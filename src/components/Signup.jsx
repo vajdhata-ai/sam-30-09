@@ -58,7 +58,7 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
                 </div>
 
                 <h2 className="text-3xl font-serif italic mb-2 text-center text-theme-text tracking-wide">
-                    Join <span className="text-theme-primary">Aurem</span>
+                    Join <span className="text-theme-primary">Auremous</span>
                 </h2>
                 <p className="text-center text-[10px] font-bold uppercase tracking-[0.2em] mb-10 text-theme-primary" style={{ opacity: 0.5 }}>
                     Create your neural profile

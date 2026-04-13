@@ -5,6 +5,7 @@ import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePerformance } from '../contexts/PerformanceContext';
 import { useLearnLoop } from '../contexts/LearnLoopContext';
+import { useChatHistory } from '../contexts/ChatHistoryContext';
 import { GROQ_API_URL } from '../utils/api';
 
 const DoubtSolver = ({ retryableFetch }) => {
@@ -13,6 +14,7 @@ const DoubtSolver = ({ retryableFetch }) => {
     const { getDifficultyLevel } = usePerformance();
     const { startLoop } = useLearnLoop();
     const { currentUser } = useAuth();
+    const { activeChatId, chats, startNewChat, addMessageToChat, getGlobalContextStr } = useChatHistory();
 
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -25,6 +27,16 @@ const DoubtSolver = ({ retryableFetch }) => {
 
     const [typedGreeting, setTypedGreeting] = useState('');
     const [showChatUI, setShowChatUI] = useState(false);
+
+    // Sync local messages with global history
+    useEffect(() => {
+        const activeChat = chats.find(c => c.id === activeChatId);
+        if (activeChat && activeChat.feature === 'doubt-solver') {
+            setMessages(activeChat.messages || []);
+        } else if (!activeChatId || (activeChat && activeChat.feature !== 'doubt-solver')) {
+            setMessages([]);
+        }
+    }, [activeChatId, chats]);
 
     useEffect(() => {
         const name = currentUser?.displayName?.split(' ')[0] || 'Student';
@@ -40,7 +52,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                 setTypedGreeting(fullText.slice(0, i));
                 if (i >= fullText.length) {
                     clearInterval(interval);
-                    setTimeout(() => setShowChatUI(true), 1000);
+                    setTimeout(() => setShowChatUI(true), 600);
                 }
             }, 60);
             return () => clearInterval(interval);
@@ -124,8 +136,21 @@ const DoubtSolver = ({ retryableFetch }) => {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
 
+        const currentActiveChat = chats.find(c => c.id === activeChatId);
+        let chatId = activeChatId;
+
+        // Optimistic UI update
         setMessages(prev => [...prev, newMessage]);
         setIsLoading(true);
+
+        if (!chatId || (currentActiveChat && currentActiveChat.feature !== 'doubt-solver')) {
+            const title = userQuestion ? userQuestion.substring(0, 30) + '...' : 'Neural Query';
+            chatId = startNewChat('doubt-solver', [newMessage], title);
+        } else {
+            addMessageToChat(chatId, newMessage);
+        }
+
+        const globalContext = getGlobalContextStr();
 
         let systemPrompt = `You are AUREM — an elite AI study companion and cognitive augmentation system.
 
@@ -152,13 +177,16 @@ const DoubtSolver = ({ retryableFetch }) => {
         CURRENT USER PERFORMANCE LEVEL: ${getDifficultyLevel().toUpperCase()}
         -> IF EASY: Explain concepts very simply, use relatable analogies, break down steps completely.
         -> IF INTERMEDIATE: Balance theory with practical steps, assume some base knowledge.
-        -> IF HARD: Be extremely concise, highly technical, and focus on profound insights and advanced applications.`;
+        -> IF HARD: Be extremely concise, highly technical, and focus on profound insights and advanced applications.
+        
+        ${globalContext}`;
 
         try {
             let payload;
 
             if (imageToSend) {
                 payload = {
+                    model: "gemini-1.5-flash",
                     messages: [{
                         role: "user",
                         content: [
@@ -167,7 +195,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                         ]
                     }],
                     temperature: 0.5,
-                    max_tokens: 1024
+                    max_tokens: 2048
                 };
             } else {
                 const conversationHistory = messages.map(msg => ({
@@ -199,13 +227,21 @@ const DoubtSolver = ({ retryableFetch }) => {
 
             const responseText = result.choices?.[0]?.message?.content || "I couldn't generate a response. Please try again.";
 
-            setMessages(prev => [...prev, {
+            const assistantMsg = {
                 role: 'assistant',
                 content: responseText,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 canEradicate: true,
                 topicContext: userQuestion
-            }]);
+            };
+
+            setMessages(prev => {
+                // To avoid duplication since we sync with context, we skip adding if it's already going to come via context?
+                // Actually the context sync effect will overwrite it, which is fine. But for instant UI, we can do optimistic:
+                return [...prev, assistantMsg];
+            });
+
+            addMessageToChat(chatId, assistantMsg);
 
         } catch (err) {
             console.error(err);
@@ -271,7 +307,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                         </h2>
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse shadow-[0_0_8px_var(--theme-primary)]" />
-                            <span className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Aurem AI Core v3.0</span>
+                            <span className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Auremous AI Core v3.0</span>
                         </div>
                     </div>
                 </div>
@@ -286,7 +322,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                             {/* Gold AUREM Logo */}
                             <div className={`transition-all duration-1000 transform ${typedGreeting.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                                 <h1 className="font-serif italic font-light text-5xl tracking-widest text-[#c9a55a] drop-shadow-[0_0_15px_rgba(201,165,90,0.3)] select-none">
-                                    ✦ Aurem
+                                    ✦ Auremous
                                 </h1>
                             </div>
 
@@ -298,7 +334,7 @@ const DoubtSolver = ({ retryableFetch }) => {
 
                             {/* Subtitle */}
                             <div className={`transition-all duration-1000 ${showChatUI ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                                <p className="text-theme-muted max-w-lg mx-auto leading-relaxed text-sm">
+                                <p className="text-theme-muted max-w-lg mx-auto leading-relaxed text-sm" style={{ opacity: 0.85 }}>
                                     I understand concepts deeply and guide you step-by-step. I never give full answers until you understand the "why".
                                 </p>
                             </div>
@@ -332,7 +368,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                                 <span className={`text-[10px] font-bold uppercase tracking-wider
                                     ${msg.role === 'user' ? 'text-theme-muted' : 'text-theme-primary'}
                                 `}>
-                                    {msg.role === 'user' ? 'You' : 'Aurem'}
+                                    {msg.role === 'user' ? 'You' : 'Auremous'}
                                 </span>
                                 <span className="text-[10px] text-theme-muted opacity-50">{msg.timestamp}</span>
                             </div>
@@ -381,7 +417,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                             <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-theme-primary to-theme-secondary flex items-center justify-center">
                                 <Sparkles className="w-3 h-3 text-theme-bg" />
                             </div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-theme-primary">Aurem</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-theme-primary">Auremous</span>
                         </div>
                     </div>
                 )}
@@ -448,7 +484,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder={selectedImage ? "Ask about this image..." : "Ask Aurem anything..."}
+                                placeholder={selectedImage ? "Ask about this image..." : "Ask Auremous anything..."}
                                 className={`w-full py-3.5 pl-5 pr-12 rounded-2xl text-[14px] font-medium outline-none transition-all duration-200 bg-theme-surface text-theme-text placeholder:text-theme-muted border border-theme-border focus:border-theme-primary focus:shadow-[0_0_0_3px_var(--theme-primary)]`}
                                 disabled={isLoading}
                             />

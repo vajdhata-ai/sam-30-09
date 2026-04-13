@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, googleProvider } from '../firebase';
-import { signInWithPopup, signOut, onAuthStateChanged, getAdditionalUserInfo } from 'firebase/auth';
+import { signInWithPopup, signOut, onAuthStateChanged, getAdditionalUserInfo, deleteUser } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -28,6 +28,17 @@ export const AuthProvider = ({ children }) => {
         return signOut(auth);
     };
 
+    const deleteAccount = async () => {
+        if (auth.currentUser) {
+            try {
+                await deleteUser(auth.currentUser);
+            } catch (error) {
+                console.error("Error deleting user:", error);
+                throw error;
+            }
+        }
+    };
+
     useEffect(() => {
         console.log("AuthContext: Setting up listener");
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -46,6 +57,7 @@ export const AuthProvider = ({ children }) => {
         currentUser,
         loginWithGoogle,
         logout,
+        deleteAccount,
         loading
     };
 

@@ -60,33 +60,33 @@ const SplashScreen = ({ onComplete }) => {
     const [phase, setPhase] = useState(0); // 0=enter, 1=logo, 2=text, 3=exit
 
     useEffect(() => {
-        const t1 = setTimeout(() => setPhase(1), 300);
-        const t2 = setTimeout(() => setPhase(2), 800);
-        const t3 = setTimeout(() => setPhase(3), 2400);
-        const t4 = setTimeout(() => onComplete?.(), 3000);
+        const t1 = setTimeout(() => setPhase(1), 150);
+        const t2 = setTimeout(() => setPhase(2), 500);
+        const t3 = setTimeout(() => setPhase(3), 2000);
+        const t4 = setTimeout(() => onComplete?.(), 2600);
         return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
     }, [onComplete]);
 
     return (
         <div
-            className={`fixed inset-0 z-[200] flex items-center justify-center transition-all duration-700 bg-theme-bg
-                ${phase >= 3 ? 'opacity-0 scale-110' : 'opacity-100 scale-100'}
+            className={`fixed inset-0 z-[200] flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.8,0,0.2,1)] bg-theme-bg
+                ${phase >= 3 ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}
             `}
         >
             <StarryBackground density={60} speed={0.5} connectDistance={100} />
             {/* Ambient background orbs using theme colors */}
-            <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div
-                    className="absolute top-[20%] left-[15%] w-[50vw] h-[50vw] rounded-full blur-[150px]"
-                    style={{ background: 'rgba(var(--theme-primary), 0.06)', animation: 'splash-float 8s ease-in-out infinite' }}
+                    className="absolute top-[20%] left-[15%] w-[50vw] h-[50vw] rounded-full will-change-transform"
+                    style={{ background: 'radial-gradient(circle, rgba(var(--theme-primary), 0.08) 0%, transparent 70%)', transform: 'translateZ(0)', animation: 'splash-float 8s ease-in-out infinite' }}
                 />
                 <div
-                    className="absolute bottom-[15%] right-[10%] w-[40vw] h-[40vw] rounded-full blur-[130px]"
-                    style={{ background: 'rgba(var(--theme-primary), 0.04)', animation: 'splash-float 10s ease-in-out infinite', animationDelay: '-3s' }}
+                    className="absolute bottom-[15%] right-[10%] w-[40vw] h-[40vw] rounded-full will-change-transform"
+                    style={{ background: 'radial-gradient(circle, rgba(var(--theme-primary), 0.05) 0%, transparent 70%)', transform: 'translateZ(0)', animation: 'splash-float 10s ease-in-out infinite', animationDelay: '-3s' }}
                 />
                 <div
-                    className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[30vw] h-[30vw] rounded-full blur-[100px]"
-                    style={{ background: 'rgba(var(--theme-secondary), 0.03)' }}
+                    className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[30vw] h-[30vw] rounded-full will-change-transform"
+                    style={{ background: 'radial-gradient(circle, rgba(var(--theme-secondary), 0.05) 0%, transparent 70%)', transform: 'translateZ(0)' }}
                 />
             </div>
 
@@ -116,7 +116,7 @@ const SplashScreen = ({ onComplete }) => {
                     ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
                 `}>
                     <h1 className="text-5xl font-serif italic tracking-wide text-theme-text">
-                        Aurem
+                        Auremous
                     </h1>
                     <p className="text-xs mt-3 tracking-[0.35em] uppercase font-medium text-theme-primary" style={{ opacity: 0.5 }}>
                         Your AI Study Companion

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Send, ShieldAlert, Cpu, Brain, Zap, MessageSquare, Loader2, Gauge } from './Icons';
 import { Mic, MicOff, Volume2 } from 'lucide-react';
-import { useRetryableFetch, GROQ_API_URL, formatGroqPayload } from '../utils/api';
+import { useRetryableFetch, GROQ_API_URL, TTS_API_URL, formatGroqPayload } from '../utils/api';
+import { auth } from '../firebase';
 
 const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
     const { retryableFetch } = useRetryableFetch();
@@ -10,9 +11,50 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
     const [isThinking, setIsThinking] = useState(false);
     const [logicStrength, setLogicStrength] = useState(50);
     const [debateSummary, setDebateSummary] = useState(null);
-    const [isVoiceActive, setIsVoiceActive] = useState(false);
+    const [isVoiceActive, setIsVoiceActive] = useState(false); // User speaking
+    const [isTutorSpeaking, setIsTutorSpeaking] = useState(false); // AI Speaking
     const chatEndRef = useRef(null);
     const recognitionRef = useRef(null);
+    const audioRef = useRef(null);
+
+    // Stop audio on unmount
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+        };
+    }, []);
+
+    const speakText = async (text) => {
+        setIsTutorSpeaking(true);
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (auth.currentUser) {
+                headers['Authorization'] = `Bearer ${await auth.currentUser.getIdToken()}`;
+            }
+            const res = await fetch(TTS_API_URL, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ text, speaker: 'explainer' }) // Use default male explainer
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const b64 = Array.isArray(data.audioBase64) ? data.audioBase64[0] : data.audioBase64;
+                const src = `data:audio/wav;base64,${b64}`;
+                
+                if (audioRef.current) audioRef.current.pause();
+                const audio = new Audio(src);
+                audioRef.current = audio;
+                audio.onended = () => setIsTutorSpeaking(false);
+                audio.onerror = () => setIsTutorSpeaking(false);
+                await audio.play();
+            } else {
+                setIsTutorSpeaking(false);
+            }
+        } catch (e) {
+            console.error(e);
+            setIsTutorSpeaking(false);
+        }
+    };
 
     const SOCRATIC_SYSTEM_PROMPT = `
         You are the "Socratic Voice Tutor". Your goal is to solve the student's doubts logically, step-by-step, and test their understanding of the topic: "${topic}".
@@ -26,7 +68,7 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
         DOCUMENT CONTEXT:
         ${documentContent.substring(0, 10000)}
 
-        Return your response in a casual conversation format, but wrapped in a JSON if you want to update the logic score:
+        Return your response in a casual conversation format, but wrapped in a JSON. KEEP YOUR RESPONSE UNDER 3 SENTENCES (MANDATORY). Short debate bursts!
         { "message": "Your text here (use markdown)", "logic_score_delta": -15 to +15, "is_convinced": false }
     `;
 
@@ -43,7 +85,7 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
         setIsThinking(true);
         try {
             const prompt = "Initialize the Socratic Voice Tutor. Greet the student and immediately ask a thought-provoking, deep conceptual question about the core topic to test their knowledge.";
-            const payload = formatGroqPayload(prompt, SOCRATIC_SYSTEM_PROMPT);
+            const payload = formatGroqPayload(prompt, SOCRATIC_SYSTEM_PROMPT, { max_tokens: 120 });
             const res = await retryableFetch(GROQ_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -61,8 +103,11 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
             } catch (e) { }
 
             setMessages([{ role: 'model', text: messageText }]);
+            if (messageText) speakText(messageText);
         } catch (e) {
             console.error(e);
+            setMessages([{ role: 'model', text: "Are you ready? Let us begin." }]);
+            speakText("Are you ready? Let us begin.");
         }
         setIsThinking(false);
     };
@@ -130,7 +175,7 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
                 Update the logic score delta based on if they defended their point well.
             `;
 
-            const payload = formatGroqPayload(prompt, SOCRATIC_SYSTEM_PROMPT);
+            const payload = formatGroqPayload(prompt, SOCRATIC_SYSTEM_PROMPT, { max_tokens: 120 });
             const res = await retryableFetch(GROQ_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -155,8 +200,11 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
 
             setLogicStrength(prev => Math.max(0, Math.min(100, prev + delta)));
             setMessages(prev => [...prev, { role: 'model', text: messageText }]);
+            if (messageText) speakText(messageText);
         } catch (e) {
             console.error(e);
+            setMessages(prev => [...prev, { role: 'model', text: "Let us reconsider that approach." }]);
+            speakText("Let us reconsider that approach.");
         }
         setIsThinking(false);
     };
@@ -248,22 +296,44 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
                     <div ref={chatEndRef} />
                 </div>
 
-                <div className="p-6 border-t border-gold/10 flex flex-col items-center justify-center text-center">
-                    <div className="space-y-3">
+                <div className="p-6 border-t border-gold/10 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    {/* Voice Interface Blob Container */}
+                    <div className="relative w-full h-[120px] flex items-center justify-center -translate-y-4">
+                        {/* Dynamic Blob behind the Mic */}
+                        <div className={`absolute shadow-[0_0_60px_rgba(201,165,90,0.6)] rounded-full mix-blend-screen pointer-events-none transition-all duration-[300ms] ease-out
+                            ${isTutorSpeaking 
+                                ? 'w-48 h-48 bg-emerald-500/30 scale-110 animate-[spin_4s_linear_infinite,pulse_1.5s_infinite]' 
+                                : isVoiceActive 
+                                    ? 'w-40 h-40 bg-gold/30 scale-125 animate-[pulse_0.5s_infinite]' 
+                                    : 'w-24 h-24 bg-transparent shadow-none'}`
+                        } style={{ borderRadius: isTutorSpeaking || isVoiceActive ? '40% 60% 60% 40% / 60% 40% 60% 40%' : '50%' }}></div>
+                    </div>
+
+                    <div className="space-y-3 relative z-10 -mt-[100px]">
                         <div className="flex justify-center">
                             <button
-                                onClick={toggleVoice}
+                                onClick={() => {
+                                    if (isTutorSpeaking) {
+                                        if (audioRef.current) audioRef.current.pause();
+                                        setIsTutorSpeaking(false);
+                                    } else {
+                                        toggleVoice();
+                                    }
+                                }}
                                 disabled={isThinking || !!debateSummary}
-                                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl cursor-none ${isVoiceActive ? 'bg-red-500 text-white animate-pulse scale-110 shadow-red-500/50' : 'bg-gold/20 text-gold border border-gold/30 hover:bg-gold hover:text-[#0e0b07] hover:scale-105'}`}
+                                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl cursor-none z-10 
+                                ${isVoiceActive ? 'bg-gold text-[#0e0b07] animate-pulse scale-110 shadow-gold' 
+                                : isTutorSpeaking ? 'bg-emerald-500 text-white scale-100 animate-pulse' 
+                                : 'bg-[#141009] text-gold border border-gold/30 hover:bg-gold hover:text-[#0e0b07] hover:scale-105'}`}
                             >
-                                {isVoiceActive ? <Mic className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+                                {isVoiceActive ? <Mic className="w-8 h-8" /> : isTutorSpeaking ? <Volume2 className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
                             </button>
                         </div>
-                        <p className="text-sm font-bold uppercase tracking-[0.15em] text-cream/40">
-                            {isThinking ? 'Processing...' : isVoiceActive ? 'Listening...' : 'Tap Mic to Speak'}
+                        <p className="text-sm font-bold uppercase tracking-[0.15em] text-cream/40 px-4 py-1 rounded-full bg-black/50 backdrop-blur-md">
+                            {isThinking ? 'Tutor is Thinking...' : isTutorSpeaking ? 'Tutor is Speaking (Tap to stop)' : isVoiceActive ? 'Listening...' : 'Tap Mic to Speak'}
                         </p>
-                        {input && !isThinking && !isVoiceActive && (
-                            <p className="text-xs text-gold/70 max-w-md mx-auto truncate">
+                        {input && !isThinking && !isVoiceActive && !isTutorSpeaking && (
+                            <p className="text-xs text-gold/70 max-w-md mx-auto truncate mt-2 bg-black/40 px-3 py-1 rounded-md">
                                 Last heard: "{input}"
                             </p>
                         )}

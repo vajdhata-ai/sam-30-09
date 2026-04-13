@@ -5,11 +5,31 @@ const ThemeContext = createContext(undefined);
 export const THEMES = {
     PREMIUM: 'premium',
     VIBRANT: 'vibrant',
-    SIMPLE: 'simple'
+    SIMPLE: 'simple',
+    CUSTOM: 'custom',
+};
+
+// Helper hex to "r, g, b"
+export function hexToRgbString(hex) {
+    if (!hex) return '0, 0, 0';
+    let rawHex = hex.replace('#', '');
+    if (rawHex.length === 3) rawHex = rawHex.split('').map(char => char + char).join('');
+    const r = parseInt(rawHex.substring(0, 2), 16) || 0;
+    const g = parseInt(rawHex.substring(2, 4), 16) || 0;
+    const b = parseInt(rawHex.substring(4, 6), 16) || 0;
+    return `${r}, ${g}, ${b}`;
+}
+
+export const DEFAULT_CUSTOM_COLORS = {
+    primary: '#8b5cf6',
+    secondary: '#d946ef',
+    bg: '#020617',
+    surface: '#0f172a',
+    text: '#ffffff',
+    muted: '#94a3b8'
 };
 
 // Theme variable maps - applied as inline CSS variables on <html>
-// This guarantees they can't be overridden by any stylesheet
 const THEME_VARS = {
     [THEMES.PREMIUM]: {
         '--theme-bg': '14, 11, 7',
@@ -50,17 +70,39 @@ const THEME_VARS = {
 };
 
 // Apply theme by injecting CSS vars directly as inline styles (highest specificity, no CSS fights)
-const applyTheme = (theme) => {
+const applyTheme = (theme, customColors = null) => {
     if (typeof window === 'undefined') return;
     const root = document.documentElement;
-    const vars = THEME_VARS[theme] || THEME_VARS[THEMES.PREMIUM];
+    let vars = THEME_VARS[theme] || THEME_VARS[THEMES.PREMIUM];
 
-    // Apply CSS variables as inline styles on <html>
+    if (theme === THEMES.CUSTOM) {
+        let colorsToUse = customColors;
+        if (!colorsToUse) {
+            try {
+                colorsToUse = JSON.parse(localStorage.getItem('atlas-custom-colors')) || DEFAULT_CUSTOM_COLORS;
+            } catch (e) {
+                colorsToUse = DEFAULT_CUSTOM_COLORS;
+            }
+        }
+        vars = {
+            '--theme-bg': hexToRgbString(colorsToUse.bg),
+            '--theme-surface': hexToRgbString(colorsToUse.surface),
+            '--theme-text': hexToRgbString(colorsToUse.text),
+            '--theme-muted': hexToRgbString(colorsToUse.muted),
+            '--theme-primary': hexToRgbString(colorsToUse.primary),
+            '--theme-secondary': hexToRgbString(colorsToUse.secondary),
+            '--theme-border': hexToRgbString(colorsToUse.primary),
+            '--aurora-1': '260, 80%, 60%',
+            '--aurora-2': '320, 80%, 60%',
+            '--aurora-3': '200, 80%, 60%',
+        };
+    }
+
     Object.entries(vars).forEach(([prop, value]) => {
         root.style.setProperty(prop, value);
     });
 
-    // Update theme classes for any CSS selectors that still use them
+    // Update theme classes
     Object.values(THEMES).forEach(t => {
         root.classList.remove(`theme-${t}`);
         document.body.classList.remove(`theme-${t}`);
@@ -70,21 +112,34 @@ const applyTheme = (theme) => {
 };
 
 export const ThemeProvider = ({ children }) => {
+    const [customColors, setCustomColorsState] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('atlas-custom-colors')) || DEFAULT_CUSTOM_COLORS;
+        } catch {
+            return DEFAULT_CUSTOM_COLORS;
+        }
+    });
+
     const [theme, setThemeState] = useState(() => {
-        const saved = typeof window !== 'undefined'
-            ? localStorage.getItem('atlas-theme-v2') || THEMES.PREMIUM
-            : THEMES.PREMIUM;
-        // Apply synchronously before first render
-        applyTheme(saved);
+        let saved = localStorage.getItem('atlas-theme-v2');
+        if (!saved || !Object.values(THEMES).includes(saved)) {
+            saved = THEMES.PREMIUM; 
+        }
+        applyTheme(saved, customColors);
         return saved;
     });
 
     const [isDark] = useState(true);
 
     useEffect(() => {
-        applyTheme(theme);
+        applyTheme(theme, customColors);
         localStorage.setItem('atlas-theme-v2', theme);
-    }, [theme]);
+    }, [theme, customColors]);
+
+    const setCustomColors = (newColors) => {
+        setCustomColorsState(newColors);
+        localStorage.setItem('atlas-custom-colors', JSON.stringify(newColors));
+    };
 
     const setTheme = (newTheme) => {
         if (Object.values(THEMES).includes(newTheme)) {
@@ -93,7 +148,7 @@ export const ThemeProvider = ({ children }) => {
     };
 
     return (
-        <ThemeContext.Provider value={{ theme, setTheme, isDark, THEMES }}>
+        <ThemeContext.Provider value={{ theme, setTheme, isDark, THEMES, customColors, setCustomColors }}>
             {children}
         </ThemeContext.Provider>
     );

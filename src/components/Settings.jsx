@@ -1,15 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTheme, THEMES } from '../contexts/ThemeContext';
 import { Moon, Sun, Crown, Settings as SettingsIcon, Eye, ChevronRight } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useChatHistory } from '../contexts/ChatHistoryContext';
+import { useAssistant } from '../contexts/AssistantContext';
 
-const ThemeOption = ({ themeKey, colorClass, label, isDark }) => {
-    const { theme, setTheme } = useTheme();
+// ═══════════════════════════════════
+// THEME OPTION BUTTON
+// ═══════════════════════════════════
+const ThemeOption = ({ themeKey, colorClass, label, isDark, onClick }) => {
+    const { theme } = useTheme();
     const isActive = theme === themeKey;
 
     return (
         <button
-            onClick={() => setTheme(themeKey)}
+            onClick={onClick}
             className={`
                 group relative flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-300
                 ${isActive
@@ -36,6 +41,12 @@ const ThemeOption = ({ themeKey, colorClass, label, isDark }) => {
     );
 };
 
+
+
+
+// ═══════════════════════════════════
+// SETTINGS SECTION WRAPPER
+// ═══════════════════════════════════
 const SettingsSection = ({ title, icon: Icon, children, isDark }) => (
     <div className="mb-8 animate-fade-in-up">
         <div className="flex items-center mb-4 px-1">
@@ -50,29 +61,85 @@ const SettingsSection = ({ title, icon: Icon, children, isDark }) => (
     </div>
 );
 
+
+// ═══════════════════════════════════
+// MAIN SETTINGS COMPONENT
+// ═══════════════════════════════════
 const Settings = () => {
-    const { isDark } = useTheme();
-    const { currentUser, logout } = useAuth();
+    const { isDark, theme, setTheme, customColors, setCustomColors } = useTheme();
+    const { currentUser, logout, deleteAccount } = useAuth();
+    const { isHistoryEnabled, setHistoryEnabled } = useChatHistory();
+    const { speak } = useAssistant();
+
+    const handleThemeChange = (newTheme) => {
+        if (newTheme === theme) return;
+        
+        speak(null, 'goodbye');
+
+        setTimeout(() => {
+            setTheme(newTheme);
+        }, 1500);
+    };
+
+    const handleDeleteAccount = async () => {
+        if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+            try {
+                await deleteAccount();
+            } catch (err) {
+                alert("Failed to delete account. You may need to sign in again to perform this action.");
+            }
+        }
+    };
 
     return (
-        <div className={`h-full overflow-y-auto custom-scrollbar p-6 md:p-10 pb-32 bg-theme-bg`}>
+        <div className={`h-full overflow-y-auto custom-scrollbar p-6 md:p-10 pb-32 bg-transparent`}>
             <div className="max-w-3xl mx-auto">
                 <header className="mb-10">
                     <h1 className={`text-3xl font-serif italic tracking-wide mb-1.5 text-theme-text`}>
                         Settings
                     </h1>
-                    <p className="text-theme-muted text-sm uppercase tracking-widest font-bold">Customize your Aurem experience</p>
+                    <p className="text-theme-muted text-sm uppercase tracking-widest font-bold">Customize your Auremous experience</p>
                 </header>
 
                 {/* Appearance */}
                 <SettingsSection title="Appearance" icon={Eye} isDark={isDark}>
                     <div>
                         <h4 className={`font-semibold text-sm mb-4 text-theme-text`}>Aesthetic Identity</h4>
-                        <div className="grid grid-cols-3 gap-4 border border-theme-border/50 p-2 rounded-3xl bg-theme-bg">
-                            <ThemeOption themeKey={THEMES.PREMIUM} label="Premium (Gold)" colorClass="from-[#c9a55a] to-[#e0c07a]" isDark={isDark} />
-                            <ThemeOption themeKey={THEMES.VIBRANT} label="Vibrant (Indigo)" colorClass="from-indigo-500 to-fuchsia-500" isDark={isDark} />
-                            <ThemeOption themeKey={THEMES.SIMPLE} label="Simple (Minimal)" colorClass="from-zinc-400 to-zinc-600" isDark={isDark} />
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 border border-theme-border/50 p-4 rounded-3xl bg-theme-bg">
+                            <ThemeOption themeKey={THEMES.PREMIUM} label="Premium (Gold)" colorClass="from-[#c9a55a] to-[#e0c07a]" isDark={isDark} onClick={() => handleThemeChange(THEMES.PREMIUM)} />
+                            <ThemeOption themeKey={THEMES.VIBRANT} label="Vibrant (Indigo)" colorClass="from-indigo-500 to-fuchsia-500" isDark={isDark} onClick={() => handleThemeChange(THEMES.VIBRANT)} />
+                            <ThemeOption themeKey={THEMES.SIMPLE} label="Simple (Minimal)" colorClass="from-zinc-400 to-zinc-600" isDark={isDark} onClick={() => handleThemeChange(THEMES.SIMPLE)} />
+                            <ThemeOption themeKey={THEMES.CUSTOM} label="Custom Palette" colorClass="from-rose-500 to-teal-500" isDark={isDark} onClick={() => handleThemeChange(THEMES.CUSTOM)} />
                         </div>
+                        
+                        {theme === THEMES.CUSTOM && customColors && (
+                            <div className="mt-6 p-4 rounded-2xl bg-black/20 border border-theme-border/30 animate-fade-in-up">
+                                <h5 className="text-theme-text text-sm font-semibold mb-4">Edit Custom Colors</h5>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+                                    {Object.keys(customColors).map(key => (
+                                        <div key={key} className="flex flex-col gap-2">
+                                            <span className="text-xs text-theme-muted uppercase tracking-wider font-medium">{key}</span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative w-8 h-8 rounded-full overflow-hidden shadow-md ring-1 ring-white/10 shrink-0">
+                                                    <input 
+                                                        type="color" 
+                                                        value={customColors[key]} 
+                                                        onChange={e => setCustomColors({ ...customColors, [key]: e.target.value })}
+                                                        className="absolute -top-2 -left-2 w-16 h-16 cursor-crosshair border-0 outline-none"
+                                                    />
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    value={customColors[key]} 
+                                                    onChange={e => setCustomColors({ ...customColors, [key]: e.target.value })}
+                                                    className="bg-theme-surface/50 border border-theme-border/30 rounded-lg px-2 py-1.5 text-xs text-theme-text w-full uppercase focus:outline-none focus:border-theme-primary/50 font-mono tracking-wider"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </SettingsSection>
 
@@ -90,11 +157,61 @@ const Settings = () => {
                                 <p className="text-xs text-theme-muted">{currentUser?.email}</p>
                             </div>
                         </div>
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={logout}
+                                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 text-theme-bg bg-theme-primary hover:bg-theme-secondary hover:-translate-y-0.5`}
+                            >
+                                Sign Out
+                            </button>
+                            <button
+                                onClick={handleDeleteAccount}
+                                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 text-red-500 hover:bg-red-500/10 border border-red-500/20 hover:-translate-y-0.5`}
+                            >
+                                Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </SettingsSection>
+
+                {/* Privacy */}
+                <SettingsSection title="Privacy & Data" icon={Eye} isDark={isDark}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1 mr-4">
+                            <h4 className="font-semibold text-sm text-theme-text mb-1">Save Chat History</h4>
+                            <p className="text-xs text-theme-muted leading-relaxed">
+                                Keep a record of your study sessions. Turning this off immediately clears past chats to ensure absolute privacy.
+                            </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                className="sr-only peer" 
+                                checked={isHistoryEnabled}
+                                onChange={(e) => setHistoryEnabled(e.target.checked)}
+                            />
+                            <div className="w-11 h-6 bg-theme-primary/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-theme-primary"></div>
+                        </label>
+                    </div>
+                </SettingsSection>
+
+                {/* Wake Up Aura */}
+                <SettingsSection title="Aura Guide" icon={Eye} isDark={isDark}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1 mr-4">
+                            <h4 className="font-semibold text-sm text-theme-text mb-1">Wake Up Aura 🤖💤</h4>
+                            <p className="text-xs text-theme-muted leading-relaxed">
+                                Aura fell asleep after showing you around. Poke her awake for another tour — she won't be mad, probably. She lives for this stuff.
+                            </p>
+                        </div>
                         <button
-                            onClick={logout}
-                            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 text-red-500 hover:bg-red-500/10 border border-red-500/20`}
+                            onClick={() => {
+                                localStorage.setItem('showOnboarding', 'true');
+                                window.location.reload();
+                            }}
+                            className="px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-lg shadow-violet-500/20 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
                         >
-                            Sign Out
+                            🫵 Wake Her Up
                         </button>
                     </div>
                 </SettingsSection>
@@ -111,11 +228,13 @@ const Settings = () => {
                             <span className={`font-mono text-xs text-theme-text`}>Production</span>
                         </div>
                         <div className="pt-2">
-                            <p className="text-theme-muted text-xs">© 2026 Aurem EdTech. All rights reserved.</p>
+                            <p className="text-theme-muted text-xs">© 2026 Auremous EdTech. All rights reserved.</p>
                         </div>
                     </div>
                 </SettingsSection>
             </div>
+
+
         </div>
     );
 };

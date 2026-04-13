@@ -28,17 +28,18 @@ console.log(`[AI Service] VERSION 9.0 (STABILITY UPDATE) ACTIVE`);
 // ...
 
 const callGroqVision = async (messages) => {
-    if (!GROQ_API_KEY) throw new Error("Missing Groq API Key");
+    // We are routing Vision calls to Gemini 1.5 Flash due to Groq Vision restrictions
+    if (!GEMINI_API_KEY) throw new Error("Missing Gemini API Key for Vision Fallback");
 
-    const model = GROQ_VISION_MODEL;
+    const model = "gemini-1.5-flash";
 
-    console.log(`[AI] Attempting Groq Vision with model: ${model}`);
+    console.log(`[AI] Routing Vision request to Gemini with model: ${model}`);
 
     try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${GROQ_API_KEY}`,
+                "Authorization": `Bearer ${GEMINI_API_KEY}`,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -52,14 +53,14 @@ const callGroqVision = async (messages) => {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error(`[AI] Groq Vision REST Error ${response.status}:`, errorText);
+            console.error(`[AI] Gemini Vision REST Error ${response.status}:`, errorText);
             throw new Error(`Vision Service Unavailable: ${response.statusText}`);
         }
 
         const data = await response.json();
         return data;
     } catch (error) {
-        console.error("[AI] Groq Vision Network Error:", error.message);
+        console.error("[AI] Gemini Vision Network Error:", error.message);
         throw new Error(`Vision Service Unavailable: ${error.message}`);
     }
 };
@@ -109,8 +110,16 @@ const callGroqStealth = async (messages, requestedModel = null) => {
 };
 
 // --- Route: Podcast ---
+// Duration mapping: minutes → exchange count (approx 3 exchanges per minute of spoken audio)
+const DURATION_MAP = {
+    7:  20,    // ~7 min podcast
+    15: 44,    // ~15 min podcast
+    30: 88,    // ~30 min podcast
+    45: 130    // ~45 min podcast
+};
+
 router.post('/podcast', verifyToken, async (req, res) => {
-    const { content, topics, mode, syllabus, tier, images } = req.body;
+    const { content, topics, mode, syllabus, tier, images, duration } = req.body;
     try {
         let topicContent;
 
@@ -118,7 +127,6 @@ router.post('/podcast', verifyToken, async (req, res) => {
         if (images && images.length > 0) {
             console.log(`[Podcast] Extracting content from ${images.length} handwritten images...`);
 
-            // Build vision request to extract text from handwritten notes
             const visionContent = [
                 {
                     type: "text",
@@ -126,7 +134,6 @@ router.post('/podcast', verifyToken, async (req, res) => {
                 }
             ];
 
-            // Add images (limit to 5 for API limits)
             images.slice(0, 5).forEach(imgUrl => {
                 visionContent.push({
                     type: "image_url",
@@ -139,7 +146,7 @@ router.post('/podcast', verifyToken, async (req, res) => {
             try {
                 const extractedResult = await callGroqVision(visionMessages);
                 const extractedText = extractedResult.choices[0]?.message?.content || '';
-                topicContent = extractedText.substring(0, 4000); // Use extracted text
+                topicContent = extractedText.substring(0, 4000);
                 console.log(`[Podcast] Extracted ${extractedText.length} chars from handwritten notes`);
             } catch (visionError) {
                 console.error("[Podcast] Vision extraction failed:", visionError.message);
@@ -151,64 +158,71 @@ router.post('/podcast', verifyToken, async (req, res) => {
             topicContent = content ? content.substring(0, 6000) : 'general educational topic';
         }
 
-        const exchanges = tier === 'pro' ? 40 : 24;
+        // Determine exchange count from duration slot
+        const durationMinutes = duration || (tier === 'pro' ? 15 : 7);
+        const exchanges = DURATION_MAP[durationMinutes] || DURATION_MAP[7];
+        
+        console.log(`[Podcast] Generating ${durationMinutes}-minute podcast with ${exchanges} exchanges`);
 
-        const prompt = `You are a world-class podcast script writer creating a DEEP, EDUCATIONAL conversation between two speakers. This is NOT a surface-level overview — it is a thorough, concept-by-concept breakdown.
+        const prompt = `You are the world's best podcast scriptwriter creating a DEEP, IN-DEPTH educational conversation. This is like a premium masterclass — every topic is explained with extreme care, clarity, and real-world connecting examples.
 
-SPEAKERS:
-- Alex: The curious, engaged host. Asks sharp follow-up questions. Challenges Sam to go deeper. Occasionally shares "aha moments" or connects ideas to everyday life. Thinks out loud.
-- Sam: The brilliant teacher-friend. Explains complex things using vivid, relatable, daily-life analogies (cooking, sports, driving, social media, etc.). Goes deep into WHY things work, not just WHAT they are. Self-corrects sometimes. Thinks step-by-step.
+SPEAKERS (STRICTLY ALTERNATE):
+- Questioner (Q): The sharp, deeply curious student. Asks genuine follow-up questions that dig deeper — never surface-level. Thinks out loud. Sometimes connects concepts to their own life. Occasionally challenges the Explainer's points. Uses natural speech patterns: "Wait wait wait...", "Hold on, so you're telling me...", "Okay but here's what I'm confused about...", "That's actually wild — so basically..."
+- Explainer (E): The brilliant, warm teacher who LOVES what they teach. Explains using vivid daily-life analogies that make complex things click instantly. Goes deep into the WHY behind everything, not just the WHAT. Self-corrects naturally: "Actually, let me rephrase that...", "Hmm no, a better way to think about it is...". Uses conversational markers: "See, here's the thing...", "Think of it like this...", "And this is the beautiful part...", "Now, most people miss this, but..."
 
-=== SOURCE MATERIAL (USE ALL OF THIS) ===
+=== SOURCE MATERIAL (COVER EVERY CONCEPT IN DEPTH) ===
 ${topicContent}
 ${topics ? `\n=== FOCUS AREAS ===\n${topics}` : ''}
 
-=== CRITICAL RULES ===
+=== CRITICAL RULES FOR ${durationMinutes}-MINUTE PODCAST ===
 
-1. **CONTENT DEPTH IS KING**: Cover EVERY major concept from the source material. Don't skip anything. If the document has 5 topics, discuss all 5 in detail. Each concept should get at least 2-3 exchanges of discussion.
+1. **EXHAUSTIVE DEPTH**: Cover EVERY single concept from the source material. Do NOT skip anything. Each concept gets 3-5 exchanges of thorough discussion. Start from fundamentals and build up layer by layer.
 
-2. **REAL-WORLD EXAMPLES**: For EVERY concept, Sam MUST give a concrete, daily-life example:
-   - Physics forces? → "Think about when you're in a car and it brakes suddenly — your body lurches forward. That's inertia."
-   - Chemical bonding? → "It's like two friends sharing their lunch — that's covalent bonding."
-   - Economics inflation? → "Remember when that samosa used to cost ₹5? Now it's ₹15. That's inflation hitting your pocket."
-   - Math derivatives? → "It's literally just asking: how fast is something changing RIGHT NOW? Like checking your speedometer."
+2. **REAL-WORLD ANALOGIES FOR EVERY CONCEPT**: The Explainer MUST ground every idea in everyday life:
+   - Physics forces? → "You know when you're in a rickshaw and it brakes suddenly? Your body flies forward — that's Newton's first law literally hitting you."
+   - Chemical bonding? → "Imagine two friends sharing their lunch — that's a covalent bond. But if one friend just takes the other's lunch entirely, boom — that's ionic."
+   - Economics inflation? → "Remember when a samosa was ₹5? Now it's ₹20. Your money didn't shrink, but its buying power did. That's inflation eating your wallet."
+   - Calculus derivatives? → "It's literally your speedometer. Speed tells you how fast your position is changing RIGHT NOW. That's what a derivative does."
+   - Biology DNA? → "Your DNA is like a recipe book. Every cell has the same book, but a liver cell reads the liver chapter while a brain cell reads the brain chapter."
 
-3. **NATURAL CONVERSATION** (but NOT empty filler):
-   - Alex's reactions should ADD value: "Wait, so you're saying that even gravity is just curved spacetime? That changes everything."
-   - Use occasional fillers like "honestly", "I mean", "right", but NEVER let fillers replace actual content.
-   - Include moments of genuine curiosity: "Okay but here's what I don't get..." followed by a real question.
-   - Self-correction that teaches: "Actually wait, I said 6 but it's really 8 — because we're counting the noble gases too."
+3. **HUMAN-LIKE CONVERSATION** — This should sound like two real people, NOT a textbook:
+   - Natural hesitations: "So it's basically... hmm, how do I put this..."
+   - Genuine "aha" moments from the Questioner: "Ohhh wait, so THAT's why [connection]! That changes everything."
+   - Mild humor and personality: "Okay this might sound nerdy, but I genuinely found this fascinating when I first learned it."
+   - Building on each other: "You actually touched on something really important there — let me expand on that..."
+   - Occasional tangential connections that enrich understanding: "This actually connects to what we were talking about earlier..."
+   - Emotional reactions: "See, this is why I love teaching this — because when you really get it, it's beautiful."
 
-4. **STRUCTURE**: Start with a hook, build up systematically through concepts, end with a powerful summary/takeaway.
+4. **STRUCTURE FOR ${durationMinutes} MINUTES**:
+   - OPENING (2-3 exchanges): Hook with a provocative question or surprising fact. Set up WHY this topic matters.
+   - DEEP DIVE (${Math.floor(exchanges * 0.85)} exchanges): Go concept by concept. Each concept: introduce → explain with analogy → Questioner asks deeper → Explainer deepens → connect to next concept.
+   - CLOSING (2-3 exchanges): Powerful summary that ties everything together into a "big picture" takeaway. End with something memorable.
 
-5. **LENGTH**: EXACTLY ${exchanges} exchanges. Each response should be 2-5 sentences. Make every sentence count — no fluff.
+5. **EXACTLY ${exchanges} EXCHANGES**. Each response should be 2-6 sentences. Every sentence adds value — NO filler, NO empty reactions.
 
-6. **SPEAKER BALANCE**: Alternate strictly between Alex and Sam. Alex asks, reacts, connects; Sam explains, analogizes, deepens.
+6. **SPEAKER BALANCE**: STRICTLY alternate between Questioner and Explainer. Start with Questioner.
 
 Output ONLY valid JSON:
-{"script":[{"speaker":"Alex","text":"..."},{"speaker":"Sam","text":"..."}]}
+{"script":[{"speaker":"Questioner","text":"..."},{"speaker":"Explainer","text":"..."}]}
 
-Begin with energy and immediately dive into the first concept.`;
+Begin with a hook that makes the listener immediately curious. Dive DEEP.`;
 
         const msgs = [{ role: 'user', content: prompt }];
 
-
         let result;
         try {
-            // Direct call with dynamic model support
             result = await callGroqStealth(msgs, req.body.model);
         } catch (apiError) {
             console.error("[Podcast] API Failed:", apiError.message);
-            // Fallback to a simple static script so the UI doesn't break
             result = {
                 choices: [{
                     message: {
                         content: JSON.stringify({
                             script: [
-                                { speaker: "Alex", text: "Welcome back! Today we're discussing this interesting topic." },
-                                { speaker: "Sam", text: "That's right, Alex. The AI service is experiencing heavy load, but let's dive into the basics." },
-                                { speaker: "Alex", text: "Absolutely. Even without the full deep dive, the key concepts remain crucial." },
-                                { speaker: "Sam", text: "Agreed. Let's keep exploring!" }
+                                { speaker: "Questioner", text: "Welcome back! Today we're discussing this fascinating topic. I've been really curious about this — can you break it down for us?" },
+                                { speaker: "Explainer", text: "Absolutely! So here's the thing — this is one of those topics that sounds complicated on the surface, but once you see the underlying pattern, it's actually brilliant. Let me start with the basics." },
+                                { speaker: "Questioner", text: "I love that approach. So what's the core idea we need to understand first?" },
+                                { speaker: "Explainer", text: "Think of it like building a house. You need the foundation before the walls. The foundation here is understanding why this concept was even needed in the first place — what problem was it solving?" }
                             ]
                         })
                     }
@@ -223,7 +237,6 @@ Begin with energy and immediately dive into the first concept.`;
             finalJson = JSON.parse(cleanedText);
         } catch (e) {
             console.warn("[Podcast] JSON Parse failed, attempting robust regex extraction...");
-            // Robust fallback for truncated or broken JSON
             const regex = /"speaker"\s*:\s*"([^"]+)"\s*,\s*"text"\s*:\s*"((?:\\"|[^"])+)"/g;
             let match;
             const extractedScript = [];
@@ -237,7 +250,7 @@ Begin with energy and immediately dive into the first concept.`;
             if (extractedScript.length > 0) {
                 finalJson.script = extractedScript;
             } else {
-                finalJson.script = [{ speaker: "Sam", text: "I'm sorry, my response was interrupted. Here is what I started to say: " + cleanedText.substring(0, 300) + "..." }];
+                finalJson.script = [{ speaker: "Explainer", text: "I'm sorry, my response was interrupted. Here is what I started to say: " + cleanedText.substring(0, 300) + "..." }];
             }
         }
 
@@ -252,15 +265,20 @@ Begin with energy and immediately dive into the first concept.`;
         } else if (Array.isArray(finalJson.dialogue)) {
             scriptArray = finalJson.dialogue;
         } else {
-            // Fallback if structure is weird but has keys
-            // Just try to find ANY array in values
             const possibleArray = Object.values(finalJson).find(val => Array.isArray(val));
             scriptArray = possibleArray || [{ speaker: "System", text: "Could not parse script format." }];
         }
 
-        res.json({ script: scriptArray, provider: "atlas-groq" });
+        // Normalize speaker names — map any old format (Alex/Sam) to new format
+        scriptArray = scriptArray.map(line => ({
+            ...line,
+            speaker: line.speaker === 'Alex' ? 'Questioner' :
+                     line.speaker === 'Sam' ? 'Explainer' :
+                     line.speaker
+        }));
+
+        res.json({ script: scriptArray, provider: "atlas-groq", duration: durationMinutes });
     } catch (error) {
-        // This catch block handles JSON parsing critical failures (unlikely due to fallbacks)
         console.error("[Podcast Error]", error);
         res.status(500).json({ error: error.message });
     }

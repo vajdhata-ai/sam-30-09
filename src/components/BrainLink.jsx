@@ -197,7 +197,7 @@ const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
                     {/* Question Section */}
                     <div className="text-center space-y-2 max-w-2xl mx-auto relative z-10 w-full mb-4 mt-6 md:mt-10">
                         <span className="text-[8px] font-black uppercase tracking-[0.3em] text-theme-muted">
-                            NEURAL QUERY {currentQuestionIndex + 1} / {quizData.length}
+                            QUESTION {currentQuestionIndex + 1} / {quizData.length}
                         </span>
                         <div className="relative group/q py-1">
                             <h2 className={`text-base md:text-lg font-extrabold leading-snug tracking-tight min-h-[2.5em] flex items-center justify-center relative z-10 text-theme-text`}>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ClipboardList, MessageSquare, Loader2, Lightbulb, Link, Globe, Send, Sparkles, Brain, Trophy, MapPin, GraduationCap, Map, Crown, BookOpen, Target, Calendar, ChevronRight, Check, Activity, FileText, Download, AlertTriangle, Award, ShieldAlert } from './Icons';
+import { ClipboardList, MessageSquare, Loader2, Lightbulb, Link, Globe, Send, Sparkles, Brain, Trophy, MapPin, GraduationCap, Map, Crown, BookOpen, Target, Calendar, ChevronRight, ChevronLeft, Check, Activity, FileText, Download, AlertTriangle, Award, ShieldAlert } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useChatHistory } from '../contexts/ChatHistoryContext';
 import { GROQ_API_URL, formatGroqPayload } from '../utils/api';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -65,12 +66,21 @@ const SelectField = ({ options, ...props }) => (
 // ───────────────────────────────────────────────
 // MAIN COMPONENT
 // ───────────────────────────────────────────────
-const CollegeCompass = ({ retryableFetch }) => {
+const CollegeCompass = ({ retryableFetch, onExit }) => {
+    const [isEntering, setIsEntering] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsEntering(false), 2600);
+        return () => clearTimeout(timer);
+    }, []);
     const { isDark } = useTheme();
     const { canUseFeature, incrementUsage, triggerUpgradeModal, isPro, getRemainingUses } = useSubscription();
 
-    // Tab state
-    const [activeTab, setActiveTab] = useState('jee');
+    // View State
+    const [viewMode, setViewMode] = useState('menu'); // 'menu' | 'active_tool'
+    const [activeTab, setActiveTab] = useState('');
+
+    const { activeChatId, chats, startNewChat, addMessageToChat, getGlobalContextStr } = useChatHistory();
 
     // ─── SHARED STUDENT PROFILE (persists across all tabs) ───
     const [studentProfile, setStudentProfile] = useState({
@@ -162,7 +172,7 @@ const CollegeCompass = ({ retryableFetch }) => {
     const [compareForm, setCompareForm] = useState({ college1: '', college2: '', college3: '', criteria: 'Overall' });
     const [compareResult, setCompareResult] = useState('');
 
-    // JEE Predictor (WORLD-CLASS)
+    // Rank Predictor (WORLD-CLASS)
     const [jeeMode, setJeeMode] = useState('marks'); // 'marks' or 'percentile'
     const [jeeForm, setJeeForm] = useState({ marks: '', percentile: '', category: 'OPEN', homeState: '', targetBranch: '', gender: 'Male', pwd: 'No' });
     const [jeeRankData, setJeeRankData] = useState(null);
@@ -213,7 +223,18 @@ const CollegeCompass = ({ retryableFetch }) => {
 
     // Chat
     const [chatInput, setChatInput] = useState('');
-    const [chatHistory, setChatHistory] = useState([{ role: 'model', text: "Hello! I'm your elite AI College Counselor. Ask me anything — admissions strategy, country comparisons, visa guidance, ranking analysis, financial planning, or career alignment. I use comprehensive data to give you world-class recommendations." }]);
+    const defaultChatMsg = { role: 'model', text: "Hello! I'm your elite AI College Counselor. Ask me anything — admissions strategy, country comparisons, visa guidance, ranking analysis, financial planning, or career alignment. I use comprehensive data to give you world-class recommendations." };
+    const [chatHistory, setChatHistory] = useState([defaultChatMsg]);
+
+    // Sync local counselor chat with global history
+    useEffect(() => {
+        const activeChat = chats.find(c => c.id === activeChatId);
+        if (activeChat && activeChat.feature === 'college-compass') {
+            setChatHistory(activeChat.messages.length > 0 ? activeChat.messages : [defaultChatMsg]);
+        } else if (!activeChatId || (activeChat && activeChat.feature !== 'college-compass')) {
+            setChatHistory([defaultChatMsg]);
+        }
+    }, [activeChatId, chats]);
 
     // Shared
     const [isLoading, setIsLoading] = useState(false);
@@ -293,6 +314,11 @@ CRITICAL RULES:
 - Deeply synthesize ALL of the user's inputs. Do NOT give generic paths (e.g. "Software Engineer"). Break constraints and suggest interdisciplinary, future-proof careers.
 - Read and use ALL data in the STUDENT PROFILE.
 - Output 5 to 8 unique career ideas.
+
+CRITICAL RULE: If the student profile is mostly EMPTY (e.g., they only filled in 1 or 2 fields in this form and completely ignored the Global Profile), you MUST add this exact section right at the top of your response:
+"## ⚠️ SYSTEM WARNING
+You are receiving generic, baseline advice. To unlock world-class, ultra-personalized mapping that completely aligns with your DNA, return to the **Universal Profile Builder** tab immediately and complete your profile."
+If their profile IS full, provide deep FOMO-inducing, highly personalized logic.
 - Use clear Markdown with emojis.`
             );
             setCareerResult(text);
@@ -355,6 +381,11 @@ Brief summary of chances, tuition, and basic scholarship advice.`,
                 `You are the world's most knowledgeable and brutally honest AI College Admissions Consultant.
 CRITICAL RULES:
 - Provide up to 20-30 colleges total.
+
+CRITICAL RULE: If the student profile is mostly EMPTY (e.g., they only filled in 1 or 2 fields in this form and completely ignored the Global Profile), you MUST add this exact section right at the top of your response:
+"## ⚠️ SYSTEM WARNING
+You are receiving generic, baseline advice. To unlock world-class, ultra-personalized mapping that completely aligns with your DNA, return to the **Universal Profile Builder** tab immediately and complete your profile."
+If their profile IS full, provide deep FOMO-inducing, highly personalized logic.
 - If stats are weak, you MUST reject top-tier Ivies/Stanford immediately. Break their illusions gracefully but firmly, and TELL them to use the "Preparation Hub" to fix their SAT/ACT/AP stats.
 - Match colleges to their exact extracurriculars and documents.
 - Provide international diversity if the country is open. Don't default to only US.
@@ -485,7 +516,7 @@ Be objective, data-driven, and specific. Present as a structured comparison.`,
         return { label: 'Explore All Options', color: 'text-red-400', emoji: '🛡️' };
     };
 
-    // ─── JEE RANK PREDICTOR (WORLD-CLASS) ───
+    // ─── RANK PREDICTOR (WORLD-CLASS) ───
     const handleJeeSubmit = async (e) => {
         e.preventDefault();
         if (!canUseFeature('college-compass')) { triggerUpgradeModal('college-compass'); return; }
@@ -971,7 +1002,7 @@ CRITICAL: If the profile is mostly empty (e.g. they didn't use the Career or Col
             // Add a title header
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(16);
-            pdf.text("Aurem Admission & Scholarship Strategy Report", 15, y);
+            pdf.text("Auremous Admission & Scholarship Strategy Report", 15, y);
             y += 15;
 
             pdf.setFont("helvetica", "normal");
@@ -1002,15 +1033,33 @@ CRITICAL: If the profile is mostly empty (e.g. they didn't use the Career or Col
         if (!chatInput.trim()) return;
         const userMsg = chatInput.trim();
         setChatInput('');
-        setChatHistory(prev => [...prev, { role: 'user', text: userMsg }]);
+
+        const newMessage = { role: 'user', text: userMsg };
+        setChatHistory(prev => [...prev, newMessage]);
         setIsLoading(true);
+
+        const currentActiveChat = chats.find(c => c.id === activeChatId);
+        let chatId = activeChatId;
+
+        if (!chatId || (currentActiveChat && currentActiveChat.feature !== 'college-compass')) {
+            const title = userMsg.substring(0, 30) + '...';
+            // Start a new chat natively with the default msg + user msg
+            chatId = startNewChat('college-compass', [defaultChatMsg, newMessage], title);
+        } else {
+            addMessageToChat(chatId, newMessage);
+        }
+
         const historyText = chatHistory.slice(-10).map(m => `${m.role === 'user' ? 'Student' : 'Counselor'}: ${m.text}`).join('\n');
+        const globalContext = getGlobalContextStr();
+
         try {
             const text = await callAI(
                 `${historyText}\nStudent: ${userMsg}`,
-                `You are the world's top AI College Admissions Counselor. Be specific, data-driven, and actionable. Use Markdown headers and emojis. Keep responses under 400 words unless depth is needed.`
+                `You are the world's top AI College Admissions Counselor. Be specific, data-driven, and actionable. Use Markdown headers and emojis. Keep responses under 400 words unless depth is needed.\n\n${globalContext}`
             );
-            setChatHistory(prev => [...prev, { role: 'model', text }]);
+            const responseMsg = { role: 'model', text };
+            setChatHistory(prev => [...prev, responseMsg]);
+            addMessageToChat(chatId, responseMsg);
         } catch (err) {
             setChatHistory(prev => [...prev, { role: 'model', text: "Sorry, I encountered an error. Please try again." }]);
         }
@@ -1033,1009 +1082,1190 @@ CRITICAL: If the profile is mostly empty (e.g. they didn't use the Career or Col
     };
 
     // ─── TAB DEFINITIONS ───
-    const TABS = [
-        { id: 'career', icon: <Brain className="w-4 h-4" />, label: 'Career AI' },
-        { id: 'college', icon: <GraduationCap className="w-4 h-4" />, label: 'College Finder' },
-        { id: 'scholarship', icon: <Trophy className="w-4 h-4" />, label: 'Scholarships' },
-        { id: 'compare', icon: <Activity className="w-4 h-4" />, label: 'Compare' },
-        { id: 'essay', icon: <BookOpen className="w-4 h-4" />, label: 'Essay Expert' },
-        { id: 'chat', icon: <MessageSquare className="w-4 h-4" />, label: 'Counselor' },
+    const TOOLS = [
+        { id: 'jee', title: 'Rank Predictor', desc: 'Predict JEE/NEET/CAT/NDA results & colleges', icon: Crown },
+        { id: 'career', title: 'Career Architect', desc: 'Discover career paths matching your DNA', icon: Target },
+        { id: 'college', title: 'University Hunt', desc: 'Find target, safety & reach schools', icon: Globe },
+        { id: 'scholarship', title: 'Aid Finder', desc: 'Discover valid global scholarships', icon: Trophy },
+        { id: 'compare', title: 'Compare Hub', desc: 'Head-to-head college comparisons', icon: Activity },
+        { id: 'essay', title: 'Essay Expert', desc: 'AI-assisted SOP & Admission Essays', icon: FileText },
+        { id: 'chat', title: 'Counselor Chat', desc: 'Talk to an AI admissions counselor', icon: MessageSquare },
+        { id: 'profile', title: 'Universal Profile Builder', desc: 'Build your complete student profile for all tools', icon: Sparkles }
     ];
 
-    return (
-        <div className={`flex flex-col h-full bg-theme-bg text-theme-text relative overflow-hidden transition-colors duration-300`}>
-            {/* Background */}
-            <div className={`absolute top-0 right-0 w-[500px] h-[500px] bg-theme-primary opacity-10 rounded-full blur-[120px] -z-10 animate-pulse`} />
-            <div className={`absolute bottom-0 left-0 w-[400px] h-[400px] bg-theme-secondary opacity-10 rounded-full blur-[120px] -z-10 animate-pulse delay-1000`} />
+    
+    if (isEntering) {
+        return (
+            <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-theme-bg text-theme-text overflow-hidden">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-theme-primary/10 blur-[150px] mix-blend-screen rounded-full animate-pulse"></div>
 
-            {/* Header */}
-            <div className={`px-6 py-5 flex items-center justify-between z-30 glass-3d-elevated border-b rounded-b-3xl mx-4 mt-4 bg-theme-surface border-theme-border shadow-2xl`}>
-                <div className="flex items-center gap-4 group cursor-default">
-                    <div className={`p-3 rounded-2xl bg-theme-surface border border-theme-border shadow-xl shadow-theme-border/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
-                        <GraduationCap className="w-6 h-6 text-theme-primary" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-xl font-black bg-gradient-to-r from-theme-secondary via-theme-primary to-theme-secondary bg-clip-text text-transparent uppercase tracking-tightest">
-                                Admissions Pilot
-                            </h1>
-                            <span className="px-2 py-0.5 rounded-full bg-theme-bg text-theme-primary text-[10px] font-black uppercase tracking-widest border border-theme-border">Neural Core v3.0</span>
+                {/* 3D Compass on Entry */}
+                <div className="compass-3d inline-block mb-8" style={{ animation: 'compass-float 4s ease-in-out infinite' }}>
+                    <div className="relative w-40 h-40 md:w-52 md:h-52 mx-auto" style={{ animation: 'compass-rotate 8s ease-in-out infinite' }}>
+                        <div className="absolute inset-0 rounded-full bg-theme-primary/20" style={{ animation: 'compass-glow 3s ease-in-out infinite', filter: 'blur(20px)' }} />
+                        <div className="absolute inset-0 rounded-full border-2 border-theme-primary/20" style={{ animation: 'compass-ring-spin 20s linear infinite' }}>
+                            {['N', 'E', 'S', 'W'].map((dir, i) => (
+                                <span key={dir} className="absolute text-[9px] font-black text-theme-primary/50 uppercase tracking-wider"
+                                      style={{
+                                          top: i === 0 ? '-2px' : i === 2 ? 'auto' : '50%',
+                                          bottom: i === 2 ? '-2px' : 'auto',
+                                          left: i === 3 ? '-2px' : i === 1 ? 'auto' : '50%',
+                                          right: i === 1 ? '-2px' : 'auto',
+                                          transform: `translate(${i % 2 === 0 ? '-50%' : '0'}, ${i < 2 ? '0' : i === 2 ? '0' : '-50%'}) rotate(-${i * 90}deg)`,
+                                      }}>
+                                    {dir}
+                                </span>
+                            ))}
+                            {Array.from({ length: 12 }).map((_, i) => (
+                                <div key={i} className="absolute w-px bg-theme-primary/15 top-0 left-1/2 origin-bottom"
+                                     style={{ height: i % 3 === 0 ? '8px' : '4px', transform: `rotate(${i * 30}deg) translateX(-50%)`,
+                                              transformOrigin: `50% ${85}px` }} />
+                            ))}
                         </div>
-                        <p className="text-[10px] font-black text-theme-muted uppercase tracking-[0.3em] mt-0.5">Global Admissions Intelligence</p>
+                        <div className="absolute inset-3 md:inset-4 rounded-full border border-theme-border bg-theme-surface/80 backdrop-blur-sm shadow-[inset_0_2px_8px_rgba(0,0,0,0.2),0_4px_20px_rgba(0,0,0,0.15)] flex items-center justify-center">
+                            <div className="absolute inset-3 rounded-full border border-theme-primary/10" />
+                            <div className="w-3 h-3 rounded-full bg-theme-primary/60 shadow-[0_0_8px_var(--theme-primary)] z-20" />
+                            <div className="absolute inset-0 flex items-center justify-center" style={{ animation: 'compass-needle 6s ease-in-out infinite' }}>
+                                <div className="absolute w-[3px] rounded-t-full bg-gradient-to-t from-transparent via-red-500 to-red-400"
+                                     style={{ height: '38%', bottom: '50%', left: '50%', transform: 'translateX(-50%)',
+                                              boxShadow: '0 0 6px rgba(239,68,68,0.3)' }} />
+                                <div className="absolute w-[3px] rounded-b-full bg-gradient-to-b from-transparent via-slate-400 to-slate-300"
+                                     style={{ height: '38%', top: '50%', left: '50%', transform: 'translateX(-50%)' }} />
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Sub-Nav Tabs */}
-            <div className="px-6 py-4 flex items-center justify-center">
-                <div className={`flex flex-wrap items-center justify-center p-2 rounded-[32px] glass-3d-elevated bg-theme-surface border-theme-border shadow-md`}>
-                    {[
-                        { id: 'jee', label: 'JEE Predictor', icon: Crown },
-                        { id: 'career', label: 'Career Planner', icon: Target },
-                        { id: 'college', label: 'University Hunt', icon: Globe },
-                        { id: 'scholarship', label: 'Aid Finder', icon: Trophy },
-                        { id: 'compare', label: 'Compare Hub', icon: Activity },
-                        { id: 'essay', label: 'Essay Expert', icon: FileText },
-                        { id: 'chat', label: 'Counselor Chat', icon: MessageSquare }
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2.5 px-6 py-3.5 rounded-[24px] text-[10px] font-black uppercase tracking-widest transition-all duration-500 relative group
-                                ${activeTab === tab.id
-                                    ? `bg-theme-bg border border-theme-primary text-theme-text shadow-xl shadow-theme-primary/20 scale-[1.08] -translate-y-1`
-                                    : 'text-theme-muted hover:text-theme-primary hover:bg-theme-bg/50'}
-                            `}
-                        >
-                            <tab.icon className={`w-4 h-4 transition-transform duration-500 ${activeTab === tab.id ? 'scale-110 rotate-12 text-theme-primary' : 'group-hover:scale-110'}`} />
-                            <span className="hidden sm:inline">{tab.label}</span>
-                        </button>
-                    ))}
-                </div>
+                <h1 className="text-2xl md:text-3xl font-serif italic tracking-[0.15em] bg-gradient-to-r from-theme-secondary via-theme-primary to-theme-secondary bg-clip-text text-transparent" style={{ animation: 'pulse 3s infinite' }}>Auremous Compass</h1>
+                <p className="mt-4 text-theme-muted tracking-[0.4em] uppercase text-[10px] animate-pulse font-bold">Synchronizing Global Intelligence...</p>
             </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col bg-theme-bg text-theme-text h-[100dvh] w-full fixed inset-0 z-[100] relative overflow-y-auto overflow-x-hidden custom-scrollbar">
+            {/* Background */}
+            <div className={`absolute top-0 right-0 w-[500px] h-[500px] bg-theme-primary opacity-10 rounded-full blur-[120px] -z-10 animate-[pulse_4s_ease-in-out_infinite]`} />
+            <div className={`absolute bottom-0 left-0 w-[400px] h-[400px] bg-theme-secondary opacity-10 rounded-full blur-[120px] -z-10 animate-[pulse_5s_ease-in-out_infinite] delay-1000`} />
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto px-6 py-8 custom-scrollbar">
-                <div className="max-w-5xl mx-auto space-y-12 pb-24">
-                    {activeTab === 'career' && (
-                        <div className="animate-fade-in space-y-6">
-                            <form onSubmit={handleCareerSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
-                                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-theme-primary to-theme-secondary" />
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Brain className={`w-6 h-6 text-theme-primary`} />
-                                    <div>
-                                        <h3 className="text-lg font-bold text-theme-text">AI Career Architect</h3>
-                                        <p className={`text-xs text-theme-muted`}>Discover careers that match your unique DNA</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <FormField label="Hobbies & Interests">
-                                        <InputField name="hobbies" value={careerForm.hobbies} onChange={e => setCareerForm({ ...careerForm, hobbies: e.target.value })} required placeholder="e.g. coding, robotics, painting..." />
-                                    </FormField>
-                                    <FormField label="Deep Passions">
-                                        <InputField name="passion" value={careerForm.passion} onChange={e => setCareerForm({ ...careerForm, passion: e.target.value })} required placeholder="e.g. climate change, AI ethics..." />
-                                    </FormField>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <FormField label="Current Study Field">
-                                        <InputField value={careerForm.field} onChange={e => setCareerForm({ ...careerForm, field: e.target.value })} required placeholder="e.g. Computer Science, Arts..." />
-                                    </FormField>
-                                    <FormField label="Future Aspirations">
-                                        <InputField value={careerForm.aspirations} onChange={e => setCareerForm({ ...careerForm, aspirations: e.target.value })} required placeholder="e.g. Lead a tech startup..." />
-                                    </FormField>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                    <FormField label="Budget Range">
-                                        <InputField value={careerForm.budget} onChange={e => setCareerForm({ ...careerForm, budget: e.target.value })} placeholder="e.g. $20k/year, flexible" />
-                                    </FormField>
-                                    <FormField label="Preferred Country">
-                                        <InputField value={careerForm.country} onChange={e => setCareerForm({ ...careerForm, country: e.target.value })} placeholder="e.g. USA, Germany, open..." />
-                                    </FormField>
-                                </div>
-                                <button type="submit" disabled={isLoading} className="w-full py-4 bg-theme-primary text-theme-bg rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_20px_var(--theme-primary)] opacity-90 hover:opacity-100 hover:-translate-y-0.5 active:translate-y-0 transition-all flex justify-center items-center disabled:opacity-50 group">
-                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                                        <>
-                                            Architect My Career Path
-                                            <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                                        </>
-                                    )}
-                                </button>
-                            </form>
-                            {careerResult && (
-                                <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up tilt-card perspective-1000`}>
-                                    <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border translate-z-10`}>
-                                        <Sparkles className={`w-5 h-5 text-theme-primary`} />
-                                        <h3 className="text-lg font-bold text-theme-text">Your Career Roadmap</h3>
-                                    </div>
-                                    <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text translate-z-10`}>
-                                        <MarkdownBlock text={careerResult} />
-                                    </div>
+            {viewMode === 'menu' ? (
+                <>
+                    <div className="fixed top-0 left-0 w-full p-5 flex items-center z-50 bg-gradient-to-b from-theme-bg via-theme-bg/80 to-transparent pointer-events-none">
+                        <button
+                            onClick={onExit}
+                            className="pointer-events-auto px-5 py-2.5 rounded-2xl bg-theme-surface/80 backdrop-blur-xl border border-theme-primary/30 text-xs font-black uppercase tracking-widest text-theme-primary hover:bg-theme-primary hover:text-theme-bg transition-all flex items-center gap-1.5 shadow-[0_0_20px_rgba(201,165,90,0.15)] hover:scale-105"
+                        >
+                            <ChevronLeft className="w-4 h-4" /> Back to Home
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-6 pt-24 pb-8 custom-scrollbar">
+                    <div className="max-w-5xl mx-auto py-12 space-y-16 animate-in fade-in zoom-in-95 duration-700">
+                        <div className="text-center space-y-5 relative">
+                            <div className="absolute inset-x-0 top-0 h-40 bg-theme-primary/5 blur-[100px] pointer-events-none"></div>
 
-                                    {/* Follow-up Input */}
-                                    <div className={`mt-6 pt-4 border-t border-theme-border`}>
-                                        <p className="text-xs font-black text-theme-muted uppercase tracking-widest mb-2">💬 What do you think?</p>
-                                        <div className="flex gap-2">
-                                            <input
-                                                value={careerFollowup}
-                                                onChange={e => setCareerFollowup(e.target.value)}
-                                                placeholder="Ask a follow-up or share your thoughts..."
-                                                className="flex-1 p-3 rounded-xl text-sm bg-theme-bg border-theme-border text-theme-text outline-none focus:border-theme-primary border transition-all"
-                                                onKeyDown={e => e.key === 'Enter' && handleFollowup(careerResult, careerFollowup, setCareerResult, setCareerFollowup)}
-                                            />
-                                            <button
-                                                onClick={() => handleFollowup(careerResult, careerFollowup, setCareerResult, setCareerFollowup)}
-                                                disabled={isLoading || !careerFollowup.trim()}
-                                                className="p-3 bg-theme-primary text-theme-bg rounded-xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
-                                            >
-                                                <Send className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Conditional Navigation */}
-                                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                        <button onClick={() => setActiveTab('college')} className="py-3 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                            College Needed → Hunt <ChevronRight className="w-3 h-3" />
-                                        </button>
-                                        <button onClick={() => setActiveTab('chat')} className="py-3 bg-theme-surface border border-theme-border text-theme-text rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                            No College → Counselor <MessageSquare className="w-3 h-3" />
-                                        </button>
-                                        <button onClick={() => { setCareerResult(''); setCareerForm({ hobbies: '', passion: '', field: '', aspirations: '', budget: '', country: '' }); }} className="py-3 bg-theme-bg border border-theme-border text-theme-muted rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:text-theme-text transition-all">
-                                            I'm Done — Exit ✕
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ═══ COLLEGE FINDER TAB (ENHANCED) ═══ */}
-                    {activeTab === 'college' && (
-                        <div className="animate-fade-in space-y-6">
-                            <form onSubmit={handleCollegeSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
-                                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-theme-primary to-theme-secondary" />
-                                <div className="flex items-center gap-3 mb-6">
-                                    <GraduationCap className={`w-6 h-6 text-theme-primary`} />
-                                    <div>
-                                        <h3 className="text-lg font-bold text-theme-text">AI College Matcher</h3>
-                                        <p className={`text-xs text-theme-muted`}>Safety, Target & Dream schools matched to your profile</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <FormField label="GPA / Marks">
-                                        <InputField value={collegeForm.gpa} onChange={e => setCollegeForm({ ...collegeForm, gpa: e.target.value })} required placeholder="e.g. 3.9/4.0 or 95%" />
-                                    </FormField>
-                                    <FormField label="Test Scores">
-                                        <InputField value={collegeForm.testScores} onChange={e => setCollegeForm({ ...collegeForm, testScores: e.target.value })} placeholder="e.g. SAT 1520, GRE 330" />
-                                    </FormField>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <FormField label="Target Major">
-                                        <InputField value={collegeForm.major} onChange={e => setCollegeForm({ ...collegeForm, major: e.target.value })} required placeholder="e.g. Computer Science" />
-                                    </FormField>
-                                    <FormField label="Study Level">
-                                        <SelectField value={collegeForm.studyLevel} onChange={e => setCollegeForm({ ...collegeForm, studyLevel: e.target.value })} options={[
-                                            { value: 'Undergraduate', label: 'Undergraduate (Bachelor\'s)' },
-                                            { value: 'Graduate', label: 'Graduate (Master\'s)' },
-                                            { value: 'PhD', label: 'PhD / Doctoral' },
-                                            { value: 'MBA', label: 'MBA' },
-                                        ]} />
-                                    </FormField>
-                                </div>
-                                <FormField label="Extracurriculars & Achievements">
-                                    <TextareaField value={collegeForm.extracurriculars} onChange={e => setCollegeForm({ ...collegeForm, extracurriculars: e.target.value })} required rows="3" placeholder="Projects, leadership, competitions, publications..." />
-                                </FormField>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-4">
-                                    <FormField label="Preferred Country">
-                                        <SelectField value={collegeForm.country} onChange={e => setCollegeForm({ ...collegeForm, country: e.target.value })} options={[
-                                            { value: 'Any', label: 'Any Country' },
-                                            { value: 'USA', label: '🇺🇸 United States' }, { value: 'UK', label: '🇬🇧 United Kingdom' },
-                                            { value: 'Canada', label: '🇨🇦 Canada' }, { value: 'Australia', label: '🇦🇺 Australia' },
-                                            { value: 'Germany', label: '🇩🇪 Germany' }, { value: 'India', label: '🇮🇳 India' },
-                                            { value: 'Singapore', label: '🇸🇬 Singapore' }, { value: 'Netherlands', label: '🇳🇱 Netherlands' },
-                                            { value: 'Japan', label: '🇯🇵 Japan' }, { value: 'Other', label: 'Other' },
-                                        ]} />
-                                    </FormField>
-                                    <FormField label="Preferred Location">
-                                        <InputField value={collegeForm.location} onChange={e => setCollegeForm({ ...collegeForm, location: e.target.value })} placeholder="e.g. East Coast, Berlin" />
-                                    </FormField>
-                                    <FormField label="Budget (per year)">
-                                        <InputField value={collegeForm.budget} onChange={e => setCollegeForm({ ...collegeForm, budget: e.target.value })} placeholder="e.g. $40k, flexible" />
-                                    </FormField>
-                                </div>
-                                <button type="submit" disabled={isLoading} className="w-full py-3.5 bg-theme-primary text-theme-bg rounded-2xl font-bold text-sm uppercase tracking-widest shadow-[0_0_20px_var(--theme-primary)] opacity-90 hover:opacity-100 transition-all flex justify-center items-center disabled:opacity-50">
-                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Match My Colleges"}
-                                </button>
-                            </form>
-                            {collegeResult && (
-                                <div className={`rounded-[40px] p-8 border glass-3d glow-border animate-page-enter bg-theme-surface border-theme-border
-                            `}>
-                                    <div className={`flex items-center gap-4 mb-8 pb-6 border-b border-theme-border`}>
-                                        <div className="p-3 rounded-2xl bg-theme-bg text-theme-primary border border-theme-border">
-                                            <Lightbulb className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-black uppercase tracking-tight text-theme-text">University Analysis</h3>
-                                            <p className="text-[10px] font-black text-theme-muted uppercase tracking-[0.2em]">Data-Driven Recommendations</p>
-                                        </div>
-                                    </div>
-                                    <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
-                                        <MarkdownBlock text={collegeResult} />
-                                    </div>
-
-                                    {/* Follow-up Input */}
-                                    <div className={`mt-6 pt-4 border-t border-theme-border`}>
-                                        <p className="text-xs font-black text-theme-muted uppercase tracking-widest mb-2">💬 What do you think?</p>
-                                        <div className="flex gap-2">
-                                            <input
-                                                value={collegeFollowup}
-                                                onChange={e => setCollegeFollowup(e.target.value)}
-                                                placeholder="Ask a follow-up about these colleges..."
-                                                className="flex-1 p-3 rounded-xl text-sm bg-theme-bg border-theme-border text-theme-text outline-none focus:border-theme-primary border transition-all"
-                                                onKeyDown={e => e.key === 'Enter' && handleFollowup(collegeResult, collegeFollowup, setCollegeResult, setCollegeFollowup)}
-                                            />
-                                            <button
-                                                onClick={() => handleFollowup(collegeResult, collegeFollowup, setCollegeResult, setCollegeFollowup)}
-                                                disabled={isLoading || !collegeFollowup.trim()}
-                                                className="p-3 bg-theme-primary text-theme-bg rounded-xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
-                                            >
-                                                <Send className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Branching Navigation */}
-                                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                        <button onClick={() => setActiveTab('compare')} className="py-3 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                            Confused? Compare → <Activity className="w-3 h-3" />
-                                        </button>
-                                        <button onClick={() => setActiveTab('essay')} className="py-3 bg-theme-surface border border-theme-primary text-theme-primary rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                            Skip to Essays → <FileText className="w-3 h-3" />
-                                        </button>
-                                        <button onClick={() => setActiveTab('chat')} className="py-3 bg-theme-surface border border-theme-border text-theme-text rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                            Talk to Counselor <MessageSquare className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ═══ SCHOLARSHIP FINDER TAB (NEW) ═══ */}
-                    {activeTab === 'scholarship' && (
-                        <div className="animate-fade-in space-y-6">
-                            <form onSubmit={handleScholarshipSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
-                                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-theme-primary to-theme-secondary" />
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Trophy className={`w-6 h-6 text-theme-primary`} />
-                                    <div>
-                                        <h3 className="text-lg font-bold text-theme-text">AI Scholarship Finder</h3>
-                                        <p className={`text-xs text-theme-muted`}>Find scholarships you actually qualify for</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <FormField label="Your Nationality">
-                                        <InputField value={scholarshipForm.nationality} onChange={e => setScholarshipForm({ ...scholarshipForm, nationality: e.target.value })} required placeholder="e.g. Indian, Nigerian, Chinese..." />
-                                    </FormField>
-                                    <FormField label="GPA / Academic Score">
-                                        <InputField value={scholarshipForm.gpa} onChange={e => setScholarshipForm({ ...scholarshipForm, gpa: e.target.value })} required placeholder="e.g. 3.8/4.0 or 92%" />
-                                    </FormField>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <FormField label="Field of Study">
-                                        <InputField value={scholarshipForm.fieldOfStudy} onChange={e => setScholarshipForm({ ...scholarshipForm, fieldOfStudy: e.target.value })} required placeholder="e.g. Engineering, Medicine, Arts..." />
-                                    </FormField>
-                                    <FormField label="Target Country">
-                                        <InputField value={scholarshipForm.targetCountry} onChange={e => setScholarshipForm({ ...scholarshipForm, targetCountry: e.target.value })} placeholder="e.g. USA, Germany, any..." />
-                                    </FormField>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <FormField label="Financial Need">
-                                        <SelectField value={scholarshipForm.financialNeed} onChange={e => setScholarshipForm({ ...scholarshipForm, financialNeed: e.target.value })} options={[
-                                            { value: 'High', label: 'High — Need full funding' },
-                                            { value: 'Medium', label: 'Medium — Need partial support' },
-                                            { value: 'Low', label: 'Low — Merit-based preferred' },
-                                        ]} />
-                                    </FormField>
-                                    <FormField label="Key Achievements">
-                                        <InputField value={scholarshipForm.achievements} onChange={e => setScholarshipForm({ ...scholarshipForm, achievements: e.target.value })} placeholder="e.g. Science Olympiad Gold, Published paper..." />
-                                    </FormField>
-                                </div>
-                                <button type="submit" disabled={isLoading} className="w-full py-4 bg-theme-primary text-theme-bg rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_20px_var(--theme-primary)] opacity-90 hover:opacity-100 hover:-translate-y-0.5 transition-all flex justify-center items-center disabled:opacity-50 group">
-                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                                        <>
-                                            Find My Scholarships
-                                            <Trophy className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
-                                        </>
-                                    )}
-                                </button>
-                            </form>
-                            {scholarshipResult && (
-                                <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up`}>
-                                    <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border`}>
-                                        <Trophy className={`w-5 h-5 text-theme-primary`} />
-                                        <h3 className="text-lg font-bold text-theme-text">Scholarship Matches</h3>
-                                    </div>
-                                    <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
-                                        <MarkdownBlock text={scholarshipResult} />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ═══ COMPARE COLLEGES TAB (NEW) ═══ */}
-                    {activeTab === 'compare' && (
-                        <div className="animate-fade-in space-y-6">
-                            <form onSubmit={handleCompareSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
-                                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-theme-primary to-theme-secondary" />
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Activity className={`w-6 h-6 text-theme-primary`} />
-                                    <div>
-                                        <h3 className="text-lg font-bold text-theme-text">Head-to-Head Comparison</h3>
-                                        <p className={`text-xs text-theme-muted`}>Compare 2-3 colleges with data-driven analysis</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                    <FormField label="College 1">
-                                        <InputField value={compareForm.college1} onChange={e => setCompareForm({ ...compareForm, college1: e.target.value })} required placeholder="e.g. MIT" />
-                                    </FormField>
-                                    <FormField label="College 2">
-                                        <InputField value={compareForm.college2} onChange={e => setCompareForm({ ...compareForm, college2: e.target.value })} required placeholder="e.g. Stanford" />
-                                    </FormField>
-                                    <FormField label="College 3 (optional)">
-                                        <InputField value={compareForm.college3} onChange={e => setCompareForm({ ...compareForm, college3: e.target.value })} placeholder="e.g. CMU" />
-                                    </FormField>
-                                </div>
-                                <FormField label="Focus Criteria">
-                                    <SelectField value={compareForm.criteria} onChange={e => setCompareForm({ ...compareForm, criteria: e.target.value })} options={[
-                                        { value: 'Overall', label: '📊 Overall Comparison' },
-                                        { value: 'Academics', label: '🎓 Academic Excellence' },
-                                        { value: 'ROI', label: '💰 Cost & ROI' },
-                                        { value: 'Career', label: '💼 Career Outcomes' },
-                                        { value: 'StudentLife', label: '🏠 Student Life & Culture' },
-                                        { value: 'Research', label: '🔬 Research Opportunities' },
-                                    ]} />
-                                </FormField>
-                                <button type="submit" disabled={isLoading} className="w-full py-4 mt-4 bg-theme-primary text-theme-bg rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_20px_var(--theme-primary)] opacity-90 hover:opacity-100 hover:-translate-y-0.5 transition-all flex justify-center items-center disabled:opacity-50 group">
-                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                                        <>
-                                            Compare Strategic Profiles
-                                            <Activity className="w-4 h-4 ml-2 group-hover:rotate-12 transition-transform" />
-                                        </>
-                                    )}
-                                </button>
-                            </form>
-                            {compareResult && (
-                                <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up`}>
-                                    <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border`}>
-                                        <Activity className={`w-5 h-5 text-theme-primary`} />
-                                        <h3 className="text-lg font-bold text-theme-text">Comparison Analysis</h3>
-                                    </div>
-                                    <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
-                                        <MarkdownBlock text={compareResult} />
-                                    </div>
-                                    {/* Navigate to Essays */}
-                                    <button onClick={() => setActiveTab('essay')} className="w-full mt-4 py-3 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                        Colleges Decided → Write Essays <ChevronRight className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-
-                    {/* ═══ EXAM PREDICTOR HUB (AUREM LENS STYLE) ═══ */}
-                    {activeTab === 'jee' && (
-                        <div className="space-y-6 animate-fade-in">
-                            {!selectedExam ? (
-                                <div className="space-y-8">
-                                    <div className="text-center space-y-3 mb-8">
-                                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-theme-primary/20 bg-theme-primary/5 mb-2 relative group">
-                                            <Target className="w-8 h-8 text-theme-primary relative z-10" />
-                                        </div>
-                                        <h2 className="text-3xl font-serif italic tracking-wide text-theme-text">Aurem Exam Predictors</h2>
-                                        <div className="flex items-center gap-3 justify-center">
-                                            <div className="w-8 h-px bg-theme-primary/30"></div>
-                                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-theme-muted">Select Your Gateway</p>
-                                            <div className="w-8 h-px bg-theme-primary/30"></div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {[
-                                            { id: 'jee', title: 'JEE Main 2026', tags: ['B.Tech', 'NITs/IIITs'], icon: Crown, color: 'from-blue-500 to-indigo-500', shadow: 'hover:shadow-blue-500/20', bg: 'bg-blue-500/10' },
-                                            { id: 'neet', title: 'NEET UG 2026', tags: ['MBBS/BDS', 'AIIMS'], icon: Activity, color: 'from-emerald-400 to-teal-500', shadow: 'hover:shadow-emerald-500/20', bg: 'bg-emerald-500/10' },
-                                            { id: 'cat', title: 'CAT 2025', tags: ['MBA', 'IIMs'], icon: Target, color: 'from-purple-500 to-pink-500', shadow: 'hover:shadow-purple-500/20', bg: 'bg-purple-500/10' },
-                                            { id: 'nda', title: 'NDA & NA', tags: ['Defense', 'SSB'], icon: ShieldAlert, color: 'from-orange-400 to-red-500', shadow: 'hover:shadow-orange-500/20', bg: 'bg-orange-500/10' }
-                                        ].map(exam => (
-                                            <button
-                                                key={exam.id}
-                                                onClick={() => setSelectedExam(exam.id)}
-                                                className={`group relative p-8 rounded-[24px] border border-theme-border bg-theme-surface hover:border-theme-primary/30 transition-all duration-500 overflow-hidden flex flex-col text-left hover:-translate-y-1 shadow-depth ${exam.shadow}`}
-                                            >
-                                                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br opacity-5 group-hover:opacity-10 transition-opacity duration-500 rounded-bl-[100px] pointer-events-none ${exam.color}`}></div>
-                                                <div className="flex justify-between items-start mb-6">
-                                                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-transform duration-500 group-hover:scale-105 ${exam.bg}`}>
-                                                        <exam.icon className="w-7 h-7 text-theme-text" />
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        {exam.tags.map(t => <span key={t} className="text-[9px] font-bold px-2 py-1 bg-theme-bg border border-theme-border rounded uppercase tracking-widest text-theme-muted">{t}</span>)}
-                                                    </div>
-                                                </div>
-                                                <h3 className="text-2xl font-black tracking-tight text-theme-text mb-2 inset-0 group-hover:text-theme-primary transition-colors">{exam.title}</h3>
-                                                <div className="mt-auto pt-6 flex w-full justify-between items-center group-hover:translate-x-2 transition-transform duration-500">
-                                                    <span className="text-xs font-bold text-theme-muted uppercase tracking-widest">Launch Predictor</span>
-                                                    <ChevronRight className="w-4 h-4 text-theme-primary" />
-                                                </div>
-                                            </button>
+                            {/* ═══ 3D ANIMATED COMPASS ═══ */}
+                            <div className="compass-3d inline-block mb-2" style={{ animation: 'compass-float 4s ease-in-out infinite' }}>
+                                <div className="relative w-28 h-28 md:w-32 md:h-32 mx-auto" style={{ animation: 'compass-rotate 8s ease-in-out infinite' }}>
+                                    {/* Glow */}
+                                    <div className="absolute inset-0 rounded-full bg-theme-primary/20" style={{ animation: 'compass-glow 3s ease-in-out infinite', filter: 'blur(20px)' }} />
+                                    {/* Outer Ring - spinning */}
+                                    <div className="absolute inset-0 rounded-full border-2 border-theme-primary/20" style={{ animation: 'compass-ring-spin 20s linear infinite' }}>
+                                        {['N', 'E', 'S', 'W'].map((dir, i) => (
+                                            <span key={dir} className="absolute text-[9px] font-black text-theme-primary/50 uppercase tracking-wider"
+                                                  style={{
+                                                      top: i === 0 ? '-2px' : i === 2 ? 'auto' : '50%',
+                                                      bottom: i === 2 ? '-2px' : 'auto',
+                                                      left: i === 3 ? '-2px' : i === 1 ? 'auto' : '50%',
+                                                      right: i === 1 ? '-2px' : 'auto',
+                                                      transform: `translate(${i % 2 === 0 ? '-50%' : '0'}, ${i < 2 ? '0' : i === 2 ? '0' : '-50%'}) rotate(-${i * 90}deg)`,
+                                                  }}>
+                                                {dir}
+                                            </span>
+                                        ))}
+                                        {/* Tick marks */}
+                                        {Array.from({ length: 12 }).map((_, i) => (
+                                            <div key={i} className="absolute w-px bg-theme-primary/15 top-0 left-1/2 origin-bottom"
+                                                 style={{ height: i % 3 === 0 ? '8px' : '4px', transform: `rotate(${i * 30}deg) translateX(-50%)`,
+                                                          transformOrigin: `50% ${72}px` }} />
                                         ))}
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-6 animate-fade-in relative">
-                                    <button onClick={() => setSelectedExam(null)} className="flex items-center gap-2 px-4 py-2 border border-theme-border rounded-xl text-xs font-bold uppercase tracking-widest text-theme-muted hover:text-theme-text hover:bg-theme-bg transition-colors mb-2">
-                                        ← Back to Exams
-                                    </button>
-
-                                    {/* Sub-Views rendered conditionally */}
-                                    {selectedExam === 'jee' && (
-                                        <div className="space-y-4">
-                                            <form onSubmit={handleJeeSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
-                                                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-600" />
-                                                <div className="flex items-center justify-between mb-6">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30">
-                                                            <Crown className={`w-6 h-6 text-blue-500`} />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="text-lg font-black text-theme-text">JEE Main 2026 Predictor — April Session</h3>
-                                                            <p className={`text-xs text-theme-muted`}>Enter marks OR percentile → Get rank, colleges, and complete guidance</p>
-                                                        </div>
-                                                    </div>
-                                                    <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[9px] font-black uppercase tracking-widest hidden sm:inline">NTA Data 2026 Projection</span>
-                                                </div>
-
-                                                {/* Toggle: Marks vs Percentile */}
-                                                <div className="flex items-center justify-center gap-2 mb-6 p-1.5 rounded-2xl bg-theme-bg border border-theme-border w-fit mx-auto">
-                                                    <button type="button" onClick={() => setJeeMode('marks')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${jeeMode === 'marks' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'text-theme-muted hover:text-theme-text'}`}>From Marks</button>
-                                                    <button type="button" onClick={() => setJeeMode('percentile')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${jeeMode === 'percentile' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'text-theme-muted hover:text-theme-text'}`}>From Percentile</button>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                    {jeeMode === 'marks' ? (
-                                                        <FormField label="Your Expected / Actual Marks (out of 300)">
-                                                            <InputField type="number" step="1" min="0" max="300" value={jeeForm.marks} onChange={e => setJeeForm({ ...jeeForm, marks: e.target.value })} required placeholder="e.g. 185" />
-                                                            {jeeForm.marks && parseFloat(jeeForm.marks) >= 0 && parseFloat(jeeForm.marks) <= 300 && (
-                                                                <p className="text-xs mt-2 text-blue-400 font-bold">≈ Estimated Percentile: {marksToPercentile(jeeForm.marks)}%</p>
-                                                            )}
-                                                        </FormField>
-                                                    ) : (
-                                                        <FormField label="Your JEE Percentile">
-                                                            <InputField type="number" step="0.0000001" value={jeeForm.percentile} onChange={e => setJeeForm({ ...jeeForm, percentile: e.target.value })} required placeholder="e.g. 98.6543210" />
-                                                        </FormField>
-                                                    )}
-                                                    <FormField label="Category">
-                                                        <SelectField value={jeeForm.category} onChange={e => setJeeForm({ ...jeeForm, category: e.target.value })} options={[
-                                                            { value: 'OPEN', label: 'OPEN / General' },
-                                                            { value: 'OBC-NCL', label: 'OBC-NCL' },
-                                                            { value: 'EWS', label: 'Gen-EWS' },
-                                                            { value: 'SC', label: 'SC' },
-                                                            { value: 'ST', label: 'ST' },
-                                                        ]} />
-                                                    </FormField>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                                                    <FormField label="Home State">
-                                                        <InputField value={jeeForm.homeState} onChange={e => setJeeForm({ ...jeeForm, homeState: e.target.value })} placeholder="e.g. Maharashtra" />
-                                                    </FormField>
-                                                    <FormField label="Target Branch">
-                                                        <InputField value={jeeForm.targetBranch} onChange={e => setJeeForm({ ...jeeForm, targetBranch: e.target.value })} placeholder="e.g. CSE, ECE" />
-                                                    </FormField>
-                                                    <FormField label="Gender">
-                                                        <SelectField value={jeeForm.gender} onChange={e => setJeeForm({ ...jeeForm, gender: e.target.value })} options={[
-                                                            { value: 'Male', label: 'Male' },
-                                                            { value: 'Female', label: 'Female (Supernumerary)' },
-                                                            { value: 'Other', label: 'Other' },
-                                                        ]} />
-                                                    </FormField>
-                                                    <FormField label="PwD Status">
-                                                        <SelectField value={jeeForm.pwd} onChange={e => setJeeForm({ ...jeeForm, pwd: e.target.value })} options={[
-                                                            { value: 'No', label: 'No' },
-                                                            { value: 'Yes', label: 'Yes (PwD Quota)' },
-                                                        ]} />
-                                                    </FormField>
-                                                </div>
-                                                <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:shadow-[0_0_40px_rgba(59,130,246,0.6)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex justify-center items-center disabled:opacity-50 group">
-                                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                                                        <>
-                                                            Predict My Colleges & Future
-                                                            <Crown className="w-4 h-4 ml-2 group-hover:scale-125 group-hover:rotate-12 transition-transform" />
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </form>
-
-                                            {/* Results */}
-                                            {(jeeCollegeResult || jeeRankData) && (
-                                                <div className={`glass-panel rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up relative overflow-hidden`}>
-                                                    <div ref={jeePdfRef} className="p-6 sm:p-8">
-                                                        {/* Report Header */}
-                                                        <div className="text-center mb-8">
-                                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] mb-1">Aurem Intelligence</p>
-                                                            <h2 className="text-2xl font-black text-theme-text uppercase tracking-tight">JEE Main 2025 — Prediction Report</h2>
-                                                            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 mx-auto mt-3 rounded-full" />
-                                                        </div>
-
-                                                        {/* Stat Cards */}
-                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-                                                            <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 text-center">
-                                                                <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">CRL Rank</p>
-                                                                <h3 className="text-2xl font-black text-blue-400">{jeeRankData?.crl?.toLocaleString('en-IN') || '—'}</h3>
-                                                            </div>
-                                                            <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border border-indigo-500/20 text-center">
-                                                                <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Percentile</p>
-                                                                <h3 className="text-2xl font-black text-indigo-400">{jeeRankData?.percentile}%</h3>
-                                                            </div>
-                                                            <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 text-center">
-                                                                <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-1">Category</p>
-                                                                <h3 className="text-lg font-black text-purple-400">{jeeRankData?.category}</h3>
-                                                            </div>
-                                                            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 text-center">
-                                                                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">Tier</p>
-                                                                <h3 className={`text-sm font-black ${jeeRankData?.tier?.color || 'text-theme-text'}`}>{jeeRankData?.tier?.emoji} {jeeRankData?.tier?.label}</h3>
-                                                            </div>
-                                                        </div>
-
-                                                        {jeeRankData?.marks && (
-                                                            <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/15 mb-8 text-center">
-                                                                <p className="text-xs text-theme-muted">Estimated from <span className="font-black text-blue-400">{jeeRankData.marks}/300 marks</span> using NTA 2024 normalization data</p>
-                                                            </div>
-                                                        )}
-
-                                                        {/* AI College Analysis */}
-                                                        {jeeCollegeResult ? (
-                                                            <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
-                                                                <MarkdownBlock text={jeeCollegeResult} />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex flex-col justify-center items-center py-16 gap-3">
-                                                                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                                                                <p className="text-xs font-bold text-theme-muted animate-pulse">Analyzing 14+ lakh candidates' data...</p>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Footer */}
-                                                        {jeeCollegeResult && (
-                                                            <div className="mt-8 pt-6 border-t border-theme-border text-center">
-                                                                <p className="text-[9px] text-theme-muted uppercase tracking-widest">Generated by Aurem College Compass • Data Source: JoSAA 2024 • For educational purposes</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Download Bar */}
-                                                    {jeeCollegeResult && (
-                                                        <div className="px-6 pb-6 sm:px-8 sm:pb-8 flex flex-col sm:flex-row gap-3">
-                                                            <button onClick={handleJeePdfDownload} className="flex-1 py-4 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40">
-                                                                Download Full Report PDF <Download className="w-4 h-4" />
-                                                            </button>
-                                                            <button onClick={() => setActiveTab('college')} className="py-4 px-6 bg-theme-bg border border-theme-border text-theme-text rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:border-theme-primary transition-all">
-                                                                Global Hunt <ChevronRight className="w-3 h-3" />
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                    {/* Inner Compass Body */}
+                                    <div className="absolute inset-3 md:inset-4 rounded-full border border-theme-border bg-theme-surface/80 backdrop-blur-sm shadow-[inset_0_2px_8px_rgba(0,0,0,0.2),0_4px_20px_rgba(0,0,0,0.15)] flex items-center justify-center">
+                                        {/* Inner ring */}
+                                        <div className="absolute inset-3 rounded-full border border-theme-primary/10" />
+                                        {/* Center dot */}
+                                        <div className="w-3 h-3 rounded-full bg-theme-primary/60 shadow-[0_0_8px_var(--theme-primary)] z-20" />
+                                        {/* Compass Needle */}
+                                        <div className="absolute inset-0 flex items-center justify-center" style={{ animation: 'compass-needle 6s ease-in-out infinite' }}>
+                                            {/* North (red) */}
+                                            <div className="absolute w-[3px] rounded-t-full bg-gradient-to-t from-transparent via-red-500 to-red-400"
+                                                 style={{ height: '38%', bottom: '50%', left: '50%', transform: 'translateX(-50%)',
+                                                          boxShadow: '0 0 6px rgba(239,68,68,0.3)' }} />
+                                            {/* South (silver) */}
+                                            <div className="absolute w-[3px] rounded-b-full bg-gradient-to-b from-transparent via-slate-400 to-slate-300"
+                                                 style={{ height: '38%', top: '50%', left: '50%', transform: 'translateX(-50%)' }} />
                                         </div>
-
-                                    )}
-
-                                    {selectedExam === 'neet' && (
-                                        <div className="space-y-4">
-                                            <form onSubmit={handleNeetSubmit} className="glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden">
-                                                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-emerald-400 to-teal-500" />
-                                                <div className="flex items-center gap-3 mb-6">
-                                                    <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
-                                                        <Activity className="w-6 h-6 text-emerald-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-black text-theme-text">NEET UG 2026 Predictor</h3>
-                                                        <p className="text-xs text-theme-muted">Marks → Rank classification → Medical Counseling</p>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                    <FormField label="Expected Marks (out of 720)">
-                                                        <InputField type="number" step="1" min="0" max="720" value={neetForm.marks} onChange={e => setNeetForm({ ...neetForm, marks: e.target.value })} required />
-                                                    </FormField>
-                                                    <FormField label="Category">
-                                                        <SelectField value={neetForm.category} onChange={e => setNeetForm({ ...neetForm, category: e.target.value })} options={[{ value: 'UR', label: 'Unreserved (UR)' }, { value: 'OBC', label: 'OBC' }, { value: 'SC', label: 'SC' }, { value: 'ST', label: 'ST' }]} />
-                                                    </FormField>
-                                                    <FormField label="Home State">
-                                                        <InputField value={neetForm.state} onChange={e => setNeetForm({ ...neetForm, state: e.target.value })} placeholder="State string (e.g. MH, UP, Delhi)" />
-                                                    </FormField>
-                                                    <FormField label="Counseling Preference">
-                                                        <SelectField value={neetForm.preference} onChange={e => setNeetForm({ ...neetForm, preference: e.target.value })} options={[{ value: 'AIQ', label: 'All India Quota (15%)' }, { value: 'State', label: 'State Quota (85%)' }, { value: 'Both', label: 'Both' }]} />
-                                                    </FormField>
-                                                </div>
-                                                <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:opacity-90 flex justify-center items-center h-12">
-                                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Predict Medical Career'}
-                                                </button>
-                                            </form>
-
-                                            {(neetCollegeResult || neetRankData) && (
-                                                <div className="glass-panel rounded-3xl p-6 border bg-theme-surface border-theme-border animate-fade-in">
-                                                    <div ref={neetPdfRef} className="p-4 rounded-xl bg-theme-surface mb-4">
-                                                        <div className="text-center mb-6">
-                                                            <h2 className="text-2xl font-black text-theme-text uppercase">NEET UG Report</h2>
-                                                        </div>
-                                                        <div className="grid grid-cols-4 gap-3 mb-6">
-                                                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-emerald-500 pb-1">Marks</p><p className="font-black text-lg text-theme-text">{neetRankData?.marks}/720</p></div>
-                                                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-blue-500 pb-1">Est Rank</p><p className="font-black text-lg text-theme-text">{neetRankData?.rank}</p></div>
-                                                            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-purple-500 pb-1">Category</p><p className="font-black text-lg text-theme-text">{neetRankData?.category}</p></div>
-                                                            <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-orange-500 pb-1">Tier</p><p className="font-bold text-xs text-theme-text">{neetRankData?.tier}</p></div>
-                                                        </div>
-                                                        <div className="prose max-w-none text-theme-text text-sm"><MarkdownBlock text={neetCollegeResult || 'Analyzing cutoffs...'} /></div>
-                                                    </div>
-                                                    {neetCollegeResult && <button onClick={handleNeetPdfDownload} className="w-full py-3 bg-emerald-500 text-white rounded-xl font-bold uppercase text-xs transition-colors hover:bg-emerald-600">Download Report <Download className="w-3 h-3 inline-block ml-2" /></button>}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {selectedExam === 'cat' && (
-                                        <div className="space-y-4">
-                                            <form onSubmit={handleCatSubmit} className="glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden">
-                                                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-purple-500 to-pink-500" />
-                                                <div className="flex items-center gap-3 mb-6">
-                                                    <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30">
-                                                        <Target className="w-6 h-6 text-purple-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-black text-theme-text">CAT 2025 Predictor</h3>
-                                                        <p className="text-xs text-theme-muted">IIM Shortlists → Composite Score Analytics</p>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                                                    <FormField label="Percentile">
-                                                        <InputField type="number" step="0.01" max="100" value={catForm.percentile} onChange={e => setCatForm({ ...catForm, percentile: e.target.value })} required />
-                                                    </FormField>
-                                                    <FormField label="Category">
-                                                        <SelectField value={catForm.category} onChange={e => setCatForm({ ...catForm, category: e.target.value })} options={[{ value: 'General', label: 'General' }, { value: 'NC-OBC', label: 'NC-OBC' }, { value: 'EWS', label: 'EWS' }]} />
-                                                    </FormField>
-                                                    <FormField label="Academic Stream">
-                                                        <SelectField value={catForm.stream} onChange={e => setCatForm({ ...catForm, stream: e.target.value })} options={[{ value: 'Engineering', label: 'Engineer' }, { value: 'Non-Engineering', label: 'Non-Engineer' }]} />
-                                                    </FormField>
-                                                    <FormField label="Work Exp (Months)">
-                                                        <InputField type="number" value={catForm.workEx} onChange={e => setCatForm({ ...catForm, workEx: e.target.value })} />
-                                                    </FormField>
-                                                </div>
-                                                <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:opacity-90 flex justify-center items-center h-12">
-                                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Predict IIM Shortlists'}
-                                                </button>
-                                            </form>
-
-                                            {(catCollegeResult || catResultData) && (
-                                                <div className="glass-panel rounded-3xl p-6 border bg-theme-surface border-theme-border animate-fade-in">
-                                                    <div ref={catPdfRef} className="p-4 rounded-xl bg-theme-surface mb-4">
-                                                        <div className="text-center mb-6"><h2 className="text-2xl font-black text-theme-text uppercase">CAT Admissions Report</h2></div>
-                                                        <div className="grid grid-cols-4 gap-3 mb-6">
-                                                            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-purple-500 pb-1">%ile</p><p className="font-black text-lg text-theme-text">{catResultData?.percentile}</p></div>
-                                                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-blue-500 pb-1">Segment</p><p className="font-black text-lg text-theme-text">{catResultData?.tier}</p></div>
-                                                            <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-pink-500 pb-1">Stream</p><p className="font-bold text-xs text-theme-text">{catResultData?.stream}</p></div>
-                                                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-amber-500 pb-1">Category</p><p className="font-bold text-xs text-theme-text">{catResultData?.category}</p></div>
-                                                        </div>
-                                                        <div className="prose max-w-none text-theme-text text-sm"><MarkdownBlock text={catCollegeResult || 'Calculating composite scores...'} /></div>
-                                                    </div>
-                                                    {catCollegeResult && <button onClick={handleCatPdfDownload} className="w-full py-3 bg-purple-500 text-white rounded-xl font-bold uppercase text-xs transition-colors hover:bg-purple-600">Download Report <Download className="w-3 h-3 inline-block ml-2" /></button>}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {selectedExam === 'nda' && (
-                                        <div className="space-y-4">
-                                            <form onSubmit={handleNdaSubmit} className="glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden">
-                                                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-orange-400 to-red-500" />
-                                                <div className="flex items-center gap-3 mb-6">
-                                                    <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30">
-                                                        <ShieldAlert className="w-6 h-6 text-orange-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-black text-theme-text">NDA Exam Predictor</h3>
-                                                        <p className="text-xs text-theme-muted">Written Marks → SSB Clearance → Merit List</p>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                    <FormField label="Written Marks (Out of 900)">
-                                                        <InputField type="number" step="1" max="900" value={ndaForm.marks} onChange={e => setNdaForm({ ...ndaForm, marks: e.target.value })} required />
-                                                    </FormField>
-                                                    <FormField label="Preferred Wing">
-                                                        <SelectField value={ndaForm.wing} onChange={e => setNdaForm({ ...ndaForm, wing: e.target.value })} options={[{ value: 'Army', label: 'Indian Army' }, { value: 'Navy', label: 'Indian Navy' }, { value: 'Air Force', label: 'Indian Air Force' }]} />
-                                                    </FormField>
-                                                </div>
-                                                <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:opacity-90 flex justify-center items-center h-12">
-                                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Predict Defense Career'}
-                                                </button>
-                                            </form>
-
-                                            {(ndaCollegeResult || ndaResultData) && (
-                                                <div className="glass-panel rounded-3xl p-6 border bg-theme-surface border-theme-border animate-fade-in">
-                                                    <div ref={ndaPdfRef} className="p-4 rounded-xl bg-theme-surface mb-4">
-                                                        <div className="text-center mb-6"><h2 className="text-2xl font-black text-theme-text uppercase">NDA Analytics Report</h2></div>
-                                                        <div className="grid grid-cols-4 gap-3 mb-6">
-                                                            <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-orange-500 pb-1">Marks</p><p className="font-black text-lg text-theme-text">{ndaResultData?.marks}</p></div>
-                                                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-red-500 pb-1">Wing Target</p><p className="font-black text-sm text-theme-text">{ndaResultData?.wing}</p></div>
-                                                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-blue-500 pb-1">Expected Cutoff</p><p className="font-black text-lg text-theme-text">{ndaResultData?.expectedCutoff}</p></div>
-                                                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-emerald-500 pb-1">Chances</p><p className="font-bold text-xs text-theme-text">{ndaResultData?.tier}</p></div>
-                                                        </div>
-                                                        <div className="prose max-w-none text-theme-text text-sm"><MarkdownBlock text={ndaCollegeResult || 'Extracting SSB guidelines...'} /></div>
-                                                    </div>
-                                                    {ndaCollegeResult && <button onClick={handleNdaPdfDownload} className="w-full py-3 bg-orange-500 text-white rounded-xl font-bold uppercase text-xs transition-colors hover:bg-orange-600">Download Report <Download className="w-3 h-3 inline-block ml-2" /></button>}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-
-                    {/* ═══ ESSAY EXPERT TAB (MERGED: Coach + Grader) ═══ */}
-                    {activeTab === 'essay' && (
-                        <div className="animate-fade-in space-y-6 relative">
-                            {/* ── UNDER DEVELOPMENT BANNER ── */}
-                            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 animate-slide-up">
-                                <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <span className="text-xl">🚧</span>
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-black text-amber-400 uppercase tracking-widest mb-1">Under Development</h4>
-                                    <p className="text-xs text-theme-muted leading-relaxed">
-                                        Essay generation quality is currently limited due to the low-quality AI model powering this feature. Essays may lack depth, repeat patterns, or degrade across iterations.
-                                        We are actively upgrading to a premium model that will deliver <strong className="text-amber-400">Ivy-level essay writing</strong>. Stay tuned — a major upgrade is coming soon.
-                                    </p>
+                                    </div>
                                 </div>
                             </div>
-                            <form onSubmit={handleEssaySubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
-                                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-500 to-rose-500" />
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Award className={`w-6 h-6 text-amber-500`} />
-                                    <div>
-                                        <div className="flex items-center gap-3">
-                                            <h3 className="text-lg font-bold text-theme-text">Essay Expert</h3>
-                                        </div>
-                                        <p className={`text-xs text-theme-muted`}>Elite coach + Harsh grader — iterate until perfection</p>
-                                    </div>
-                                    {essayIteration > 0 && (
-                                        <div className="ml-auto flex items-center gap-2">
-                                            <span className={`text-xs font-black px-3 py-1 rounded-full ${essayScore >= 8 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                Score: {essayScore}/10 • Iteration #{essayIteration}
-                                            </span>
-                                        </div>
-                                    )}
+
+                            <div className="space-y-3 relative z-10">
+                                <h1 className="text-2xl md:text-3xl font-serif italic tracking-wide text-theme-text"> College Compass </h1>
+                                <div className="flex items-center justify-center gap-4">
+                                    <div className="h-px w-12 bg-theme-primary/20"></div>
+                                    <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.3em]">Global Admissions Intelligence</p>
+                                    <div className="h-px w-12 bg-theme-primary/20"></div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                    <FormField label="Target School(s)">
-                                        <InputField value={essaySchool} onChange={e => setEssaySchool(e.target.value)} placeholder="e.g. Stanford, MIT, Oxford" />
-                                    </FormField>
-                                    <FormField label="Essay Type">
-                                        <SelectField value={essayType} onChange={e => setEssayType(e.target.value)} options={[
-                                            { value: 'Personal Statement', label: 'Personal Statement' },
-                                            { value: 'Common App', label: 'Common App Essay' },
-                                            { value: 'Why Us', label: 'Why Us / Supplemental' },
-                                            { value: 'SOP', label: 'Statement of Purpose' },
-                                            { value: 'Scholarship', label: 'Scholarship Essay' },
-                                            { value: 'Activity', label: 'Activity Description' },
-                                        ]} />
-                                    </FormField>
-                                    <FormField label="Word Limit">
-                                        <InputField value={essayWordLimit} onChange={e => setEssayWordLimit(e.target.value)} placeholder="e.g. 650, 250" />
-                                    </FormField>
-                                </div>
-
-                                {/* ─── ENHANCED: Auto-Generate Section ─── */}
-                                <div className="p-5 mb-6 rounded-2xl bg-gradient-to-r from-amber-500/5 to-rose-500/5 border border-amber-500/20">
-                                    <h4 className="text-sm font-bold text-amber-500 mb-2 flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4" /> AI Essay Generator
-                                    </h4>
-                                    <p className="text-xs text-theme-muted mb-4 leading-relaxed">
-                                        The more details you give, the better your draft. Tell us your story — even a rough description helps the AI craft something authentic and compelling. We'll also pull context from your Career &amp; College tabs if available.
-                                    </p>
-
-                                    {/* Profile Summary Indicator */}
-                                    {(studentProfile.extracurriculars || studentProfile.hobbies || studentProfile.uploadedDocs) && (
-                                        <div className="mb-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-                                            <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">✅ Profile Data Loaded</p>
-                                            <p className="text-xs text-theme-muted">
-                                                The AI already knows: {[
-                                                    studentProfile.hobbies && 'your hobbies',
-                                                    studentProfile.passions && 'your passions',
-                                                    studentProfile.extracurriculars && 'your extracurriculars',
-                                                    studentProfile.gpa && 'your GPA',
-                                                    studentProfile.major && 'your target major',
-                                                    studentProfile.uploadedDocs && `uploaded doc: "${studentProfile.uploadedFileName}"`,
-                                                ].filter(Boolean).join(', ') || 'nothing yet — fill in Career or College tabs first'}.
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* Document Upload Zone */}
-                                    <div className="mb-4">
-                                        <div
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="w-full p-4 rounded-xl border-2 border-dashed border-theme-border hover:border-amber-500/50 bg-theme-bg/50 cursor-pointer transition-all text-center group"
-                                        >
-                                            <FileText className="w-6 h-6 mx-auto mb-2 text-theme-muted group-hover:text-amber-500 transition-colors" />
-                                            <p className="text-xs font-bold text-theme-muted group-hover:text-theme-text transition-colors">
-                                                {studentProfile.uploadedFileName
-                                                    ? `📎 "${studentProfile.uploadedFileName}" loaded — click to replace`
-                                                    : 'Upload Resume, Achievement List, or Prior Essays (PDF / TXT)'
-                                                }
-                                            </p>
-                                            <p className="text-[10px] text-theme-muted mt-1">Your achievements will be automatically included in every AI call</p>
-                                        </div>
-                                        <input ref={fileInputRef} type="file" accept=".pdf,.txt" onChange={handleFileUpload} className="hidden" />
-                                    </div>
-
-                                    {/* Key Story */}
-                                    <FormField label="⭐ Your Key Story / Anecdote (Most Important)">
-                                        <TextareaField value={essayStory} onChange={e => setEssayStory(e.target.value)} rows="4" placeholder="Describe a specific moment, challenge, or realization you want the essay to revolve around. Example: 'When I was 14, my science fair project failed spectacularly in front of 200 people. Instead of quitting, I redesigned it overnight and won 2nd place the next day. That failure taught me...' — The more specific and personal, the better!" />
-                                    </FormField>
-
-                                    {/* Core Trait & Tone */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                        <FormField label="💎 Core Trait to Highlight">
-                                            <InputField value={essayTrait} onChange={e => setEssayTrait(e.target.value)} placeholder="e.g. Resilience, Intellectual Curiosity, Empathy, Leadership..." />
-                                        </FormField>
-                                        <FormField label="🎨 Essay Tone">
-                                            <SelectField value={essayTone} onChange={e => setEssayTone(e.target.value)} options={[
-                                                { value: 'Reflective', label: '🪞 Reflective & Poetic' },
-                                                { value: 'Analytical', label: '🔬 Analytical & Direct' },
-                                                { value: 'Humorous', label: '😄 Humorous & Witty' },
-                                                { value: 'Bold', label: '⚡ Bold & Unconventional' },
-                                                { value: 'Narrative', label: '📖 Storytelling & Cinematic' },
-                                            ]} />
-                                        </FormField>
-                                    </div>
-
-                                    {/* Additional Instructions */}
-                                    <div className="mt-4" id="essay-prompt-input">
-                                        <FormField label="📝 Additional Instructions (Optional)">
-                                            <TextareaField value={essayPrompt} onChange={e => setEssayPrompt(e.target.value)} rows="2" placeholder="Any extra details: themes to weave in, things to avoid, specific achievements to mention..." />
-                                        </FormField>
-                                    </div>
-
-                                    <button type="button" onClick={handleGenerateEssay} disabled={isLoading} className="w-full py-3 mt-4 bg-theme-bg border border-amber-500/50 text-amber-500 rounded-xl font-black text-xs uppercase tracking-[0.1em] hover:bg-amber-500 hover:text-white transition-all flex justify-center items-center disabled:opacity-50">
-                                        {isLoading && essayPhase === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : (<>Auto-Generate Draft <Award className="w-4 h-4 ml-2" /></>)}
-                                    </button>
-                                </div>
-                                <FormField label="Your Essay Draft">
-                                    <TextareaField value={essayText} onChange={e => setEssayText(e.target.value)} required rows="12" placeholder="Paste your full essay draft here..." />
-                                </FormField>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                                    <button type="submit" disabled={isLoading || !essayText.trim()} className="py-4 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-amber-500/30 hover:scale-[1.02] transition-all flex justify-center items-center disabled:opacity-50 group">
-                                        {isLoading && essayPhase === 'coach' ? <Loader2 className="w-5 h-5 animate-spin" /> : (<>Coach Review <Award className="w-4 h-4 ml-2" /></>)}
-                                    </button>
-                                    <button type="button" onClick={handleGraderSubmit} disabled={isLoading || !essayText.trim()} className="py-4 bg-red-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-red-500/30 hover:scale-[1.02] transition-all flex justify-center items-center disabled:opacity-50 group">
-                                        {isLoading && essayPhase === 'grader' ? <Loader2 className="w-5 h-5 animate-spin" /> : (<>{essayIteration === 0 ? 'Harsh Grade' : `Re-Grade #${essayIteration + 1}`} <AlertTriangle className="w-4 h-4 ml-2" /></>)}
-                                    </button>
-                                </div>
-                            </form>
-                            {essayResult && (
-                                <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up`}>
-                                    <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border`}>
-                                        {essayPhase === 'coach' ? <Award className="w-5 h-5 text-amber-500" /> : <AlertTriangle className="w-5 h-5 text-red-500" />}
-                                        <h3 className="text-lg font-bold text-theme-text">
-                                            {essayPhase === 'coach' ? 'Elite Coach Feedback' : `Grader Verdict — Iteration #${essayIteration}`}
-                                        </h3>
-                                    </div>
-                                    <div ref={essayPdfRef} className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
-                                        <MarkdownBlock text={essayResult} />
-
-                                        {/* NEW: Use Feedback to Improve Button */}
-                                        {essayScore < 10 && (
-                                            <button
-                                                type="button"
-                                                onClick={handleAutoFixEssay}
-                                                disabled={isLoading}
-                                                className="mt-6 w-full py-3 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-500/20 transition-all disabled:opacity-50"
-                                            >
-                                                {isLoading ? (
-                                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                                ) : essayScore >= 8 ? (
-                                                    "Keep Grinding for a Perfect 10 ✨"
-                                                ) : (
-                                                    "Auto-Fix Draft Using Feedback ✨"
-                                                )}
-                                            </button>
-                                        )}
-
-                                        {essayScore >= 8 && (
-                                            <div className="mt-6 p-4 rounded-2xl bg-green-500/10 border border-green-500/30 text-center">
-                                                <Check className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                                                <h4 className="text-lg font-black text-green-400">🎉 {essayScore === 10 ? 'PERFECT 10/10' : `${essayScore}/10 QUALIFIED`} — APPROVED!</h4>
-                                                <p className="text-xs text-green-300 mt-1">Your essay is highly competitive. Download it now, or keep iterating for a 10/10.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {essayScore >= 8 ? (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                                            <button onClick={handlePdfDownload} className="py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                                Download PDF <Download className="w-4 h-4" />
-                                            </button>
-                                            <button onClick={() => setActiveTab('chat')} className="py-3 bg-theme-surface border border-theme-border text-theme-text rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                                → Counselor for Final Qs <MessageSquare className="w-3 h-3" />
-                                            </button>
-                                        </div>
-                                    ) : essayPhase === 'grader' ? (
-                                        <p className="text-center text-xs text-red-400 mt-4 font-bold">
-                                            ⚠️ Score below 8 — revise using the feedback button above and hit "Harsh Grade" again.
-                                        </p>
-                                    ) : (
-                                        <p className="text-center text-xs text-theme-muted mt-4 font-bold">
-                                            💡 Happy with your draft? Hit "Harsh Grade" for the ultimate test.
-                                        </p>
-                                    )}
-                                </div>
-                            )}
+                            </div>
                         </div>
-                    )}
 
-                    {/* ═══ CHAT TAB ═══ */}
-                    {activeTab === 'chat' && (
-                        <div className={`animate-fade-in flex flex-col glass-panel rounded-3xl shadow-2xl border bg-theme-surface border-theme-border h-[75vh] md:h-[600px] overflow-hidden`}>
-                            <div className={`p-3 border-b border-theme-border bg-theme-surface flex items-center gap-3`}>
-                                <div className="p-2 rounded-xl bg-theme-bg border border-theme-border">
-                                    <MessageSquare className={`w-4 h-4 text-theme-primary`} />
-                                </div>
-                                <span className="font-bold text-sm text-theme-text">Admissions AI Assistant</span>
-                                <button
-                                    onClick={() => setActiveTab('essay')}
-                                    className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-theme-primary/10 border border-theme-primary/20 text-theme-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-theme-primary/20 transition-all"
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
+                            {TOOLS.map((card, idx) => (
+                                <div
+                                    key={card.id}
+                                    onClick={() => { setActiveTab(card.id); setViewMode('active_tool'); }}
+                                    className="group relative p-5 rounded-[20px] flex flex-col items-center text-center border border-theme-border bg-theme-surface hover:border-theme-primary/40 transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(var(--theme-primary-rgb),0.3)] cursor-pointer overflow-hidden transform-gpu"
+                                    style={{ transitionDelay: `${idx * 50}ms` }}
                                 >
-                                    Ready for Essays <ChevronRight className="w-3 h-3" />
-                                </button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                                {chatHistory.map((msg, i) => (
-                                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
-                                            ? 'bg-gradient-to-tr from-theme-primary to-theme-secondary text-theme-bg rounded-br-none'
-                                            : `bg-theme-bg border-theme-border text-theme-text border rounded-tl-none`
-                                            }`}>
-                                            {msg.role === 'user' ? msg.text : (
-                                                <MarkdownBlock text={msg.text} />
-                                            )}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-theme-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-0"></div>
+
+                                    <div className="w-12 h-12 rounded-xl border border-theme-primary/20 bg-theme-primary/10 flex items-center justify-center transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6 text-theme-primary mb-4 relative z-10 shadow-inner">
+                                        <card.icon className="w-6 h-6" />
+                                    </div>
+
+                                    <h3 className="text-sm font-black uppercase tracking-tight text-theme-text mb-2 relative z-10">{card.title}</h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-theme-muted leading-relaxed relative z-10 flex-1">{card.desc}</p>
+
+                                    <div className="mt-4 h-[2px] w-10 bg-theme-primary/50 transform origin-center scale-x-50 group-hover:scale-x-150 transition-transform duration-500 relative z-10"></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                </>
+            ) : (
+                <div className="flex-1 overflow-y-auto px-6 py-8 custom-scrollbar animate-in slide-in-from-bottom-8 fade-in duration-700">
+                    <div className="max-w-5xl mx-auto mb-6 flex items-center gap-3">
+                        <button onClick={onExit} className="px-5 py-2.5 rounded-xl border border-theme-primary/30 bg-theme-surface hover:bg-theme-primary/10 text-[10px] font-black uppercase tracking-widest text-theme-primary hover:text-theme-primary transition-all duration-300 flex items-center gap-2 group w-fit">
+                            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                            Exit Compass
+                        </button>
+                        <button onClick={() => setViewMode('menu')} className="px-5 py-2.5 rounded-xl border border-theme-border bg-theme-surface hover:bg-theme-bg text-[10px] font-black uppercase tracking-widest text-theme-muted hover:text-theme-text transition-all duration-300 flex items-center gap-2 group w-fit">
+                            <Map className="w-4 h-4" />
+                            Tool Grid
+                        </button>
+                    </div>
+                    <div className="max-w-5xl mx-auto space-y-12 pb-24">
+                        {activeTab === 'career' && (
+                            <div className="animate-fade-in space-y-6">
+                                <form onSubmit={handleCareerSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-theme-primary to-theme-secondary" />
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <Brain className={`w-6 h-6 text-theme-primary`} />
+                                        <div>
+                                            <h3 className="text-lg font-bold text-theme-text">AI Career Architect</h3>
+                                            <p className={`text-xs text-theme-muted`}>Discover careers that match your unique DNA</p>
                                         </div>
                                     </div>
-                                ))}
-                                {isLoading && (
-                                    <div className="flex justify-start">
-                                        <div className={`bg-theme-bg border-theme-border p-3 rounded-2xl rounded-tl-none border flex items-center gap-2`}>
-                                            <Loader2 className={`w-4 h-4 animate-spin text-theme-primary`} />
-                                            <span className={`text-xs text-theme-muted`}>Thinking...</span>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <FormField label="Hobbies & Interests">
+                                            <InputField name="hobbies" value={careerForm.hobbies} onChange={e => setCareerForm({ ...careerForm, hobbies: e.target.value })} required placeholder="e.g. coding, robotics, painting..." />
+                                        </FormField>
+                                        <FormField label="Deep Passions">
+                                            <InputField name="passion" value={careerForm.passion} onChange={e => setCareerForm({ ...careerForm, passion: e.target.value })} required placeholder="e.g. climate change, AI ethics..." />
+                                        </FormField>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <FormField label="Current Study Field">
+                                            <InputField value={careerForm.field} onChange={e => setCareerForm({ ...careerForm, field: e.target.value })} required placeholder="e.g. Computer Science, Arts..." />
+                                        </FormField>
+                                        <FormField label="Future Aspirations">
+                                            <InputField value={careerForm.aspirations} onChange={e => setCareerForm({ ...careerForm, aspirations: e.target.value })} required placeholder="e.g. Lead a tech startup..." />
+                                        </FormField>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                        <FormField label="Budget Range">
+                                            <InputField value={careerForm.budget} onChange={e => setCareerForm({ ...careerForm, budget: e.target.value })} placeholder="e.g. $20k/year, flexible" />
+                                        </FormField>
+                                        <FormField label="Preferred Country">
+                                            <InputField value={careerForm.country} onChange={e => setCareerForm({ ...careerForm, country: e.target.value })} placeholder="e.g. USA, Germany, open..." />
+                                        </FormField>
+                                    </div>
+                                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-theme-primary text-theme-bg rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_20px_var(--theme-primary)] opacity-90 hover:opacity-100 hover:-translate-y-0.5 active:translate-y-0 transition-all flex justify-center items-center disabled:opacity-50 group">
+                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                            <>
+                                                Architect My Career Path
+                                                <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                                {careerResult && (
+                                    <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up tilt-card perspective-1000`}>
+                                        <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border translate-z-10`}>
+                                            <Sparkles className={`w-5 h-5 text-theme-primary`} />
+                                            <h3 className="text-lg font-bold text-theme-text">Your Career Roadmap</h3>
+                                        </div>
+                                        <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text translate-z-10`}>
+                                            <MarkdownBlock text={careerResult} />
+                                        </div>
+
+                                        {/* Follow-up Input */}
+                                        <div className={`mt-6 pt-4 border-t border-theme-border`}>
+                                            <p className="text-xs font-black text-theme-muted uppercase tracking-widest mb-2">💬 What do you think?</p>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    value={careerFollowup}
+                                                    onChange={e => setCareerFollowup(e.target.value)}
+                                                    placeholder="Ask a follow-up or share your thoughts..."
+                                                    className="flex-1 p-3 rounded-xl text-sm bg-theme-bg border-theme-border text-theme-text outline-none focus:border-theme-primary border transition-all"
+                                                    onKeyDown={e => e.key === 'Enter' && handleFollowup(careerResult, careerFollowup, setCareerResult, setCareerFollowup)}
+                                                />
+                                                <button
+                                                    onClick={() => handleFollowup(careerResult, careerFollowup, setCareerResult, setCareerFollowup)}
+                                                    disabled={isLoading || !careerFollowup.trim()}
+                                                    className="p-3 bg-theme-primary text-theme-bg rounded-xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
+                                                >
+                                                    <Send className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Conditional Navigation */}
+                                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <button onClick={() => setActiveTab('college')} className="py-3 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
+                                                College Needed → Hunt <ChevronRight className="w-3 h-3" />
+                                            </button>
+                                            <button onClick={() => setActiveTab('chat')} className="py-3 bg-theme-surface border border-theme-border text-theme-text rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
+                                                No College → Counselor <MessageSquare className="w-3 h-3" />
+                                            </button>
+                                            <button onClick={() => { setCareerResult(''); setCareerForm({ hobbies: '', passion: '', field: '', aspirations: '', budget: '', country: '' }); }} className="py-3 bg-theme-bg border border-theme-border text-theme-muted rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:text-theme-text transition-all">
+                                                I'm Done — Exit ✕
+                                            </button>
                                         </div>
                                     </div>
                                 )}
-                                <div ref={chatEndRef} />
                             </div>
-                            <form onSubmit={handleChatSubmit} className={`p-3 bg-theme-surface border-theme-border border-t flex gap-2`}>
-                                <input
-                                    value={chatInput}
-                                    onChange={e => setChatInput(e.target.value)}
-                                    placeholder="Ask anything about colleges, admissions, visas..."
-                                    className={`flex-1 p-3 rounded-xl text-sm bg-theme-bg border-theme-border text-theme-text outline-none focus:border-theme-primary border transition-all`}
-                                />
-                                <button type="submit" disabled={isLoading || !chatInput.trim()} className="p-3 bg-theme-primary text-theme-bg rounded-xl shadow-[0_0_15px_var(--theme-primary)] opacity-90 hover:opacity-100 transition-all disabled:opacity-50">
-                                    <Send className="w-5 h-5" />
-                                </button>
-                            </form>
-                        </div>
-                    )}
+                        )}
+
+                        {/* ═══ COLLEGE FINDER TAB (ENHANCED) ═══ */}
+                        {activeTab === 'college' && (
+                            <div className="animate-fade-in space-y-6">
+                                <form onSubmit={handleCollegeSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-theme-primary to-theme-secondary" />
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <GraduationCap className={`w-6 h-6 text-theme-primary`} />
+                                        <div>
+                                            <h3 className="text-lg font-bold text-theme-text">AI College Matcher</h3>
+                                            <p className={`text-xs text-theme-muted`}>Safety, Target & Dream schools matched to your profile</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <FormField label="GPA / Marks">
+                                            <InputField value={collegeForm.gpa} onChange={e => setCollegeForm({ ...collegeForm, gpa: e.target.value })} required placeholder="e.g. 3.9/4.0 or 95%" />
+                                        </FormField>
+                                        <FormField label="Test Scores">
+                                            <InputField value={collegeForm.testScores} onChange={e => setCollegeForm({ ...collegeForm, testScores: e.target.value })} placeholder="e.g. SAT 1520, GRE 330" />
+                                        </FormField>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <FormField label="Target Major">
+                                            <InputField value={collegeForm.major} onChange={e => setCollegeForm({ ...collegeForm, major: e.target.value })} required placeholder="e.g. Computer Science" />
+                                        </FormField>
+                                        <FormField label="Study Level">
+                                            <SelectField value={collegeForm.studyLevel} onChange={e => setCollegeForm({ ...collegeForm, studyLevel: e.target.value })} options={[
+                                                { value: 'Undergraduate', label: 'Undergraduate (Bachelor\'s)' },
+                                                { value: 'Graduate', label: 'Graduate (Master\'s)' },
+                                                { value: 'PhD', label: 'PhD / Doctoral' },
+                                                { value: 'MBA', label: 'MBA' },
+                                            ]} />
+                                        </FormField>
+                                    </div>
+                                    <FormField label="Extracurriculars & Achievements">
+                                        <TextareaField value={collegeForm.extracurriculars} onChange={e => setCollegeForm({ ...collegeForm, extracurriculars: e.target.value })} required rows="3" placeholder="Projects, leadership, competitions, publications..." />
+                                    </FormField>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-4">
+                                        <FormField label="Preferred Country">
+                                            <SelectField value={collegeForm.country} onChange={e => setCollegeForm({ ...collegeForm, country: e.target.value })} options={[
+                                                { value: 'Any', label: 'Any Country' },
+                                                { value: 'USA', label: '🇺🇸 United States' }, { value: 'UK', label: '🇬🇧 United Kingdom' },
+                                                { value: 'Canada', label: '🇨🇦 Canada' }, { value: 'Australia', label: '🇦🇺 Australia' },
+                                                { value: 'Germany', label: '🇩🇪 Germany' }, { value: 'India', label: '🇮🇳 India' },
+                                                { value: 'Singapore', label: '🇸🇬 Singapore' }, { value: 'Netherlands', label: '🇳🇱 Netherlands' },
+                                                { value: 'Japan', label: '🇯🇵 Japan' }, { value: 'Other', label: 'Other' },
+                                            ]} />
+                                        </FormField>
+                                        <FormField label="Preferred Location">
+                                            <InputField value={collegeForm.location} onChange={e => setCollegeForm({ ...collegeForm, location: e.target.value })} placeholder="e.g. East Coast, Berlin" />
+                                        </FormField>
+                                        <FormField label="Budget (per year)">
+                                            <InputField value={collegeForm.budget} onChange={e => setCollegeForm({ ...collegeForm, budget: e.target.value })} placeholder="e.g. $40k, flexible" />
+                                        </FormField>
+                                    </div>
+                                    <button type="submit" disabled={isLoading} className="w-full py-3.5 bg-theme-primary text-theme-bg rounded-2xl font-bold text-sm uppercase tracking-widest shadow-[0_0_20px_var(--theme-primary)] opacity-90 hover:opacity-100 transition-all flex justify-center items-center disabled:opacity-50">
+                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Match My Colleges"}
+                                    </button>
+                                </form>
+                                {collegeResult && (
+                                    <div className={`rounded-[40px] p-8 border glass-3d glow-border animate-page-enter bg-theme-surface border-theme-border
+                            `}>
+                                        <div className={`flex items-center gap-4 mb-8 pb-6 border-b border-theme-border`}>
+                                            <div className="p-3 rounded-2xl bg-theme-bg text-theme-primary border border-theme-border">
+                                                <Lightbulb className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-black uppercase tracking-tight text-theme-text">University Analysis</h3>
+                                                <p className="text-[10px] font-black text-theme-muted uppercase tracking-[0.2em]">Data-Driven Recommendations</p>
+                                            </div>
+                                        </div>
+                                        <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
+                                            <MarkdownBlock text={collegeResult} />
+                                        </div>
+
+                                        {/* Follow-up Input */}
+                                        <div className={`mt-6 pt-4 border-t border-theme-border`}>
+                                            <p className="text-xs font-black text-theme-muted uppercase tracking-widest mb-2">💬 What do you think?</p>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    value={collegeFollowup}
+                                                    onChange={e => setCollegeFollowup(e.target.value)}
+                                                    placeholder="Ask a follow-up about these colleges..."
+                                                    className="flex-1 p-3 rounded-xl text-sm bg-theme-bg border-theme-border text-theme-text outline-none focus:border-theme-primary border transition-all"
+                                                    onKeyDown={e => e.key === 'Enter' && handleFollowup(collegeResult, collegeFollowup, setCollegeResult, setCollegeFollowup)}
+                                                />
+                                                <button
+                                                    onClick={() => handleFollowup(collegeResult, collegeFollowup, setCollegeResult, setCollegeFollowup)}
+                                                    disabled={isLoading || !collegeFollowup.trim()}
+                                                    className="p-3 bg-theme-primary text-theme-bg rounded-xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
+                                                >
+                                                    <Send className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Branching Navigation */}
+                                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <button onClick={() => setActiveTab('compare')} className="py-3 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
+                                                Confused? Compare → <Activity className="w-3 h-3" />
+                                            </button>
+                                            <button onClick={() => setActiveTab('essay')} className="py-3 bg-theme-surface border border-theme-primary text-theme-primary rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
+                                                Skip to Essays → <FileText className="w-3 h-3" />
+                                            </button>
+                                            <button onClick={() => setActiveTab('chat')} className="py-3 bg-theme-surface border border-theme-border text-theme-text rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
+                                                Talk to Counselor <MessageSquare className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ═══ SCHOLARSHIP FINDER TAB (NEW) ═══ */}
+                        {activeTab === 'scholarship' && (
+                            <div className="animate-fade-in space-y-6">
+                                <form onSubmit={handleScholarshipSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-theme-primary to-theme-secondary" />
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <Trophy className={`w-6 h-6 text-theme-primary`} />
+                                        <div>
+                                            <h3 className="text-lg font-bold text-theme-text">AI Scholarship Finder</h3>
+                                            <p className={`text-xs text-theme-muted`}>Find scholarships you actually qualify for</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <FormField label="Your Nationality">
+                                            <InputField value={scholarshipForm.nationality} onChange={e => setScholarshipForm({ ...scholarshipForm, nationality: e.target.value })} required placeholder="e.g. Indian, Nigerian, Chinese..." />
+                                        </FormField>
+                                        <FormField label="GPA / Academic Score">
+                                            <InputField value={scholarshipForm.gpa} onChange={e => setScholarshipForm({ ...scholarshipForm, gpa: e.target.value })} required placeholder="e.g. 3.8/4.0 or 92%" />
+                                        </FormField>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <FormField label="Field of Study">
+                                            <InputField value={scholarshipForm.fieldOfStudy} onChange={e => setScholarshipForm({ ...scholarshipForm, fieldOfStudy: e.target.value })} required placeholder="e.g. Engineering, Medicine, Arts..." />
+                                        </FormField>
+                                        <FormField label="Target Country">
+                                            <InputField value={scholarshipForm.targetCountry} onChange={e => setScholarshipForm({ ...scholarshipForm, targetCountry: e.target.value })} placeholder="e.g. USA, Germany, any..." />
+                                        </FormField>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <FormField label="Financial Need">
+                                            <SelectField value={scholarshipForm.financialNeed} onChange={e => setScholarshipForm({ ...scholarshipForm, financialNeed: e.target.value })} options={[
+                                                { value: 'High', label: 'High — Need full funding' },
+                                                { value: 'Medium', label: 'Medium — Need partial support' },
+                                                { value: 'Low', label: 'Low — Merit-based preferred' },
+                                            ]} />
+                                        </FormField>
+                                        <FormField label="Key Achievements">
+                                            <InputField value={scholarshipForm.achievements} onChange={e => setScholarshipForm({ ...scholarshipForm, achievements: e.target.value })} placeholder="e.g. Science Olympiad Gold, Published paper..." />
+                                        </FormField>
+                                    </div>
+                                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-theme-primary text-theme-bg rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_20px_var(--theme-primary)] opacity-90 hover:opacity-100 hover:-translate-y-0.5 transition-all flex justify-center items-center disabled:opacity-50 group">
+                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                            <>
+                                                Find My Scholarships
+                                                <Trophy className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                                {scholarshipResult && (
+                                    <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up`}>
+                                        <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border`}>
+                                            <Trophy className={`w-5 h-5 text-theme-primary`} />
+                                            <h3 className="text-lg font-bold text-theme-text">Scholarship Matches</h3>
+                                        </div>
+                                        <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
+                                            <MarkdownBlock text={scholarshipResult} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ═══ COMPARE COLLEGES TAB (NEW) ═══ */}
+                        {activeTab === 'compare' && (
+                            <div className="animate-fade-in space-y-6">
+                                <form onSubmit={handleCompareSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-theme-primary to-theme-secondary" />
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <Activity className={`w-6 h-6 text-theme-primary`} />
+                                        <div>
+                                            <h3 className="text-lg font-bold text-theme-text">Head-to-Head Comparison</h3>
+                                            <p className={`text-xs text-theme-muted`}>Compare 2-3 colleges with data-driven analysis</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <FormField label="College 1">
+                                            <InputField value={compareForm.college1} onChange={e => setCompareForm({ ...compareForm, college1: e.target.value })} required placeholder="e.g. MIT" />
+                                        </FormField>
+                                        <FormField label="College 2">
+                                            <InputField value={compareForm.college2} onChange={e => setCompareForm({ ...compareForm, college2: e.target.value })} required placeholder="e.g. Stanford" />
+                                        </FormField>
+                                        <FormField label="College 3 (optional)">
+                                            <InputField value={compareForm.college3} onChange={e => setCompareForm({ ...compareForm, college3: e.target.value })} placeholder="e.g. CMU" />
+                                        </FormField>
+                                    </div>
+                                    <FormField label="Focus Criteria">
+                                        <SelectField value={compareForm.criteria} onChange={e => setCompareForm({ ...compareForm, criteria: e.target.value })} options={[
+                                            { value: 'Overall', label: '📊 Overall Comparison' },
+                                            { value: 'Academics', label: '🎓 Academic Excellence' },
+                                            { value: 'ROI', label: '💰 Cost & ROI' },
+                                            { value: 'Career', label: '💼 Career Outcomes' },
+                                            { value: 'StudentLife', label: '🏠 Student Life & Culture' },
+                                            { value: 'Research', label: '🔬 Research Opportunities' },
+                                        ]} />
+                                    </FormField>
+                                    <button type="submit" disabled={isLoading} className="w-full py-4 mt-4 bg-theme-primary text-theme-bg rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_20px_var(--theme-primary)] opacity-90 hover:opacity-100 hover:-translate-y-0.5 transition-all flex justify-center items-center disabled:opacity-50 group">
+                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                            <>
+                                                Compare Strategic Profiles
+                                                <Activity className="w-4 h-4 ml-2 group-hover:rotate-12 transition-transform" />
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                                {compareResult && (
+                                    <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up`}>
+                                        <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border`}>
+                                            <Activity className={`w-5 h-5 text-theme-primary`} />
+                                            <h3 className="text-lg font-bold text-theme-text">Comparison Analysis</h3>
+                                        </div>
+                                        <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
+                                            <MarkdownBlock text={compareResult} />
+                                        </div>
+                                        {/* Navigate to Essays */}
+                                        <button onClick={() => setActiveTab('essay')} className="w-full mt-4 py-3 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
+                                            Colleges Decided → Write Essays <ChevronRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+
+                        {/* ═══ EXAM PREDICTOR HUB (AUREM LENS STYLE) ═══ */}
+                        {activeTab === 'jee' && (
+                            <div className="space-y-6 animate-fade-in">
+                                {!selectedExam ? (
+                                    <div className="space-y-8">
+                                        <div className="text-center space-y-3 mb-8">
+                                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-theme-primary/20 bg-theme-primary/5 mb-2 relative group">
+                                                <Target className="w-8 h-8 text-theme-primary relative z-10" />
+                                            </div>
+                                            <h2 className="text-3xl font-serif italic tracking-wide text-theme-text">Auremous Exam Predictors</h2>
+                                            <div className="flex items-center gap-3 justify-center">
+                                                <div className="w-8 h-px bg-theme-primary/30"></div>
+                                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-theme-muted">Select Your Gateway</p>
+                                                <div className="w-8 h-px bg-theme-primary/30"></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {[
+                                                { id: 'jee', title: 'JEE Main 2026', tags: ['B.Tech', 'NITs/IIITs'], icon: Crown, color: 'from-blue-500 to-indigo-500', shadow: 'hover:shadow-blue-500/20', bg: 'bg-blue-500/10' },
+                                                { id: 'neet', title: 'NEET UG 2026', tags: ['MBBS/BDS', 'AIIMS'], icon: Activity, color: 'from-emerald-400 to-teal-500', shadow: 'hover:shadow-emerald-500/20', bg: 'bg-emerald-500/10' },
+                                                { id: 'cat', title: 'CAT 2025', tags: ['MBA', 'IIMs'], icon: Target, color: 'from-purple-500 to-pink-500', shadow: 'hover:shadow-purple-500/20', bg: 'bg-purple-500/10' },
+                                                { id: 'nda', title: 'NDA & NA', tags: ['Defense', 'SSB'], icon: ShieldAlert, color: 'from-orange-400 to-red-500', shadow: 'hover:shadow-orange-500/20', bg: 'bg-orange-500/10' }
+                                            ].map(exam => (
+                                                <button
+                                                    key={exam.id}
+                                                    onClick={() => setSelectedExam(exam.id)}
+                                                    style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}
+                                                    className={`group relative p-8 rounded-[32px] border border-theme-border bg-theme-surface/60 backdrop-blur-md hover:border-theme-primary/50 transition-all duration-700 overflow-hidden flex flex-col text-left hover:-translate-y-2 hover:scale-[1.02] hover:shadow-[0_20px_40px_-15px_rgba(var(--theme-primary-rgb),0.3)] transform-gpu`}
+                                                >
+                                                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br opacity-5 group-hover:opacity-10 transition-opacity duration-500 rounded-bl-[100px] pointer-events-none ${exam.color}`}></div>
+                                                    <div className="flex justify-between items-start mb-6">
+                                                        <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-transform duration-500 group-hover:scale-105 ${exam.bg}`}>
+                                                            <exam.icon className="w-7 h-7 text-theme-text" />
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            {exam.tags.map(t => <span key={t} className="text-[9px] font-bold px-2 py-1 bg-theme-bg border border-theme-border rounded uppercase tracking-widest text-theme-muted">{t}</span>)}
+                                                        </div>
+                                                    </div>
+                                                    <h3 className="text-2xl font-black tracking-tight text-theme-text mb-2 inset-0 group-hover:text-theme-primary transition-colors">{exam.title}</h3>
+                                                    <div className="mt-auto pt-6 flex w-full justify-between items-center group-hover:translate-x-2 transition-transform duration-500">
+                                                        <span className="text-xs font-bold text-theme-muted uppercase tracking-widest">Launch Predictor</span>
+                                                        <ChevronRight className="w-4 h-4 text-theme-primary" />
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6 animate-fade-in relative">
+                                        <button onClick={() => setSelectedExam(null)} className="flex items-center gap-2 px-4 py-2 border border-theme-border rounded-xl text-xs font-bold uppercase tracking-widest text-theme-muted hover:text-theme-text hover:bg-theme-bg transition-colors mb-2">
+                                            ← Back to Exams
+                                        </button>
+
+                                        {/* Sub-Views rendered conditionally */}
+                                        {selectedExam === 'jee' && (
+                                            <div className="space-y-4">
+                                                <form onSubmit={handleJeeSubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
+                                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-600" />
+                                                    <div className="flex items-center justify-between mb-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30">
+                                                                <Crown className={`w-6 h-6 text-blue-500`} />
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="text-lg font-black text-theme-text">JEE Main 2026 Predictor — April Session</h3>
+                                                                <p className={`text-xs text-theme-muted`}>Enter marks OR percentile → Get rank, colleges, and complete guidance</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[9px] font-black uppercase tracking-widest hidden sm:inline">NTA Data 2026 Projection</span>
+                                                    </div>
+
+                                                    {/* Toggle: Marks vs Percentile */}
+                                                    <div className="flex items-center justify-center gap-2 mb-6 p-1.5 rounded-2xl bg-theme-bg border border-theme-border w-fit mx-auto">
+                                                        <button type="button" onClick={() => setJeeMode('marks')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${jeeMode === 'marks' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'text-theme-muted hover:text-theme-text'}`}>From Marks</button>
+                                                        <button type="button" onClick={() => setJeeMode('percentile')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${jeeMode === 'percentile' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'text-theme-muted hover:text-theme-text'}`}>From Percentile</button>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                        {jeeMode === 'marks' ? (
+                                                            <FormField label="Your Expected / Actual Marks (out of 300)">
+                                                                <InputField type="number" step="1" min="0" max="300" value={jeeForm.marks} onChange={e => setJeeForm({ ...jeeForm, marks: e.target.value })} required placeholder="e.g. 185" />
+                                                                {jeeForm.marks && parseFloat(jeeForm.marks) >= 0 && parseFloat(jeeForm.marks) <= 300 && (
+                                                                    <p className="text-xs mt-2 text-blue-400 font-bold">≈ Estimated Percentile: {marksToPercentile(jeeForm.marks)}%</p>
+                                                                )}
+                                                            </FormField>
+                                                        ) : (
+                                                            <FormField label="Your JEE Percentile">
+                                                                <InputField type="number" step="0.0000001" value={jeeForm.percentile} onChange={e => setJeeForm({ ...jeeForm, percentile: e.target.value })} required placeholder="e.g. 98.6543210" />
+                                                            </FormField>
+                                                        )}
+                                                        <FormField label="Category">
+                                                            <SelectField value={jeeForm.category} onChange={e => setJeeForm({ ...jeeForm, category: e.target.value })} options={[
+                                                                { value: 'OPEN', label: 'OPEN / General' },
+                                                                { value: 'OBC-NCL', label: 'OBC-NCL' },
+                                                                { value: 'EWS', label: 'Gen-EWS' },
+                                                                { value: 'SC', label: 'SC' },
+                                                                { value: 'ST', label: 'ST' },
+                                                            ]} />
+                                                        </FormField>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                                                        <FormField label="Home State">
+                                                            <InputField value={jeeForm.homeState} onChange={e => setJeeForm({ ...jeeForm, homeState: e.target.value })} placeholder="e.g. Maharashtra" />
+                                                        </FormField>
+                                                        <FormField label="Target Branch">
+                                                            <InputField value={jeeForm.targetBranch} onChange={e => setJeeForm({ ...jeeForm, targetBranch: e.target.value })} placeholder="e.g. CSE, ECE" />
+                                                        </FormField>
+                                                        <FormField label="Gender">
+                                                            <SelectField value={jeeForm.gender} onChange={e => setJeeForm({ ...jeeForm, gender: e.target.value })} options={[
+                                                                { value: 'Male', label: 'Male' },
+                                                                { value: 'Female', label: 'Female (Supernumerary)' },
+                                                                { value: 'Other', label: 'Other' },
+                                                            ]} />
+                                                        </FormField>
+                                                        <FormField label="PwD Status">
+                                                            <SelectField value={jeeForm.pwd} onChange={e => setJeeForm({ ...jeeForm, pwd: e.target.value })} options={[
+                                                                { value: 'No', label: 'No' },
+                                                                { value: 'Yes', label: 'Yes (PwD Quota)' },
+                                                            ]} />
+                                                        </FormField>
+                                                    </div>
+                                                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:shadow-[0_0_40px_rgba(59,130,246,0.6)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex justify-center items-center disabled:opacity-50 group">
+                                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                                            <>
+                                                                Predict My Colleges & Future
+                                                                <Crown className="w-4 h-4 ml-2 group-hover:scale-125 group-hover:rotate-12 transition-transform" />
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </form>
+
+                                                {/* Results */}
+                                                {(jeeCollegeResult || jeeRankData) && (
+                                                    <div className={`glass-panel rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up relative overflow-hidden`}>
+                                                        <div ref={jeePdfRef} className="p-6 sm:p-8">
+                                                            {/* Report Header */}
+                                                            <div className="text-center mb-8">
+                                                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] mb-1">Auremous Intelligence</p>
+                                                                <h2 className="text-2xl font-black text-theme-text uppercase tracking-tight">JEE Main 2025 — Prediction Report</h2>
+                                                                <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 mx-auto mt-3 rounded-full" />
+                                                            </div>
+
+                                                            {/* Stat Cards */}
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                                                                <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 text-center">
+                                                                    <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">CRL Rank</p>
+                                                                    <h3 className="text-2xl font-black text-blue-400">{jeeRankData?.crl?.toLocaleString('en-IN') || '—'}</h3>
+                                                                </div>
+                                                                <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border border-indigo-500/20 text-center">
+                                                                    <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Percentile</p>
+                                                                    <h3 className="text-2xl font-black text-indigo-400">{jeeRankData?.percentile}%</h3>
+                                                                </div>
+                                                                <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 text-center">
+                                                                    <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-1">Category</p>
+                                                                    <h3 className="text-lg font-black text-purple-400">{jeeRankData?.category}</h3>
+                                                                </div>
+                                                                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 text-center">
+                                                                    <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">Tier</p>
+                                                                    <h3 className={`text-sm font-black ${jeeRankData?.tier?.color || 'text-theme-text'}`}>{jeeRankData?.tier?.emoji} {jeeRankData?.tier?.label}</h3>
+                                                                </div>
+                                                            </div>
+
+                                                            {jeeRankData?.marks && (
+                                                                <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/15 mb-8 text-center">
+                                                                    <p className="text-xs text-theme-muted">Estimated from <span className="font-black text-blue-400">{jeeRankData.marks}/300 marks</span> using NTA 2024 normalization data</p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* AI College Analysis */}
+                                                            {jeeCollegeResult ? (
+                                                                <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
+                                                                    <MarkdownBlock text={jeeCollegeResult} />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col justify-center items-center py-16 gap-3">
+                                                                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                                                                    <p className="text-xs font-bold text-theme-muted animate-pulse">Analyzing 14+ lakh candidates' data...</p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Footer */}
+                                                            {jeeCollegeResult && (
+                                                                <div className="mt-8 pt-6 border-t border-theme-border text-center">
+                                                                    <p className="text-[9px] text-theme-muted uppercase tracking-widest">Generated by Auremous College Compass • Data Source: JoSAA 2024 • For educational purposes</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Download Bar */}
+                                                        {jeeCollegeResult && (
+                                                            <div className="px-6 pb-6 sm:px-8 sm:pb-8 flex flex-col sm:flex-row gap-3">
+                                                                <button onClick={handleJeePdfDownload} className="flex-1 py-4 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40">
+                                                                    Download Full Report PDF <Download className="w-4 h-4" />
+                                                                </button>
+                                                                <button onClick={() => setActiveTab('college')} className="py-4 px-6 bg-theme-bg border border-theme-border text-theme-text rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:border-theme-primary transition-all">
+                                                                    Global Hunt <ChevronRight className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                        )}
+
+                                        {selectedExam === 'neet' && (
+                                            <div className="space-y-4">
+                                                <form onSubmit={handleNeetSubmit} className="glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden">
+                                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-emerald-400 to-teal-500" />
+                                                    <div className="flex items-center gap-3 mb-6">
+                                                        <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
+                                                            <Activity className="w-6 h-6 text-emerald-500" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-lg font-black text-theme-text">NEET UG 2026 Predictor</h3>
+                                                            <p className="text-xs text-theme-muted">Marks → Rank classification → Medical Counseling</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                        <FormField label="Expected Marks (out of 720)">
+                                                            <InputField type="number" step="1" min="0" max="720" value={neetForm.marks} onChange={e => setNeetForm({ ...neetForm, marks: e.target.value })} required />
+                                                        </FormField>
+                                                        <FormField label="Category">
+                                                            <SelectField value={neetForm.category} onChange={e => setNeetForm({ ...neetForm, category: e.target.value })} options={[{ value: 'UR', label: 'Unreserved (UR)' }, { value: 'OBC', label: 'OBC' }, { value: 'SC', label: 'SC' }, { value: 'ST', label: 'ST' }]} />
+                                                        </FormField>
+                                                        <FormField label="Home State">
+                                                            <InputField value={neetForm.state} onChange={e => setNeetForm({ ...neetForm, state: e.target.value })} placeholder="State string (e.g. MH, UP, Delhi)" />
+                                                        </FormField>
+                                                        <FormField label="Counseling Preference">
+                                                            <SelectField value={neetForm.preference} onChange={e => setNeetForm({ ...neetForm, preference: e.target.value })} options={[{ value: 'AIQ', label: 'All India Quota (15%)' }, { value: 'State', label: 'State Quota (85%)' }, { value: 'Both', label: 'Both' }]} />
+                                                        </FormField>
+                                                    </div>
+                                                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:opacity-90 flex justify-center items-center h-12">
+                                                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Predict Medical Career'}
+                                                    </button>
+                                                </form>
+
+                                                {(neetCollegeResult || neetRankData) && (
+                                                    <div className="glass-panel rounded-3xl p-6 border bg-theme-surface border-theme-border animate-fade-in">
+                                                        <div ref={neetPdfRef} className="p-4 rounded-xl bg-theme-surface mb-4">
+                                                            <div className="text-center mb-6">
+                                                                <h2 className="text-2xl font-black text-theme-text uppercase">NEET UG Report</h2>
+                                                            </div>
+                                                            <div className="grid grid-cols-4 gap-3 mb-6">
+                                                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-emerald-500 pb-1">Marks</p><p className="font-black text-lg text-theme-text">{neetRankData?.marks}/720</p></div>
+                                                                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-blue-500 pb-1">Est Rank</p><p className="font-black text-lg text-theme-text">{neetRankData?.rank}</p></div>
+                                                                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-purple-500 pb-1">Category</p><p className="font-black text-lg text-theme-text">{neetRankData?.category}</p></div>
+                                                                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-orange-500 pb-1">Tier</p><p className="font-bold text-xs text-theme-text">{neetRankData?.tier}</p></div>
+                                                            </div>
+                                                            <div className="prose max-w-none text-theme-text text-sm"><MarkdownBlock text={neetCollegeResult || 'Analyzing cutoffs...'} /></div>
+                                                        </div>
+                                                        {neetCollegeResult && <button onClick={handleNeetPdfDownload} className="w-full py-3 bg-emerald-500 text-white rounded-xl font-bold uppercase text-xs transition-colors hover:bg-emerald-600">Download Report <Download className="w-3 h-3 inline-block ml-2" /></button>}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {selectedExam === 'cat' && (
+                                            <div className="space-y-4">
+                                                <form onSubmit={handleCatSubmit} className="glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden">
+                                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-purple-500 to-pink-500" />
+                                                    <div className="flex items-center gap-3 mb-6">
+                                                        <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30">
+                                                            <Target className="w-6 h-6 text-purple-500" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-lg font-black text-theme-text">CAT 2025 Predictor</h3>
+                                                            <p className="text-xs text-theme-muted">IIM Shortlists → Composite Score Analytics</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                                                        <FormField label="Percentile">
+                                                            <InputField type="number" step="0.01" max="100" value={catForm.percentile} onChange={e => setCatForm({ ...catForm, percentile: e.target.value })} required />
+                                                        </FormField>
+                                                        <FormField label="Category">
+                                                            <SelectField value={catForm.category} onChange={e => setCatForm({ ...catForm, category: e.target.value })} options={[{ value: 'General', label: 'General' }, { value: 'NC-OBC', label: 'NC-OBC' }, { value: 'EWS', label: 'EWS' }]} />
+                                                        </FormField>
+                                                        <FormField label="Academic Stream">
+                                                            <SelectField value={catForm.stream} onChange={e => setCatForm({ ...catForm, stream: e.target.value })} options={[{ value: 'Engineering', label: 'Engineer' }, { value: 'Non-Engineering', label: 'Non-Engineer' }]} />
+                                                        </FormField>
+                                                        <FormField label="Work Exp (Months)">
+                                                            <InputField type="number" value={catForm.workEx} onChange={e => setCatForm({ ...catForm, workEx: e.target.value })} />
+                                                        </FormField>
+                                                    </div>
+                                                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:opacity-90 flex justify-center items-center h-12">
+                                                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Predict IIM Shortlists'}
+                                                    </button>
+                                                </form>
+
+                                                {(catCollegeResult || catResultData) && (
+                                                    <div className="glass-panel rounded-3xl p-6 border bg-theme-surface border-theme-border animate-fade-in">
+                                                        <div ref={catPdfRef} className="p-4 rounded-xl bg-theme-surface mb-4">
+                                                            <div className="text-center mb-6"><h2 className="text-2xl font-black text-theme-text uppercase">CAT Admissions Report</h2></div>
+                                                            <div className="grid grid-cols-4 gap-3 mb-6">
+                                                                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-purple-500 pb-1">%ile</p><p className="font-black text-lg text-theme-text">{catResultData?.percentile}</p></div>
+                                                                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-blue-500 pb-1">Segment</p><p className="font-black text-lg text-theme-text">{catResultData?.tier}</p></div>
+                                                                <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-pink-500 pb-1">Stream</p><p className="font-bold text-xs text-theme-text">{catResultData?.stream}</p></div>
+                                                                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-amber-500 pb-1">Category</p><p className="font-bold text-xs text-theme-text">{catResultData?.category}</p></div>
+                                                            </div>
+                                                            <div className="prose max-w-none text-theme-text text-sm"><MarkdownBlock text={catCollegeResult || 'Calculating composite scores...'} /></div>
+                                                        </div>
+                                                        {catCollegeResult && <button onClick={handleCatPdfDownload} className="w-full py-3 bg-purple-500 text-white rounded-xl font-bold uppercase text-xs transition-colors hover:bg-purple-600">Download Report <Download className="w-3 h-3 inline-block ml-2" /></button>}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {selectedExam === 'nda' && (
+                                            <div className="space-y-4">
+                                                <form onSubmit={handleNdaSubmit} className="glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden">
+                                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-orange-400 to-red-500" />
+                                                    <div className="flex items-center gap-3 mb-6">
+                                                        <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30">
+                                                            <ShieldAlert className="w-6 h-6 text-orange-500" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-lg font-black text-theme-text">NDA Exam Predictor</h3>
+                                                            <p className="text-xs text-theme-muted">Written Marks → SSB Clearance → Merit List</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                        <FormField label="Written Marks (Out of 900)">
+                                                            <InputField type="number" step="1" max="900" value={ndaForm.marks} onChange={e => setNdaForm({ ...ndaForm, marks: e.target.value })} required />
+                                                        </FormField>
+                                                        <FormField label="Preferred Wing">
+                                                            <SelectField value={ndaForm.wing} onChange={e => setNdaForm({ ...ndaForm, wing: e.target.value })} options={[{ value: 'Army', label: 'Indian Army' }, { value: 'Navy', label: 'Indian Navy' }, { value: 'Air Force', label: 'Indian Air Force' }]} />
+                                                        </FormField>
+                                                    </div>
+                                                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:opacity-90 flex justify-center items-center h-12">
+                                                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Predict Defense Career'}
+                                                    </button>
+                                                </form>
+
+                                                {(ndaCollegeResult || ndaResultData) && (
+                                                    <div className="glass-panel rounded-3xl p-6 border bg-theme-surface border-theme-border animate-fade-in">
+                                                        <div ref={ndaPdfRef} className="p-4 rounded-xl bg-theme-surface mb-4">
+                                                            <div className="text-center mb-6"><h2 className="text-2xl font-black text-theme-text uppercase">NDA Analytics Report</h2></div>
+                                                            <div className="grid grid-cols-4 gap-3 mb-6">
+                                                                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-orange-500 pb-1">Marks</p><p className="font-black text-lg text-theme-text">{ndaResultData?.marks}</p></div>
+                                                                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-red-500 pb-1">Wing Target</p><p className="font-black text-sm text-theme-text">{ndaResultData?.wing}</p></div>
+                                                                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-blue-500 pb-1">Expected Cutoff</p><p className="font-black text-lg text-theme-text">{ndaResultData?.expectedCutoff}</p></div>
+                                                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-center"><p className="text-[9px] uppercase font-bold text-emerald-500 pb-1">Chances</p><p className="font-bold text-xs text-theme-text">{ndaResultData?.tier}</p></div>
+                                                            </div>
+                                                            <div className="prose max-w-none text-theme-text text-sm"><MarkdownBlock text={ndaCollegeResult || 'Extracting SSB guidelines...'} /></div>
+                                                        </div>
+                                                        {ndaCollegeResult && <button onClick={handleNdaPdfDownload} className="w-full py-3 bg-orange-500 text-white rounded-xl font-bold uppercase text-xs transition-colors hover:bg-orange-600">Download Report <Download className="w-3 h-3 inline-block ml-2" /></button>}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+
+                        {/* ═══ ESSAY EXPERT TAB (MERGED: Coach + Grader) ═══ */}
+                        {activeTab === 'essay' && (
+                            <div className="animate-fade-in space-y-6 relative">
+                                {/* ── UNDER DEVELOPMENT BANNER ── */}
+                                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 animate-slide-up">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <span className="text-xl">🚧</span>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-black text-amber-400 uppercase tracking-widest mb-1">Under Development</h4>
+                                        <p className="text-xs text-theme-muted leading-relaxed">
+                                            Essay generation quality is currently limited due to the low-quality AI model powering this feature. Essays may lack depth, repeat patterns, or degrade across iterations.
+                                            We are actively upgrading to a premium model that will deliver <strong className="text-amber-400">Ivy-level essay writing</strong>. Stay tuned — a major upgrade is coming soon.
+                                        </p>
+                                    </div>
+                                </div>
+                                <form onSubmit={handleEssaySubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-500 to-rose-500" />
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <Award className={`w-6 h-6 text-amber-500`} />
+                                        <div>
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-lg font-bold text-theme-text">Essay Expert</h3>
+                                            </div>
+                                            <p className={`text-xs text-theme-muted`}>Elite coach + Harsh grader — iterate until perfection</p>
+                                        </div>
+                                        {essayIteration > 0 && (
+                                            <div className="ml-auto flex items-center gap-2">
+                                                <span className={`text-xs font-black px-3 py-1 rounded-full ${essayScore >= 8 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                    Score: {essayScore}/10 • Iteration #{essayIteration}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <FormField label="Target School(s)">
+                                            <InputField value={essaySchool} onChange={e => setEssaySchool(e.target.value)} placeholder="e.g. Stanford, MIT, Oxford" />
+                                        </FormField>
+                                        <FormField label="Essay Type">
+                                            <SelectField value={essayType} onChange={e => setEssayType(e.target.value)} options={[
+                                                { value: 'Personal Statement', label: 'Personal Statement' },
+                                                { value: 'Common App', label: 'Common App Essay' },
+                                                { value: 'Why Us', label: 'Why Us / Supplemental' },
+                                                { value: 'SOP', label: 'Statement of Purpose' },
+                                                { value: 'Scholarship', label: 'Scholarship Essay' },
+                                                { value: 'Activity', label: 'Activity Description' },
+                                            ]} />
+                                        </FormField>
+                                        <FormField label="Word Limit">
+                                            <InputField value={essayWordLimit} onChange={e => setEssayWordLimit(e.target.value)} placeholder="e.g. 650, 250" />
+                                        </FormField>
+                                    </div>
+
+                                    {/* ─── ENHANCED: Auto-Generate Section ─── */}
+                                    <div className="p-5 mb-6 rounded-2xl bg-gradient-to-r from-amber-500/5 to-rose-500/5 border border-amber-500/20">
+                                        <h4 className="text-sm font-bold text-amber-500 mb-2 flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4" /> AI Essay Generator
+                                        </h4>
+                                        <p className="text-xs text-theme-muted mb-4 leading-relaxed">
+                                            The more details you give, the better your draft. Tell us your story — even a rough description helps the AI craft something authentic and compelling. We'll also pull context from your Career &amp; College tabs if available.
+                                        </p>
+
+                                        {/* Profile Summary Indicator */}
+                                        {(studentProfile.extracurriculars || studentProfile.hobbies || studentProfile.uploadedDocs) && (
+                                            <div className="mb-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                                                <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">✅ Profile Data Loaded</p>
+                                                <p className="text-xs text-theme-muted">
+                                                    The AI already knows: {[
+                                                        studentProfile.hobbies && 'your hobbies',
+                                                        studentProfile.passions && 'your passions',
+                                                        studentProfile.extracurriculars && 'your extracurriculars',
+                                                        studentProfile.gpa && 'your GPA',
+                                                        studentProfile.major && 'your target major',
+                                                        studentProfile.uploadedDocs && `uploaded doc: "${studentProfile.uploadedFileName}"`,
+                                                    ].filter(Boolean).join(', ') || 'nothing yet — fill in Career or College tabs first'}.
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Document Upload Zone */}
+                                        <div className="mb-4">
+                                            <div
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="w-full p-4 rounded-xl border-2 border-dashed border-theme-border hover:border-amber-500/50 bg-theme-bg/50 cursor-pointer transition-all text-center group"
+                                            >
+                                                <FileText className="w-6 h-6 mx-auto mb-2 text-theme-muted group-hover:text-amber-500 transition-colors" />
+                                                <p className="text-xs font-bold text-theme-muted group-hover:text-theme-text transition-colors">
+                                                    {studentProfile.uploadedFileName
+                                                        ? `📎 "${studentProfile.uploadedFileName}" loaded — click to replace`
+                                                        : 'Upload Resume, Achievement List, or Prior Essays (PDF / TXT)'
+                                                    }
+                                                </p>
+                                                <p className="text-[10px] text-theme-muted mt-1">Your achievements will be automatically included in every AI call</p>
+                                            </div>
+                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt" onChange={handleFileUpload} className="hidden" />
+                                        </div>
+
+                                        {/* Key Story */}
+                                        <FormField label="⭐ Your Key Story / Anecdote (Most Important)">
+                                            <TextareaField value={essayStory} onChange={e => setEssayStory(e.target.value)} rows="4" placeholder="Describe a specific moment, challenge, or realization you want the essay to revolve around. Example: 'When I was 14, my science fair project failed spectacularly in front of 200 people. Instead of quitting, I redesigned it overnight and won 2nd place the next day. That failure taught me...' — The more specific and personal, the better!" />
+                                        </FormField>
+
+                                        {/* Core Trait & Tone */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                            <FormField label="💎 Core Trait to Highlight">
+                                                <InputField value={essayTrait} onChange={e => setEssayTrait(e.target.value)} placeholder="e.g. Resilience, Intellectual Curiosity, Empathy, Leadership..." />
+                                            </FormField>
+                                            <FormField label="🎨 Essay Tone">
+                                                <SelectField value={essayTone} onChange={e => setEssayTone(e.target.value)} options={[
+                                                    { value: 'Reflective', label: '🪞 Reflective & Poetic' },
+                                                    { value: 'Analytical', label: '🔬 Analytical & Direct' },
+                                                    { value: 'Humorous', label: '😄 Humorous & Witty' },
+                                                    { value: 'Bold', label: '⚡ Bold & Unconventional' },
+                                                    { value: 'Narrative', label: '📖 Storytelling & Cinematic' },
+                                                ]} />
+                                            </FormField>
+                                        </div>
+
+                                        {/* Additional Instructions */}
+                                        <div className="mt-4" id="essay-prompt-input">
+                                            <FormField label="📝 Additional Instructions (Optional)">
+                                                <TextareaField value={essayPrompt} onChange={e => setEssayPrompt(e.target.value)} rows="2" placeholder="Any extra details: themes to weave in, things to avoid, specific achievements to mention..." />
+                                            </FormField>
+                                        </div>
+
+                                        <button type="button" onClick={handleGenerateEssay} disabled={isLoading} className="w-full py-3 mt-4 bg-theme-bg border border-amber-500/50 text-amber-500 rounded-xl font-black text-xs uppercase tracking-[0.1em] hover:bg-amber-500 hover:text-white transition-all flex justify-center items-center disabled:opacity-50">
+                                            {isLoading && essayPhase === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : (<>Auto-Generate Draft <Award className="w-4 h-4 ml-2" /></>)}
+                                        </button>
+                                    </div>
+                                    <FormField label="Your Essay Draft">
+                                        <TextareaField value={essayText} onChange={e => setEssayText(e.target.value)} required rows="12" placeholder="Paste your full essay draft here..." />
+                                    </FormField>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                                        <button type="submit" disabled={isLoading || !essayText.trim()} className="py-4 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-amber-500/30 hover:scale-[1.02] transition-all flex justify-center items-center disabled:opacity-50 group">
+                                            {isLoading && essayPhase === 'coach' ? <Loader2 className="w-5 h-5 animate-spin" /> : (<>Coach Review <Award className="w-4 h-4 ml-2" /></>)}
+                                        </button>
+                                        <button type="button" onClick={handleGraderSubmit} disabled={isLoading || !essayText.trim()} className="py-4 bg-red-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-red-500/30 hover:scale-[1.02] transition-all flex justify-center items-center disabled:opacity-50 group">
+                                            {isLoading && essayPhase === 'grader' ? <Loader2 className="w-5 h-5 animate-spin" /> : (<>{essayIteration === 0 ? 'Harsh Grade' : `Re-Grade #${essayIteration + 1}`} <AlertTriangle className="w-4 h-4 ml-2" /></>)}
+                                        </button>
+                                    </div>
+                                </form>
+                                {essayResult && (
+                                    <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up`}>
+                                        <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border`}>
+                                            {essayPhase === 'coach' ? <Award className="w-5 h-5 text-amber-500" /> : <AlertTriangle className="w-5 h-5 text-red-500" />}
+                                            <h3 className="text-lg font-bold text-theme-text">
+                                                {essayPhase === 'coach' ? 'Elite Coach Feedback' : `Grader Verdict — Iteration #${essayIteration}`}
+                                            </h3>
+                                        </div>
+                                        <div ref={essayPdfRef} className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
+                                            <MarkdownBlock text={essayResult} />
+
+                                            {/* NEW: Use Feedback to Improve Button */}
+                                            {essayScore < 10 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAutoFixEssay}
+                                                    disabled={isLoading}
+                                                    className="mt-6 w-full py-3 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-500/20 transition-all disabled:opacity-50"
+                                                >
+                                                    {isLoading ? (
+                                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                                    ) : essayScore >= 8 ? (
+                                                        "Keep Grinding for a Perfect 10 ✨"
+                                                    ) : (
+                                                        "Auto-Fix Draft Using Feedback ✨"
+                                                    )}
+                                                </button>
+                                            )}
+
+                                            {essayScore >= 8 && (
+                                                <div className="mt-6 p-4 rounded-2xl bg-green-500/10 border border-green-500/30 text-center">
+                                                    <Check className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                                                    <h4 className="text-lg font-black text-green-400">🎉 {essayScore === 10 ? 'PERFECT 10/10' : `${essayScore}/10 QUALIFIED`} — APPROVED!</h4>
+                                                    <p className="text-xs text-green-300 mt-1">Your essay is highly competitive. Download it now, or keep iterating for a 10/10.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {essayScore >= 8 ? (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                                                <button onClick={handlePdfDownload} className="py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
+                                                    Download PDF <Download className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => setActiveTab('chat')} className="py-3 bg-theme-surface border border-theme-border text-theme-text rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
+                                                    → Counselor for Final Qs <MessageSquare className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ) : essayPhase === 'grader' ? (
+                                            <p className="text-center text-xs text-red-400 mt-4 font-bold">
+                                                ⚠️ Score below 8 — revise using the feedback button above and hit "Harsh Grade" again.
+                                            </p>
+                                        ) : (
+                                            <p className="text-center text-xs text-theme-muted mt-4 font-bold">
+                                                💡 Happy with your draft? Hit "Harsh Grade" for the ultimate test.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ═══ CHAT TAB ═══ */}
+                        
+                        {/* ═══ UNIVERSAL PROFILE BUILDER TAB (NEW) ═══ */}
+                        {activeTab === 'profile' && (
+                            <div className="animate-fade-in space-y-6">
+                                <div className="glass-panel p-8 rounded-[40px] shadow-2xl border bg-theme-surface border-theme-primary/30 relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-theme-primary/5 blur-[50px] animate-pulse"></div>
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-4 mb-8">
+                                            <div className="p-4 rounded-3xl bg-theme-primary/20 text-theme-primary border border-theme-primary/50 shadow-[0_0_30px_rgba(201,165,90,0.3)]">
+                                                <Sparkles className="w-8 h-8" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-3xl font-black italic uppercase tracking-tighter text-theme-primary text-glow">The Universal Master Profile</h2>
+                                                <p className="text-sm font-bold text-theme-muted mt-1 tracking-widest uppercase">Centralize your entire academic DNA in one vault. All other AI tools will map perfectly to this core.</p>
+                                            </div>
+                                        </div>
+
+                                        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert('Profile Synchronized Across All Modules!'); }}>
+                                            <div className="p-6 rounded-3xl bg-theme-bg/50 border border-theme-border">
+                                                <h4 className="text-lg font-bold text-theme-text mb-4 border-b border-theme-border pb-2">Academic Core</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <FormField label="Current Grade / Year">
+                                                        <InputField value={studentProfile.gpa} onChange={e => setStudentProfile({ ...studentProfile, gpa: e.target.value })} placeholder="e.g. 11th Grade, High School Senior" />
+                                                    </FormField>
+                                                    <FormField label="Standardized Test Scores">
+                                                        <InputField value={studentProfile.testScores} onChange={e => setStudentProfile({ ...studentProfile, testScores: e.target.value })} placeholder="e.g. SAT 1550, AP Calc 5" />
+                                                    </FormField>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-6 rounded-3xl bg-theme-bg/50 border border-theme-border">
+                                                <h4 className="text-lg font-bold text-theme-text mb-4 border-b border-theme-border pb-2">Passions & DNA</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <FormField label="Deep Hobbies">
+                                                        <InputField value={studentProfile.hobbies} onChange={e => setStudentProfile({ ...studentProfile, hobbies: e.target.value })} placeholder="e.g. Chess, Astronomy, Anime" />
+                                                    </FormField>
+                                                    <FormField label="Target Future Major">
+                                                        <InputField value={studentProfile.major} onChange={e => setStudentProfile({ ...studentProfile, major: e.target.value })} placeholder="e.g. Aerospace Engineering" />
+                                                    </FormField>
+                                                    <div className="col-span-1 md:col-span-2">
+                                                        <FormField label="Extracurricular Arsenal">
+                                                            <TextareaField value={studentProfile.extracurriculars} onChange={e => setStudentProfile({ ...studentProfile, extracurriculars: e.target.value })} rows="3" placeholder="List your greatest conquests: clubs, medals, internships, research..." />
+                                                        </FormField>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-6 rounded-3xl bg-theme-bg/50 border border-theme-border flex items-center justify-between group">
+                                                <div>
+                                                    <h4 className="text-lg font-bold text-theme-text">Upload Resume / CV (PDF)</h4>
+                                                    <p className="text-xs text-theme-muted mt-1">Let the neural network auto-extract your achievements.</p>
+                                                    {studentProfile.uploadedFileName && <span className="inline-block mt-2 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-[10px] font-black uppercase">Linked: {studentProfile.uploadedFileName}</span>}
+                                                </div>
+                                                <button type="button" onClick={() => fileInputRef.current?.click()} className="p-4 rounded-full bg-theme-primary/10 text-theme-primary border border-theme-primary/30 hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-lg">
+                                                    <FileText className="w-6 h-6" />
+                                                </button>
+                                                <input ref={fileInputRef} type="file" accept=".pdf,.txt" onChange={handleFileUpload} className="hidden" />
+                                            </div>
+
+                                            <button type="submit" className="w-full py-5 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg rounded-[24px] font-black text-sm uppercase tracking-[0.2em] shadow-[0_0_40px_rgba(201,165,90,0.4)] hover:scale-[1.02] transition-transform flex justify-center items-center">
+                                                Synchronize Profile <Sparkles className="w-5 h-5 ml-2" />
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'chat' && (
+                            <div className={`animate-fade-in flex flex-col glass-panel rounded-3xl shadow-2xl border bg-theme-surface border-theme-border h-[75vh] md:h-[600px] overflow-hidden`}>
+                                <div className={`p-3 border-b border-theme-border bg-theme-surface flex items-center gap-3`}>
+                                    <div className="p-2 rounded-xl bg-theme-bg border border-theme-border">
+                                        <MessageSquare className={`w-4 h-4 text-theme-primary`} />
+                                    </div>
+                                    <span className="font-bold text-sm text-theme-text">Admissions AI Assistant</span>
+                                    <button
+                                        onClick={() => setActiveTab('essay')}
+                                        className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-theme-primary/10 border border-theme-primary/20 text-theme-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-theme-primary/20 transition-all"
+                                    >
+                                        Ready for Essays <ChevronRight className="w-3 h-3" />
+                                    </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                                    {chatHistory.map((msg, i) => (
+                                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+                                                ? 'bg-gradient-to-tr from-theme-primary to-theme-secondary text-theme-bg rounded-br-none'
+                                                : `bg-theme-bg border-theme-border text-theme-text border rounded-tl-none`
+                                                }`}>
+                                                {msg.role === 'user' ? msg.text : (
+                                                    <MarkdownBlock text={msg.text} />
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {isLoading && (
+                                        <div className="flex justify-start">
+                                            <div className={`bg-theme-bg border-theme-border p-3 rounded-2xl rounded-tl-none border flex items-center gap-2`}>
+                                                <Loader2 className={`w-4 h-4 animate-spin text-theme-primary`} />
+                                                <span className={`text-xs text-theme-muted`}>Thinking...</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div ref={chatEndRef} />
+                                </div>
+                                <form onSubmit={handleChatSubmit} className={`p-3 bg-theme-surface border-theme-border border-t flex gap-2`}>
+                                    <input
+                                        value={chatInput}
+                                        onChange={e => setChatInput(e.target.value)}
+                                        placeholder="Ask anything about colleges, admissions, visas..."
+                                        className={`flex-1 p-3 rounded-xl text-sm bg-theme-bg border-theme-border text-theme-text outline-none focus:border-theme-primary border transition-all`}
+                                    />
+                                    <button type="submit" disabled={isLoading || !chatInput.trim()} className="p-3 bg-theme-primary text-theme-bg rounded-xl shadow-[0_0_15px_var(--theme-primary)] opacity-90 hover:opacity-100 transition-all disabled:opacity-50">
+                                        <Send className="w-5 h-5" />
+                                    </button>
+                                </form>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

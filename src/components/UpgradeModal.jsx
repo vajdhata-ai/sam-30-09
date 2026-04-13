@@ -103,7 +103,7 @@ const UpgradeModal = () => {
                         </h2>
                         <p className="text-white/80 text-sm">
                             {paymentSuccess
-                                ? `Welcome to Aurem ${selectedPlan === 'go' ? 'Go' : 'Pro'}! Activating...`
+                                ? `Welcome to Auremous ${selectedPlan === 'go' ? 'Go' : 'Pro'}! Activating...`
                                 : showPayment
                                     ? 'Enter your payment details below'
                                     : isDirectUpgrade
@@ -281,7 +281,7 @@ const UpgradeModal = () => {
                                         <Check className="w-10 h-10 text-green-500" />
                                     </div>
                                     <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                        Welcome to {selectedPlan === 'go' ? 'Aurem Go' : 'Aurem Pro'}!
+                                        Welcome to {selectedPlan === 'go' ? 'Auremous Go' : 'Auremous Pro'}!
                                     </h3>
                                     <p className="text-gray-500">
                                         Activating your unlimited access...

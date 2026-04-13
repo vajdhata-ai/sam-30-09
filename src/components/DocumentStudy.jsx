@@ -398,21 +398,21 @@ STRUCTURAL PROTOCOL:
                MASTERY TARGET: ${targetLevel}.
                ${levelDirective}
                
-               Structure: Nexus, Modules, Friction Points, Synthesis Matrix.
+               Structure: Overview, Modules, Friction Points, Synthesis Matrix.
                Divider: End with "---CONTENT_SPLIT---" followed by Revision Summary.`
             : `Construct the WORLD'S BEST study guide based on the provided material.
 MASTERY TARGET: ${targetLevel}.
 INSTRUCTIONAL STRATEGY: ${levelDirective}
 
 STRUCTURE REQUIREMENTS:
-1.  **The Nexus (Executive Summary)**: 3-5 high-impact sentences on significance.
+1.  **The Overview (Executive Summary)**: 3-5 high-impact sentences on significance.
 2.  **Modules (4-8 Extensive Chapters)**:
     - Exhaustive conceptual exploration (Textbook style).
     - **Bolded** definitions with etymological/contextual depth.
     - Worked examples, case studies, or analytical simulations.
     - High-precision comparison tables.
     - Formulas/Axioms formatted for elite clarity.
-    - > 'The Aurem Insight' (Critical takeaway for exams/mastery) at end of each section.
+    - > 'The Auremous Insight' (Critical takeaway for exams/mastery) at end of each section.
 3.  **The Friction Point (Common Misconceptions)**: Deep analysis of where students fail.
 4.  **The Synthesis Matrix (Mastery Overview)**: A massive table summarizing the entire topic.
 
@@ -649,7 +649,7 @@ You are writing a comprehensive textbook chapter.`;
 
                 <div className="space-y-3 relative z-10">
                     <h1 className="text-4xl md:text-5xl font-serif italic tracking-wide text-theme-text">
-                        Aurem Lens
+                        Auremous Lens
                     </h1>
                     <div className="flex items-center justify-center gap-4">
                         <div className="h-px w-12 bg-theme-primary/20"></div>
@@ -664,7 +664,7 @@ You are writing a comprehensive textbook chapter.`;
                     {[
                         { id: 'chapter', title: 'Study a Chapter', desc: 'AI-guided deep dive into any topic', icon: BookOpen },
                         { id: 'document', title: 'Upload Document', desc: 'PDFs or Text files', icon: FilePlus },
-                        { id: 'retina', title: 'Aurem Retina', desc: 'Scan handwritten notes & diagrams', icon: Zap, disabled: false }
+                        { id: 'retina', title: 'Auremous Retina', desc: 'Scan handwritten notes & diagrams', icon: Zap, disabled: false }
                     ].map(card => (
                         <div
                             key={card.id}
@@ -879,7 +879,7 @@ You are writing a comprehensive textbook chapter.`;
                         </div>
                         <div>
                             <h3 className="text-2xl font-serif italic mb-2 tracking-wide text-theme-text">
-                                Hey, I'm Aurem
+                                Hey, I'm Auremous
                             </h3>
                             <p className="text-[14px] text-theme-muted max-w-md mx-auto font-light leading-relaxed">
                                 I am an elite contextual AI. Ask me to explain complex topics, summarize sections, or generate novel examples from this document.
@@ -898,7 +898,7 @@ You are writing a comprehensive textbook chapter.`;
                                     </div>
                                 )}
                                 <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-muted">
-                                    {msg.role === 'user' ? 'You' : 'Aurem'}
+                                    {msg.role === 'user' ? 'You' : 'Auremous'}
                                 </span>
                             </div>
                             <div className={`relative p-5 sm:p-6 rounded-[20px] transition-all duration-300
@@ -938,7 +938,7 @@ You are writing a comprehensive textbook chapter.`;
                             type="text"
                             value={chatInput}
                             onChange={e => setChatInput(e.target.value)}
-                            placeholder="Ask Aurem to explain a concept..."
+                            placeholder="Ask Auremous to explain a concept..."
                             disabled={isActionLoading}
                             className="flex-1 py-3 pl-4 pr-4 bg-transparent text-[14px] font-light outline-none text-theme-text placeholder:text-theme-muted"
                         />
@@ -975,7 +975,7 @@ You are writing a comprehensive textbook chapter.`;
                                 <Sparkles className="w-3 h-3" />
                                 Study Hub
                             </span>
-                            <span className="text-xl font-serif italic tracking-wide text-theme-text uppercase leading-none">Aurem Lens</span>
+                            <span className="text-xl font-serif italic tracking-wide text-theme-text uppercase leading-none">Auremous Lens</span>
                         </div>
                     )}
                     <button
@@ -992,7 +992,7 @@ You are writing a comprehensive textbook chapter.`;
                         { id: 'summaries', label: 'Executive Summary', icon: Layers, color: 'violet' },
                         { id: 'cards', label: 'Flashcards & Maps', icon: CreditCard, color: 'emerald' },
                         { id: 'quiz', label: 'Quiz & Assessment', icon: Trophy, color: 'amber' },
-                        { id: 'socratic', label: 'Socratic Tutor', icon: ShieldAlert, color: 'indigo', disabled: true },
+                        { id: 'socratic', label: 'Socratic Tutor', icon: ShieldAlert, color: 'indigo' },
                         ...(masterpieceContent ? [
                             { id: 'masterpiece', label: 'Definitive Chapter', icon: Crown, color: 'orange' }
                         ] : [])
@@ -1315,21 +1315,16 @@ You are writing a comprehensive textbook chapter.`;
 
                                         {/* Entry to Socratic Room */}
                                         <div className="mt-20 p-12 rounded-[32px] border border-theme-primary/20 bg-theme-surface text-center space-y-6 animate-in slide-in-from-bottom-8 duration-700 shadow-depth relative overflow-hidden">
-                                            <div className="absolute inset-0 z-50 bg-theme-bg/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
-                                                <span className="text-xs font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-500 border border-amber-500/30 mb-2 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
-                                                    Under Development
-                                                </span>
-                                            </div>
-                                            <div className="w-16 h-16 rounded-full border border-theme-primary/20 bg-theme-primary/5 flex items-center justify-center mx-auto relative z-10 opacity-30">
+                                            <div className="w-16 h-16 rounded-full border border-theme-primary/20 bg-theme-primary/5 flex items-center justify-center mx-auto relative z-10 transition-transform duration-500 hover:scale-110">
                                                 <ShieldAlert className="w-8 h-8 text-theme-primary" />
                                             </div>
-                                            <h3 className="text-2xl font-serif italic text-theme-text relative z-10 tracking-wide opacity-30">The Socratic Challenge</h3>
-                                            <p className="text-theme-muted max-w-md mx-auto relative z-10 leading-relaxed font-light opacity-30">You've mastered the content. Now, can you defend it? Enter the Socratic Room to face the Grandmaster.</p>
+                                            <h3 className="text-2xl font-serif italic text-theme-text relative z-10 tracking-wide">The Socratic Challenge</h3>
+                                            <p className="text-theme-muted max-w-md mx-auto relative z-10 leading-relaxed font-light">You've mastered the content. Now, can you defend it? Enter the Socratic Room to face the Grandmaster.</p>
                                             <button
-                                                disabled
-                                                className="relative z-10 mt-4 px-10 py-4 border border-theme-primary/30 text-theme-muted bg-theme-surface font-bold tracking-[0.2em] uppercase text-sm rounded-xl transition-colors duration-300 opacity-50 cursor-not-allowed"
+                                                onClick={() => setActiveSection('socratic')}
+                                                className="relative z-10 mt-4 px-10 py-4 border border-theme-primary/30 text-theme-primary bg-theme-primary/10 hover:bg-theme-primary hover:text-theme-bg font-bold tracking-[0.2em] uppercase text-sm rounded-xl transition-all duration-300"
                                             >
-                                                ENTER SOCRATIC ROOM (PAUSED)
+                                                ENTER SOCRATIC ROOM
                                             </button>
                                         </div>
                                     </div>

@@ -12,7 +12,7 @@ export async function callGroq(messages, model, isVision = false, options = {}) 
 
     // If we detected image contents, switch to a vision model
     if (isVision) {
-        groqModel = "llama-3.2-90b-vision-preview";
+        groqModel = "llama-3.2-11b-vision-preview";
     }
 
     const url = "https://api.groq.com/openai/v1/chat/completions";

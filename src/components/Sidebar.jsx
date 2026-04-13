@@ -1,19 +1,21 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useAssistant } from '../contexts/AssistantContext';
 import { Bot, FileText, LogOut, Moon, Sun, ChevronRight, ChevronLeft, GraduationCap, FilePlus, ClipboardList, Mic, Sparkles, Crown, Eye, Settings, RefreshCw, Video, Trophy, Swords } from './Icons';
 
 const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen, isCollapsed, setIsCollapsed, user, onLogin, onLogout }) => {
     const { isDark } = useTheme();
     const { tier, isPro, isDevMode, triggerUpgradeModal } = useSubscription();
+    const { speak } = useAssistant();
 
     const navItems = [
         { id: 'doubt-solver', label: 'Neural Query', icon: Bot },
-        { id: 'document-study', label: 'Aurem Lens', icon: Eye },
+        { id: 'document-study', label: 'Auremous Lens', icon: Eye },
         { id: 'neural-arena', label: 'Cognitive Colosseum', icon: Swords },
         { id: 'exam-hub', label: 'Competitive Prep', icon: Trophy },
         { id: 'podcast-generator', label: 'Audio Studio', icon: Mic },
-        { id: 'college-compass', label: 'Admissions Pilot', icon: GraduationCap },
+        { id: 'college-compass', label: 'College Compass', icon: GraduationCap },
         { id: 'quiz-assessment', label: 'Adaptive Testing', icon: ClipboardList },
         { id: 'video-generator', label: 'Visual Studio', icon: Video },
     ];
@@ -49,7 +51,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                                 <div>
                                     <span className="font-serif italic font-light text-2xl tracking-wide text-theme-text select-none">
                                         <span className="text-theme-primary not-italic mr-1">✦</span>
-                                        <span className="text-[#c9a55a]">Aurem</span>
+                                        <span className="text-[#c9a55a]">Auremous</span>
                                     </span>
                                     <p className="text-[9px] font-medium text-theme-muted mt-1 tracking-[0.2em] uppercase select-none">EdTech Platform</p>
                                 </div>
@@ -85,6 +87,12 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                                     key={item.id}
                                     onClick={() => {
                                         setCurrentView(item.id);
+                                        // Trigger Assistant Voice Line based on view
+                                        if (item.id === 'doubt-solver') speak(null, 'nav_doubt');
+                                        else if (item.id === 'neural-arena') speak(null, 'nav_arena');
+                                        else if (item.id === 'exam-hub') speak(null, 'nav_exam');
+                                        else speak(null, 'default_click');
+
                                         // Auto-retract sidebar on navigation for both desktop and mobile
                                         setIsSidebarOpen(false); // Mobile
                                         if (window.innerWidth >= 768) {

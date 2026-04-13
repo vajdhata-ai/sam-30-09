@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Video, Play, Clock, Download, Crown, Lock, Sparkles, Film, Zap, Check, ChevronRight, Monitor, Smartphone } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { formatGeminiPayload, retryableFetch, GEMINI_API_URL } from '../utils/api';
 
 const DURATIONS = [
     { id: '30s', label: '30 seconds', desc: 'Quick explainer' },
@@ -21,6 +22,30 @@ const VideoGenerator = () => {
     const { isPro, canUseFeature, triggerUpgradeModal } = useSubscription();
     const [selectedDuration, setSelectedDuration] = useState('1m');
     const [topic, setTopic] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [scriptResult, setScriptResult] = useState('');
+
+    const generateVideoMock = async () => {
+        if (!topic.trim()) return;
+        setIsGenerating(true);
+        try {
+            const systemContent = `You are an expert video script writer for educational content. Write a structured video script for a ${selectedDuration} video explaining "${topic}". Include visual cues in brackets [like this] and narration block. Keep it highly engaging.`;
+            const payload = formatGeminiPayload(`Generate a highly engaging video script about ${topic}`, systemContent);
+            const response = await retryableFetch(GEMINI_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (response.choices && response.choices.length > 0) {
+                setScriptResult(response.choices[0].message.content);
+            } else {
+                setScriptResult("Failed to synthesize video script. Please try another topic.");
+            }
+        } catch (error) {
+            setScriptResult(`AI Synthesis failed: ${error.message}`);
+        }
+        setIsGenerating(false);
+    };
 
     const userTier = isPro ? 'pro' : 'free'; // Simplified — expand when Go tier exists
     const currentTier = TIERS[userTier];
@@ -42,71 +67,81 @@ const VideoGenerator = () => {
                     </p>
                 </div>
 
-                {/* Coming Soon Banner */}
+                {/* Generator Interface */}
                 <div className={`relative rounded-3xl border overflow-hidden bg-theme-surface border-theme-border/20`}>
-                    {/* Gradient background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-theme-primary/5 via-theme-secondary/5 to-theme-primary/5"></div>
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-theme-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
-
-                    <div className="relative p-10 text-center">
-                        {/* Animated icon */}
-                        <div className="relative inline-block mb-6">
-                            <div className={`w-24 h-24 rounded-3xl flex items-center justify-center bg-gradient-to-br from-theme-primary to-theme-secondary shadow-xl shadow-theme-primary/25`}>
-                                <Video className="w-12 h-12 text-theme-bg" />
+                    
+                    {scriptResult ? (
+                        <div className="relative p-10">
+                            <div className="flex justify-between items-center mb-6 border-b border-theme-border/20 pb-4">
+                                <h2 className="text-2xl font-black text-theme-text flex items-center gap-2">
+                                    <Video className="w-6 h-6 text-theme-primary" /> Generated Video Script
+                                </h2>
+                                <button 
+                                    onClick={() => setScriptResult('')}
+                                    className="px-4 py-2 text-sm text-theme-primary border border-theme-primary/20 hover:bg-theme-primary/10 rounded-xl transition-colors"
+                                >
+                                    Create New
+                                </button>
                             </div>
-                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-theme-primary rounded-full flex items-center justify-center animate-pulse">
-                                <Zap className="w-3 h-3 text-theme-bg" />
+                            <div className="bg-theme-bg/50 backdrop-blur-sm border border-theme-border/30 rounded-2xl p-6 custom-scrollbar overflow-y-auto max-h-[500px]">
+                                <pre className="whitespace-pre-wrap font-sans text-theme-text text-sm leading-relaxed">
+                                    {scriptResult}
+                                </pre>
                             </div>
                         </div>
+                    ) : (
+                        <div className="relative p-10 text-center">
+                            <h2 className="text-2xl font-black mb-3 text-theme-text">Create Educational Video</h2>
+                            <p className="text-theme-muted max-w-md mx-auto mb-8">
+                                Enter a topic and we'll generate a comprehensive video script complete with visual cues and narration.
+                            </p>
 
-                        <h2 className="text-2xl font-black mb-3 text-theme-primary">Coming Soon</h2>
-                        <p className="text-theme-muted max-w-md mx-auto mb-8">
-                            Powered by next-gen AI video models, AUREM Video will create stunning educational videos from your study material. We're putting the finishing touches on something incredible.
-                        </p>
+                            {/* Topic Input */}
+                            <div className={`max-w-lg mx-auto rounded-2xl border p-6 mb-8 bg-theme-bg border-theme-border/50`}>
+                                <label className="text-xs font-bold text-theme-muted uppercase tracking-wider mb-3 block text-left">What do you want a video about?</label>
+                                <input
+                                    type="text"
+                                    value={topic}
+                                    onChange={(e) => setTopic(e.target.value)}
+                                    placeholder="e.g. Newton's Third Law of Motion"
+                                    className={`w-full px-4 py-3 rounded-xl border text-sm mb-4 outline-none transition-all focus:ring-2 focus:ring-theme-primary/50 bg-theme-surface border-theme-border/30 text-theme-text placeholder-theme-muted/50`}
+                                />
 
-                        {/* Topic Input (preview of the interface) */}
-                        <div className={`max-w-lg mx-auto rounded-2xl border p-6 mb-8 bg-theme-bg border-theme-border/50`}>
-                            <label className="text-xs font-bold text-theme-muted uppercase tracking-wider mb-3 block text-left">What do you want a video about?</label>
-                            <input
-                                type="text"
-                                value={topic}
-                                onChange={(e) => setTopic(e.target.value)}
-                                placeholder="e.g. Newton's Third Law of Motion"
-                                className={`w-full px-4 py-3 rounded-xl border text-sm mb-4 outline-none transition-all focus:ring-2 focus:ring-theme-primary/50 bg-theme-surface border-theme-border/30 text-theme-text placeholder-theme-muted/50`}
-                            />
+                                {/* Duration Selector */}
+                                <label className="text-xs font-bold text-theme-muted uppercase tracking-wider mb-3 block text-left">Video Length</label>
+                                <div className="grid grid-cols-4 gap-2 mb-5">
+                                    {DURATIONS.map(d => (
+                                        <button
+                                            key={d.id}
+                                            onClick={() => setSelectedDuration(d.id)}
+                                            className={`py-2.5 px-3 rounded-xl text-center transition-all border text-xs font-semibold ${selectedDuration === d.id
+                                                ? 'border-theme-primary bg-theme-primary/10 text-theme-primary ring-1 ring-theme-primary/30'
+                                                : `border-theme-border/20 text-theme-muted hover:border-theme-primary/50`
+                                                }`}
+                                        >
+                                            <div className="font-bold">{d.label}</div>
+                                            <div className="text-[10px] opacity-60 mt-0.5">{d.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
 
-                            {/* Duration Selector */}
-                            <label className="text-xs font-bold text-theme-muted uppercase tracking-wider mb-3 block text-left">Video Length</label>
-                            <div className="grid grid-cols-4 gap-2 mb-5">
-                                {DURATIONS.map(d => (
-                                    <button
-                                        key={d.id}
-                                        onClick={() => setSelectedDuration(d.id)}
-                                        className={`py-2.5 px-3 rounded-xl text-center transition-all border text-xs font-semibold ${selectedDuration === d.id
-                                            ? 'border-theme-primary bg-theme-primary/10 text-theme-primary ring-1 ring-theme-primary/30'
-                                            : `border-theme-border/20 text-theme-muted hover:border-theme-primary/50`
-                                            }`}
-                                    >
-                                        <div className="font-bold">{d.label}</div>
-                                        <div className="text-[10px] opacity-60 mt-0.5">{d.desc}</div>
-                                    </button>
-                                ))}
+                                {/* Generate Button */}
+                                <button
+                                    onClick={generateVideoMock}
+                                    disabled={!topic || isGenerating}
+                                    className={`w-full py-3.5 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg font-bold rounded-xl flex items-center justify-center gap-2 transition-all ${(!topic || isGenerating) ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90 shadow-lg shadow-theme-primary/20'}`}
+                                >
+                                    {isGenerating ? (
+                                        <div className="w-5 h-5 border-2 border-theme-bg border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <Sparkles className="w-4 h-4" />
+                                    )}
+                                    {isGenerating ? 'Synthesizing Video Script...' : 'Generate Video Script'}
+                                </button>
                             </div>
-
-                            {/* Generate Button (disabled) */}
-                            <button
-                                disabled
-                                className="w-full py-3.5 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg font-bold rounded-xl opacity-50 cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                <Sparkles className="w-4 h-4" /> Generate Video — Coming Soon
-                            </button>
                         </div>
-
-                        {/* ETA */}
-                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs bg-theme-primary/10 text-theme-primary border border-theme-primary/20`}>
-                            <Clock className="w-3 h-3" /> Expected launch: Q3 2026
-                        </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Tier Comparison */}

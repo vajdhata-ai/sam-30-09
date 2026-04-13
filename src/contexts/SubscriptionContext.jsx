@@ -13,7 +13,7 @@ const BASIC_LIMITS = {
     'podcast': 1,
     'quiz': 2,
     'mindmap': 2,
-    'flashcards': 3,  // Aurem Lens flashcards - 3 uses per day
+    'flashcards': 3,  // Auremous Lens flashcards - 3 uses per day
     'youtube': 0,     // YouTube video loading - Premium only
     // Doubt Solver and Document Study core are UNLIMITED
 };
@@ -79,28 +79,30 @@ export const SubscriptionProvider = ({ children }) => {
                 } else {
                     // Check localStorage as fallback (and migrate to Firestore)
                     const storedTier = localStorage.getItem(`aurem_tier_${currentUser.uid}`);
-                    if (storedTier === 'pro' || storedTier === 'dev') {
-                        console.log('[Subscription] Migrating from localStorage to Firestore:', storedTier);
-                        // Migrate to Firestore, treating 'dev' as 'pro' for persistence
+                    if (storedTier === 'pro' || storedTier === 'dev' || storedTier === 'go') {
+                        const targetTier = storedTier === 'dev' ? 'pro' : storedTier;
+                        console.log('[Subscription] Migrating from localStorage to Firestore:', targetTier);
+                        // Migrate to Firestore
                         await setDoc(userDocRef, {
-                            subscriptionTier: 'pro',
+                            subscriptionTier: targetTier,
                             upgradedAt: new Date().toISOString()
                         }, { merge: true });
 
                         // Persist locally to survive reload and update state
                         if (currentUser?.uid) {
-                            localStorage.setItem(`aurem_tier_${currentUser.uid}`, 'pro');
+                            localStorage.setItem(`aurem_tier_${currentUser.uid}`, targetTier);
                         }
-                        setTier('pro');
+                        setTier(targetTier);
                     } else {
+                        // If no stored tier exists locally but they had older access, don't brutally overwrite
                         setTier(getDefaultTier());
                     }
                 }
             } catch (error) {
                 console.error('[Subscription] Firestore load error:', error);
                 const storedTier = localStorage.getItem(`aurem_tier_${currentUser.uid}`);
-                if (storedTier === 'pro' || storedTier === 'dev') {
-                    setTier(storedTier);
+                if (storedTier === 'pro' || storedTier === 'dev' || storedTier === 'go') {
+                    setTier(storedTier === 'dev' ? 'pro' : storedTier);
                 } else {
                     setTier(getDefaultTier());
                 }

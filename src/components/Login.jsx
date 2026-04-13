@@ -102,7 +102,7 @@ const Login = ({ onSwitchToSignup }) => {
 
                     <h2 className="text-3xl font-serif italic mb-2 tracking-wide text-theme-text">
                         Welcome to{' '}
-                        <span className="text-theme-primary">Aurem</span>
+                        <span className="text-theme-primary">Auremous</span>
                     </h2>
 
                     <p className="text-sm mb-8 leading-relaxed max-w-[280px] text-theme-muted">
@@ -142,7 +142,7 @@ const Login = ({ onSwitchToSignup }) => {
 
                     {/* Footer */}
                     <div className="mt-10 pt-6 w-full flex justify-between items-center text-[11px] border-t border-theme-border text-theme-muted" style={{ opacity: 0.4 }}>
-                        <span className="font-medium">Aurem v2.0</span>
+                        <span className="font-medium">Auremous v2.0</span>
                         <div className="flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                             <span>Systems Online</span>

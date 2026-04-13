@@ -12,9 +12,9 @@ const features = [
     },
     {
         icon: '🔭',
-        name: 'Aurem Lens',
+        name: 'Auremous Lens',
         tag: 'Visual AI',
-        desc: 'Point your camera at any object, diagram, or text. Aurem Lens instantly identifies and teaches — turning the real world into your classroom.',
+        desc: 'Point your camera at any object, diagram, or text. Auremous Lens instantly identifies and teaches — turning the real world into your classroom.',
         color: 'feature-teal',
     },
     {
@@ -28,7 +28,7 @@ const features = [
         icon: '📄',
         name: 'Document Study',
         tag: 'AI Reading',
-        desc: 'Upload PDFs or paste text. Aurem reads it, creates flashcards, summaries, and lets you ask questions about your own documents.',
+        desc: 'Upload PDFs or paste text. Auremous reads it, creates flashcards, summaries, and lets you ask questions about your own documents.',
         color: 'feature-indigo',
     },
     {
@@ -76,7 +76,7 @@ const testimonials = [
         init: "A",
     },
     {
-        quote: "I uploaded my entire textbook PDF and Aurem turned it into flashcards and a quiz in minutes. Genuinely magical.",
+        quote: "I uploaded my entire textbook PDF and Auremous turned it into flashcards and a quiz in minutes. Genuinely magical.",
         name: "Priya K.",
         role: "MBBS Student",
         init: "P",
@@ -120,7 +120,7 @@ const LandingPageV2 = ({ onGetStarted }) => {
 
             {/* ── NAV ── */}
             <nav className="lp-nav">
-                <div className="lp-logo"><span>✦</span> Aurem</div>
+                <div className="lp-logo"><span>✦</span> Auremous</div>
                 <ul className="lp-nav-links">
                     <li><a href="#features">Features</a></li>
                     <li><a href="#how">How It Works</a></li>
@@ -139,7 +139,7 @@ const LandingPageV2 = ({ onGetStarted }) => {
                     <p className="lp-eyebrow">Your AI-Powered Study Companion</p>
                     <h1>Study smarter.<br />Learn <em>deeper.</em><br />Achieve more.</h1>
                     <p className="lp-hero-sub">
-                        Aurem is an all-in-one AI learning platform with 10+ intelligent tools — from instant doubt solving to vision AI, audio lessons, competitive prep, and personalized assessments.
+                        Auremous is an all-in-one AI learning platform with 10+ intelligent tools — from instant doubt solving to vision AI, audio lessons, competitive prep, and personalized assessments.
                     </p>
                     <div className="lp-hero-actions">
                         <button className="lp-btn-dark" onClick={onGetStarted}>Start Learning Free</button>
@@ -181,7 +181,7 @@ const LandingPageV2 = ({ onGetStarted }) => {
                                 <div className="lp-ui-send-btn">→</div>
                             </div>
                         </div>
-                        <div className="lp-floating-badge">🔭 Aurem Lens <strong>Active</strong></div>
+                        <div className="lp-floating-badge">🔭 Auremous Lens <strong>Active</strong></div>
                         <div className="lp-floating-badge2">📋 Quiz Ready <strong>8 Qs</strong></div>
                     </div>
                 </div>
@@ -190,8 +190,8 @@ const LandingPageV2 = ({ onGetStarted }) => {
             {/* ── MARQUEE ── */}
             <div className="lp-marquee-strip">
                 <div className="lp-marquee-track">
-                    {['Neural Query', 'Aurem Lens', 'Quiz & Assessment', 'Document Study', 'Audio Studio', 'Cognitive Colosseum', 'Competitive Prep', 'Admissions Pilot', 'Adaptive Testing', 'Visual Studio',
-                        'Neural Query', 'Aurem Lens', 'Quiz & Assessment', 'Document Study', 'Audio Studio', 'Cognitive Colosseum', 'Competitive Prep', 'Admissions Pilot', 'Adaptive Testing', 'Visual Studio'
+                    {['Neural Query', 'Auremous Lens', 'Quiz & Assessment', 'Document Study', 'Audio Studio', 'Cognitive Colosseum', 'Competitive Prep', 'Admissions Pilot', 'Adaptive Testing', 'Visual Studio',
+                        'Neural Query', 'Auremous Lens', 'Quiz & Assessment', 'Document Study', 'Audio Studio', 'Cognitive Colosseum', 'Competitive Prep', 'Admissions Pilot', 'Adaptive Testing', 'Visual Studio'
                     ].map((item, i) => (
                         <React.Fragment key={i}>
                             <span>{item}</span>
@@ -269,7 +269,7 @@ const LandingPageV2 = ({ onGetStarted }) => {
                     <div className="lp-step lp-reveal" style={{ transitionDelay: '200ms' }}>
                         <div className="lp-step-num">03</div>
                         <h4>Learn deeply</h4>
-                        <p>Aurem adapts to your pace, tracks your progress, and helps you build lasting understanding.</p>
+                        <p>Auremous adapts to your pace, tracks your progress, and helps you build lasting understanding.</p>
                     </div>
                 </div>
             </section>
@@ -328,8 +328,8 @@ const LandingPageV2 = ({ onGetStarted }) => {
 
             {/* ── FOOTER ── */}
             <footer className="lp-footer">
-                <div className="lp-footer-logo">✦ Aurem</div>
-                <p>© 2026 Aurem — The AI Study Companion. Crafted with care.</p>
+                <div className="lp-footer-logo">✦ Auremous</div>
+                <p>© 2026 Auremous — The AI Study Companion. Crafted with care.</p>
                 <p>Privacy · Terms · Support</p>
             </footer>
 
