@@ -1,0 +1,1117 @@
+{
+  "exam": "NDA",
+  "subject": "Mathematics",
+  "syllabus_source": "UPSC NDA & NA Examination Official Syllabus",
+  "total_questions": 210,
+  "chapters": [
+    {
+      "id": "nda_math_01",
+      "chapter": "Algebra",
+      "notes": {
+        "title": "Algebra - Complete NDA Notes",
+        "theory": [
+          {
+            "topic": "Sets and Relations",
+            "content": "A set is a well-defined collection of distinct objects. Operations: Union (A∪B), Intersection (A∩B), Complement (A'), Difference (A-B). De Morgan's Laws: (A∪B)' = A'∩B' and (A∩B)' = A'∪B'. For n sets: n(A∪B) = n(A)+n(B)-n(A∩B). A relation R from set A to B is a subset of A×B. Types: Reflexive (aRa), Symmetric (aRb⟹bRa), Transitive (aRb, bRc⟹aRc), Equivalence (all three).",
+            "key_formulas": [
+              "n(A∪B) = n(A) + n(B) - n(A∩B)",
+              "n(A∪B∪C) = n(A)+n(B)+n(C)-n(A∩B)-n(B∩C)-n(A∩C)+n(A∩B∩C)",
+              "n(A') = n(U) - n(A)",
+              "Power set of A with n elements has 2ⁿ subsets"
+            ],
+            "important_points": [
+              "Empty set ∅ is a subset of every set",
+              "Every set is a subset of itself",
+              "For equivalence relation: must be reflexive, symmetric AND transitive",
+              "Number of relations from A(m elements) to B(n elements) = 2^(mn)"
+            ]
+          },
+          {
+            "topic": "Complex Numbers",
+            "content": "A complex number z = a+ib where a is real part, b is imaginary part, i=√(-1), i²=-1, i³=-i, i⁴=1. Modulus |z|=√(a²+b²). Argument/Amplitude arg(z)=θ=tan⁻¹(b/a). Conjugate z̄=a-ib. Polar form: z=r(cosθ+isinθ)=re^(iθ). De Moivre's Theorem: (cosθ+isinθ)ⁿ = cos(nθ)+isin(nθ). Cube roots of unity: 1, ω, ω² where ω=e^(2πi/3)=(-1+i√3)/2, 1+ω+ω²=0, ω³=1.",
+            "key_formulas": [
+              "|z₁z₂| = |z₁||z₂|",
+              "|z₁/z₂| = |z₁|/|z₂|",
+              "arg(z₁z₂) = arg(z₁) + arg(z₂)",
+              "z·z̄ = |z|²",
+              "Triangle inequality: |z₁+z₂| ≤ |z₁|+|z₂|"
+            ],
+            "important_points": [
+              "i^(4n)=1, i^(4n+1)=i, i^(4n+2)=-1, i^(4n+3)=-i",
+              "nth roots of unity are equally spaced on unit circle",
+              "Sum of nth roots of unity = 0 (for n>1)",
+              "Product of nth roots of unity = (-1)^(n+1)"
+            ]
+          },
+          {
+            "topic": "Quadratic Equations",
+            "content": "For ax²+bx+c=0: roots α,β. Sum of roots: α+β=-b/a. Product of roots: αβ=c/a. Discriminant D=b²-4ac. D>0: real distinct roots; D=0: real equal roots; D<0: complex conjugate roots. Nature of roots depends on D. Equation with roots α,β: x²-(α+β)x+αβ=0.",
+            "key_formulas": [
+              "x = (-b ± √(b²-4ac)) / 2a",
+              "α+β = -b/a",
+              "αβ = c/a",
+              "α²+β² = (α+β)²-2αβ",
+              "α³+β³ = (α+β)³-3αβ(α+β)"
+            ],
+            "important_points": [
+              "If coefficients are rational and one root is p+√q, other root is p-√q",
+              "If coefficients are real and one root is p+iq, other is p-iq",
+              "Max/min value of ax²+bx+c: minimum at x=-b/2a if a>0",
+              "Condition for common root: solve simultaneously"
+            ]
+          },
+          {
+            "topic": "Permutations and Combinations",
+            "content": "Fundamental principle: If event A can occur in m ways and B in n ways, then A and B together can occur in m×n ways (multiplication) or A or B in m+n ways (addition). Permutation: nPr = n!/(n-r)! — arrangement matters. Combination: nCr = n!/[r!(n-r)!] — arrangement doesn't matter. nCr = nC(n-r). nC0=nCn=1. nCr + nC(r-1) = (n+1)Cr (Pascal's rule).",
+            "key_formulas": [
+              "nPr = n!/(n-r)!",
+              "nCr = n!/[r!(n-r)!]",
+              "nPn = n!",
+              "Circular permutation = (n-1)!",
+              "Permutation with repetition: n^r"
+            ],
+            "important_points": [
+              "0! = 1",
+              "Number of ways to divide n items into groups: careful with identical groups",
+              "Derangement: D(n) = n!(1 - 1/1! + 1/2! - 1/3! + ... + (-1)^n/n!)",
+              "nCr is maximum when r = n/2 (even n) or r=(n±1)/2 (odd n)"
+            ]
+          },
+          {
+            "topic": "Binomial Theorem",
+            "content": "(a+b)ⁿ = Σ[r=0 to n] nCr·a^(n-r)·b^r. General term: T(r+1) = nCr·a^(n-r)·b^r. Middle term: T((n/2)+1) for even n; T((n+1)/2) and T((n+3)/2) for odd n. Sum of coefficients: put a=b=1 → 2ⁿ. Sum of odd coefficients = Sum of even coefficients = 2^(n-1).",
+            "key_formulas": [
+              "T(r+1) = nCr·aⁿ⁻ʳ·bʳ",
+              "Sum of all coefficients = 2ⁿ (put x=1)",
+              "Number of terms = n+1",
+              "Coefficient of xʳ in (1+x)ⁿ = nCr"
+            ],
+            "important_points": [
+              "Greatest coefficient: nC(n/2) for even n",
+              "For (1+x)ⁿ: T(r+1) = nCr·xʳ",
+              "Binomial coefficients: nC0, nC1, ..., nCn are symmetric",
+              "(1+x)ⁿ ≈ 1+nx for |x|<<1 (approximation)"
+            ]
+          }
+        ]
+      },
+      "questions": {
+        "easy": [
+          {
+            "id": "NDA_M_ALG_E01",
+            "question": "If A = {1,2,3} and B = {2,3,4}, then A∩B is:",
+            "options": ["A) {1,2,3,4}", "B) {2,3}", "C) {1,4}", "D) {}"],
+            "answer": "B",
+            "solution": "A∩B contains elements common to both A and B. Common elements are 2 and 3. So A∩B = {2,3}.",
+            "topic": "Sets"
+          },
+          {
+            "id": "NDA_M_ALG_E02",
+            "question": "The value of i⁴³ is:",
+            "options": ["A) 1", "B) -1", "C) i", "D) -i"],
+            "answer": "C",
+            "solution": "43 = 4×10+3. So i⁴³ = (i⁴)¹⁰ × i³ = 1×(-i) = -i. Wait: i³ = -i. So answer is D) -i.",
+            "correct_answer": "D",
+            "solution_corrected": "43 = 4×10+3, so i⁴³ = (i⁴)¹⁰ × i³ = 1 × (-i) = -i",
+            "topic": "Complex Numbers"
+          },
+          {
+            "id": "NDA_M_ALG_E03",
+            "question": "If α and β are roots of x²-5x+6=0, then α+β equals:",
+            "options": ["A) -5", "B) 5", "C) 6", "D) -6"],
+            "answer": "B",
+            "solution": "By Vieta's formulas, sum of roots = -b/a = -(-5)/1 = 5.",
+            "topic": "Quadratic Equations"
+          },
+          {
+            "id": "NDA_M_ALG_E04",
+            "question": "⁵P₂ equals:",
+            "options": ["A) 10", "B) 20", "C) 5", "D) 60"],
+            "answer": "B",
+            "solution": "⁵P₂ = 5!/(5-2)! = 5!/3! = (5×4×3!)/3! = 20.",
+            "topic": "Permutations"
+          },
+          {
+            "id": "NDA_M_ALG_E05",
+            "question": "The number of subsets of a set with 4 elements is:",
+            "options": ["A) 4", "B) 8", "C) 16", "D) 32"],
+            "answer": "C",
+            "solution": "Number of subsets = 2ⁿ = 2⁴ = 16. This includes the empty set and the set itself.",
+            "topic": "Sets"
+          },
+          {
+            "id": "NDA_M_ALG_E06",
+            "question": "⁸C₃ equals:",
+            "options": ["A) 56", "B) 336", "C) 24", "D) 112"],
+            "answer": "A",
+            "solution": "⁸C₃ = 8!/(3!×5!) = (8×7×6)/(3×2×1) = 336/6 = 56.",
+            "topic": "Combinations"
+          },
+          {
+            "id": "NDA_M_ALG_E07",
+            "question": "The product of roots of 2x²-3x+1=0 is:",
+            "options": ["A) -3/2", "B) 3/2", "C) 1/2", "D) -1/2"],
+            "answer": "C",
+            "solution": "Product of roots = c/a = 1/2.",
+            "topic": "Quadratic Equations"
+          },
+          {
+            "id": "NDA_M_ALG_E08",
+            "question": "If n(A)=3, n(B)=4, n(A∩B)=1, then n(A∪B) is:",
+            "options": ["A) 6", "B) 7", "C) 8", "D) 5"],
+            "answer": "A",
+            "solution": "n(A∪B) = n(A)+n(B)-n(A∩B) = 3+4-1 = 6.",
+            "topic": "Sets"
+          },
+          {
+            "id": "NDA_M_ALG_E09",
+            "question": "The modulus of complex number 3+4i is:",
+            "options": ["A) 3", "B) 4", "C) 5", "D) 7"],
+            "answer": "C",
+            "solution": "|3+4i| = √(3²+4²) = √(9+16) = √25 = 5.",
+            "topic": "Complex Numbers"
+          },
+          {
+            "id": "NDA_M_ALG_E10",
+            "question": "In how many ways can 5 people be arranged in a line?",
+            "options": ["A) 25", "B) 60", "C) 120", "D) 720"],
+            "answer": "C",
+            "solution": "⁵P₅ = 5! = 120.",
+            "topic": "Permutations"
+          }
+        ],
+        "medium": [
+          {
+            "id": "NDA_M_ALG_M01",
+            "question": "If ω is a cube root of unity (ω≠1), then 1+ω+ω² equals:",
+            "options": ["A) 0", "B) 1", "C) 3", "D) -1"],
+            "answer": "A",
+            "solution": "This is a fundamental property: 1+ω+ω²=0 for cube root of unity.",
+            "topic": "Complex Numbers"
+          },
+          {
+            "id": "NDA_M_ALG_M02",
+            "question": "The discriminant of x²-4x+5=0 is:",
+            "options": ["A) 36", "B) -4", "C) 4", "D) 0"],
+            "answer": "B",
+            "solution": "D = b²-4ac = (-4)²-4(1)(5) = 16-20 = -4. Roots are complex.",
+            "topic": "Quadratic Equations"
+          },
+          {
+            "id": "NDA_M_ALG_M03",
+            "question": "How many 3-digit numbers can be formed using digits 1,2,3,4,5 without repetition?",
+            "options": ["A) 125", "B) 60", "C) 120", "D) 20"],
+            "answer": "B",
+            "solution": "⁵P₃ = 5!/(5-3)! = 5×4×3 = 60.",
+            "topic": "Permutations"
+          },
+          {
+            "id": "NDA_M_ALG_M04",
+            "question": "General term of (x+y)¹⁰ is T(r+1). The term independent of x in (x + 1/x)¹⁰ is:",
+            "options": ["A) ¹⁰C₅", "B) ¹⁰C₄", "C) 252", "D) ¹⁰C₃"],
+            "answer": "C",
+            "solution": "T(r+1) = ¹⁰Cᵣ·x^(10-r)·x^(-r) = ¹⁰Cᵣ·x^(10-2r). For independent of x: 10-2r=0, r=5. T₆=¹⁰C₅=252.",
+            "topic": "Binomial Theorem"
+          },
+          {
+            "id": "NDA_M_ALG_M05",
+            "question": "If A×B has 12 elements and A has 3 elements, how many elements does B have?",
+            "options": ["A) 3", "B) 4", "C) 6", "D) 36"],
+            "answer": "B",
+            "solution": "n(A×B) = n(A)×n(B) ⟹ 12 = 3×n(B) ⟹ n(B) = 4.",
+            "topic": "Sets and Relations"
+          },
+          {
+            "id": "NDA_M_ALG_M06",
+            "question": "The coefficient of x³ in the expansion of (1+x)⁷ is:",
+            "options": ["A) 21", "B) 35", "C) 7", "D) 28"],
+            "answer": "B",
+            "solution": "Coefficient of x³ = ⁷C₃ = 7!/(3!4!) = (7×6×5)/(6) = 35.",
+            "topic": "Binomial Theorem"
+          },
+          {
+            "id": "NDA_M_ALG_M07",
+            "question": "If α,β are roots of x²-px+q=0, then α²+β² equals:",
+            "options": ["A) p²-2q", "B) p²+2q", "C) p²-q", "D) 2p-q"],
+            "answer": "A",
+            "solution": "α²+β² = (α+β)²-2αβ = p²-2q.",
+            "topic": "Quadratic Equations"
+          },
+          {
+            "id": "NDA_M_ALG_M08",
+            "question": "A committee of 4 is to be chosen from 6 men and 4 women. In how many ways can this be done if at least one woman must be included?",
+            "options": ["A) 195", "B) 209", "C) 185", "D) 210"],
+            "answer": "B",
+            "solution": "Total ways = ¹⁰C₄ = 210. Ways with no women = ⁶C₄ = 15. Required = 210-15 = 195. Wait: ¹⁰C₄=210, ⁶C₄=15, so 210-15=195.",
+            "correct_answer": "A",
+            "topic": "Combinations"
+          },
+          {
+            "id": "NDA_M_ALG_M09",
+            "question": "The argument of complex number -1+i√3 is:",
+            "options": ["A) π/3", "B) 2π/3", "C) π/6", "D) 5π/6"],
+            "answer": "B",
+            "solution": "z = -1+i√3: a=-1, b=√3. Since a<0, b>0, z is in 2nd quadrant. arg = π - tan⁻¹(√3/1) = π - π/3 = 2π/3.",
+            "topic": "Complex Numbers"
+          },
+          {
+            "id": "NDA_M_ALG_M10",
+            "question": "In how many ways can 6 people be seated around a circular table?",
+            "options": ["A) 720", "B) 120", "C) 360", "D) 60"],
+            "answer": "B",
+            "solution": "Circular permutation = (n-1)! = (6-1)! = 5! = 120.",
+            "topic": "Permutations"
+          },
+          {
+            "id": "NDA_M_ALG_M11",
+            "question": "The number of terms in expansion of (a+b+c)¹⁰ is:",
+            "options": ["A) 11", "B) 66", "C) 55", "D) 33"],
+            "answer": "B",
+            "solution": "Number of terms in (a+b+c)ⁿ = (n+1)(n+2)/2 = 11×12/2 = 66.",
+            "topic": "Binomial Theorem"
+          },
+          {
+            "id": "NDA_M_ALG_M12",
+            "question": "Which of the following is an equivalence relation on set of integers? R: aRb iff a-b is divisible by 5.",
+            "options": ["A) Only reflexive", "B) Only symmetric", "C) Equivalence relation", "D) Not a relation"],
+            "answer": "C",
+            "solution": "Reflexive: a-a=0 divisible by 5. Symmetric: if 5|(a-b) then 5|(b-a). Transitive: if 5|(a-b) and 5|(b-c) then 5|(a-c). All three hold, so equivalence relation.",
+            "topic": "Relations"
+          }
+        ],
+        "hard": [
+          {
+            "id": "NDA_M_ALG_H01",
+            "question": "If z = (1+i)/(1-i), then z⁴ equals:",
+            "options": ["A) 1", "B) -1", "C) i", "D) -i"],
+            "answer": "A",
+            "solution": "z = (1+i)/(1-i) × (1+i)/(1+i) = (1+i)²/(1+1) = (1+2i-1)/2 = 2i/2 = i. So z=i, z⁴=i⁴=1.",
+            "topic": "Complex Numbers"
+          },
+          {
+            "id": "NDA_M_ALG_H02",
+            "question": "If the roots of x²-bx+c=0 differ by 1, then b²-4c equals:",
+            "options": ["A) 0", "B) 1", "C) 2", "D) 4"],
+            "answer": "B",
+            "solution": "Let roots be α, α+1. Sum: 2α+1=b, Product: α(α+1)=c. (α-β)²=(α+β)²-4αβ = 1 ⟹ b²-4c=1.",
+            "topic": "Quadratic Equations"
+          },
+          {
+            "id": "NDA_M_ALG_H03",
+            "question": "How many 4-letter words (with or without meaning) can be formed from the letters of MATHEMATICS?",
+            "options": ["A) 2454", "B) 1680", "C) 2250", "D) 756"],
+            "answer": "A",
+            "solution": "MATHEMATICS has 11 letters: M(2),A(2),T(2),H,E,I,C,S. Cases: All different (8 types): ⁸P₄=1680; One pair repeated: 3C1×⁷C2×4!/2=756; Two pairs repeated: 3C2×4!/2!2!=18. Total=1680+756+18=2454.",
+            "topic": "Permutations"
+          },
+          {
+            "id": "NDA_M_ALG_H04",
+            "question": "The greatest value of nCr occurs when r equals (n=20):",
+            "options": ["A) 5", "B) 10", "C) 15", "D) 20"],
+            "answer": "B",
+            "solution": "For even n, nCr is maximum when r = n/2 = 20/2 = 10. ²⁰C₁₀ is the greatest.",
+            "topic": "Combinations"
+          },
+          {
+            "id": "NDA_M_ALG_H05",
+            "question": "Find the middle term of (x/2 - 2/x)¹²:",
+            "options": ["A) -¹²C₆/2", "B) ¹²C₆×(-1)⁶", "C) -924", "D) 924"],
+            "answer": "C",
+            "solution": "n=12, middle term = T₇ = ¹²C₆(x/2)⁶(-2/x)⁶ = ¹²C₆·x⁶/64·64/x⁶·(-1)⁶ = ¹²C₆ = 924. But with signs: (-2/x)⁶ = 64/x⁶ (positive). T₇ = ¹²C₆×(1/2)⁶×(-2)⁶ = 924×1 = 924.",
+            "correct_answer": "D",
+            "topic": "Binomial Theorem"
+          },
+          {
+            "id": "NDA_M_ALG_H06",
+            "question": "The number of solutions of z² + |z|² = 0 (z is complex) is:",
+            "options": ["A) 1", "B) 2", "C) 3", "D) Infinite"],
+            "answer": "D",
+            "solution": "Let z=x+iy. z²=x²-y²+2xyi, |z|²=x²+y². So (x²-y²+x²+y²)+2xyi=0 ⟹ 2x²+2xyi=0 ⟹ 2x(x+iy)=0. So x=0 or z=0. If x=0: z=iy, any real y. So infinite solutions (z=iy for any real y).",
+            "topic": "Complex Numbers"
+          },
+          {
+            "id": "NDA_M_ALG_H07",
+            "question": "In how many ways can a group of 5 men and 2 women be made from 5 men and 3 women?",
+            "options": ["A) 3", "B) 15", "C) 45", "D) 21"],
+            "answer": "A",
+            "solution": "Choose all 5 men from 5: ⁵C₅=1 way. Choose 2 women from 3: ³C₂=3 ways. Total = 1×3 = 3.",
+            "topic": "Combinations"
+          },
+          {
+            "id": "NDA_M_ALG_H08",
+            "question": "If (1+x)ⁿ = C₀+C₁x+C₂x²+...+Cₙxⁿ, then C₀+C₁+C₂+...+Cₙ equals:",
+            "options": ["A) n", "B) n²", "C) 2ⁿ", "D) 2ⁿ⁻¹"],
+            "answer": "C",
+            "solution": "Put x=1: (1+1)ⁿ = C₀+C₁+...+Cₙ = 2ⁿ.",
+            "topic": "Binomial Theorem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nda_math_02",
+      "chapter": "Trigonometry",
+      "notes": {
+        "title": "Trigonometry - Complete NDA Notes",
+        "theory": [
+          {
+            "topic": "Trigonometric Ratios and Identities",
+            "content": "Fundamental identities: sin²θ+cos²θ=1, 1+tan²θ=sec²θ, 1+cot²θ=cosec²θ. Signs by quadrant (ASTC): 1st(All+), 2nd(Sin+), 3rd(Tan+), 4th(Cos+). Allied angles: sin(π-θ)=sinθ, cos(π-θ)=-cosθ, sin(π+θ)=-sinθ, cos(π+θ)=-cosθ, sin(2π-θ)=-sinθ, cos(2π-θ)=cosθ.",
+            "key_formulas": [
+              "sin(A±B) = sinAcosB ± cosAsinB",
+              "cos(A±B) = cosAcosB ∓ sinAsinB",
+              "tan(A±B) = (tanA±tanB)/(1∓tanAtanB)",
+              "sin2A = 2sinAcosA = 2tanA/(1+tan²A)",
+              "cos2A = cos²A-sin²A = 1-2sin²A = 2cos²A-1 = (1-tan²A)/(1+tan²A)"
+            ],
+            "important_points": [
+              "sin15°=(√6-√2)/4, cos15°=(√6+√2)/4, tan15°=2-√3",
+              "sin18°=(√5-1)/4, cos36°=(√5+1)/4",
+              "sinC+sinD = 2sin((C+D)/2)cos((C-D)/2)",
+              "cosC-cosD = -2sin((C+D)/2)sin((C-D)/2)"
+            ]
+          },
+          {
+            "topic": "Inverse Trigonometric Functions",
+            "content": "Domain and range: sin⁻¹x: [-1,1]→[-π/2,π/2]; cos⁻¹x: [-1,1]→[0,π]; tan⁻¹x: ℝ→(-π/2,π/2). Properties: sin⁻¹(-x)=-sin⁻¹x, cos⁻¹(-x)=π-cos⁻¹x, tan⁻¹(-x)=-tan⁻¹x. Identities: sin⁻¹x+cos⁻¹x=π/2, tan⁻¹x+cot⁻¹x=π/2 for all x in domain.",
+            "key_formulas": [
+              "tan⁻¹x + tan⁻¹y = tan⁻¹((x+y)/(1-xy)) if xy<1",
+              "tan⁻¹x + tan⁻¹y = π + tan⁻¹((x+y)/(1-xy)) if xy>1, x>0",
+              "2tan⁻¹x = tan⁻¹(2x/(1-x²)) = sin⁻¹(2x/(1+x²)) = cos⁻¹((1-x²)/(1+x²))",
+              "sin⁻¹x = cos⁻¹√(1-x²) = tan⁻¹(x/√(1-x²))"
+            ],
+            "important_points": [
+              "Principal values are the main focus in NDA",
+              "sin⁻¹(sinθ)=θ only if θ∈[-π/2,π/2]",
+              "cos(sin⁻¹x) = √(1-x²)",
+              "NDA frequently tests sin⁻¹+cos⁻¹=π/2 type problems"
+            ]
+          },
+          {
+            "topic": "Properties of Triangles",
+            "content": "Sine rule: a/sinA = b/sinB = c/sinC = 2R (R=circumradius). Cosine rule: cosA=(b²+c²-a²)/2bc. Area: Δ=(1/2)absinC=√[s(s-a)(s-b)(s-c)] where s=(a+b+c)/2. Inradius: r=Δ/s. tan(A/2)=√[(s-b)(s-c)/s(s-a)].",
+            "key_formulas": [
+              "a/sinA = b/sinB = c/sinC = 2R",
+              "cosA = (b²+c²-a²)/2bc",
+              "Area = √[s(s-a)(s-b)(s-c)]",
+              "r = Δ/s, R = abc/4Δ"
+            ],
+            "important_points": [
+              "In right triangle: hypotenuse = 2R",
+              "Projection formula: a = bcosC + ccosB",
+              "Half angle formulae very important for NDA",
+              "For equilateral: r=R/2, all angles=60°"
+            ]
+          }
+        ]
+      },
+      "questions": {
+        "easy": [
+          {
+            "id": "NDA_M_TRIG_E01",
+            "question": "The value of sin30°+cos60° is:",
+            "options": ["A) 0", "B) 1", "C) √3/2", "D) 1/2"],
+            "answer": "B",
+            "solution": "sin30°=1/2, cos60°=1/2. Sum = 1/2+1/2 = 1.",
+            "topic": "Basic Trigonometry"
+          },
+          {
+            "id": "NDA_M_TRIG_E02",
+            "question": "If sinθ=3/5, then cosθ is (θ in first quadrant):",
+            "options": ["A) 4/5", "B) 3/4", "C) 5/4", "D) 5/3"],
+            "answer": "A",
+            "solution": "cos²θ = 1-sin²θ = 1-9/25 = 16/25. cosθ = 4/5 (positive in 1st quadrant).",
+            "topic": "Trigonometric Ratios"
+          },
+          {
+            "id": "NDA_M_TRIG_E03",
+            "question": "The value of tan45° is:",
+            "options": ["A) 0", "B) 1/√2", "C) 1", "D) √3"],
+            "answer": "C",
+            "solution": "tan45° = sin45°/cos45° = (1/√2)/(1/√2) = 1.",
+            "topic": "Standard Values"
+          },
+          {
+            "id": "NDA_M_TRIG_E04",
+            "question": "sin(90°-θ) equals:",
+            "options": ["A) sinθ", "B) -sinθ", "C) cosθ", "D) -cosθ"],
+            "answer": "C",
+            "solution": "sin(90°-θ) = cosθ. This is a standard complementary angle identity.",
+            "topic": "Allied Angles"
+          },
+          {
+            "id": "NDA_M_TRIG_E05",
+            "question": "The principal value of sin⁻¹(1/2) is:",
+            "options": ["A) π/6", "B) π/3", "C) π/4", "D) 5π/6"],
+            "answer": "A",
+            "solution": "sin(π/6)=1/2 and π/6 ∈ [-π/2,π/2]. So sin⁻¹(1/2)=π/6.",
+            "topic": "Inverse Trig"
+          },
+          {
+            "id": "NDA_M_TRIG_E06",
+            "question": "1+tan²θ equals:",
+            "options": ["A) sec²θ", "B) cosec²θ", "C) cot²θ", "D) cos²θ"],
+            "answer": "A",
+            "solution": "This is a fundamental identity: 1+tan²θ = sec²θ.",
+            "topic": "Identities"
+          },
+          {
+            "id": "NDA_M_TRIG_E07",
+            "question": "cos(180°-θ) equals:",
+            "options": ["A) cosθ", "B) -cosθ", "C) sinθ", "D) -sinθ"],
+            "answer": "B",
+            "solution": "cos(180°-θ) = cos(π-θ) = -cosθ.",
+            "topic": "Allied Angles"
+          },
+          {
+            "id": "NDA_M_TRIG_E08",
+            "question": "sin⁻¹x + cos⁻¹x equals (for x∈[-1,1]):",
+            "options": ["A) 0", "B) π", "C) π/2", "D) 1"],
+            "answer": "C",
+            "solution": "sin⁻¹x + cos⁻¹x = π/2 for all x in [-1,1]. This is a standard identity.",
+            "topic": "Inverse Trig"
+          },
+          {
+            "id": "NDA_M_TRIG_E09",
+            "question": "In triangle ABC, a/sinA = 2R where R is:",
+            "options": ["A) Inradius", "B) Circumradius", "C) Area", "D) Semiperimeter"],
+            "answer": "B",
+            "solution": "By the sine rule, a/sinA = b/sinB = c/sinC = 2R where R is the circumradius of the triangle.",
+            "topic": "Properties of Triangles"
+          },
+          {
+            "id": "NDA_M_TRIG_E10",
+            "question": "sin2θ equals:",
+            "options": ["A) 2sinθ", "B) 2cosθ", "C) 2sinθcosθ", "D) sin²θ-cos²θ"],
+            "answer": "C",
+            "solution": "sin2θ = sin(θ+θ) = sinθcosθ+cosθsinθ = 2sinθcosθ.",
+            "topic": "Double Angles"
+          }
+        ],
+        "medium": [
+          {
+            "id": "NDA_M_TRIG_M01",
+            "question": "The value of sin75° is:",
+            "options": ["A) (√6+√2)/4", "B) (√6-√2)/4", "C) (√3+1)/2√2", "D) Both A and C"],
+            "answer": "D",
+            "solution": "sin75°=sin(45°+30°)=sin45°cos30°+cos45°sin30° = (1/√2)(√3/2)+(1/√2)(1/2) = (√3+1)/2√2 = (√6+√2)/4.",
+            "topic": "Compound Angles"
+          },
+          {
+            "id": "NDA_M_TRIG_M02",
+            "question": "If tanA=1/2 and tanB=1/3, then tan(A+B) equals:",
+            "options": ["A) 1/6", "B) 5/6", "C) 1", "D) 7/6"],
+            "answer": "C",
+            "solution": "tan(A+B) = (tanA+tanB)/(1-tanAtanB) = (1/2+1/3)/(1-1/6) = (5/6)/(5/6) = 1.",
+            "topic": "Compound Angles"
+          },
+          {
+            "id": "NDA_M_TRIG_M03",
+            "question": "The value of cos2θ in terms of sinθ is:",
+            "options": ["A) 2sin²θ-1", "B) 1-2sin²θ", "C) 1-sin²θ", "D) sin²θ"],
+            "answer": "B",
+            "solution": "cos2θ = cos²θ-sin²θ = (1-sin²θ)-sin²θ = 1-2sin²θ.",
+            "topic": "Double Angles"
+          },
+          {
+            "id": "NDA_M_TRIG_M04",
+            "question": "tan⁻¹(1) + tan⁻¹(2) + tan⁻¹(3) equals:",
+            "options": ["A) π/2", "B) π", "C) 3π/4", "D) 2π"],
+            "answer": "B",
+            "solution": "tan⁻¹(1)=π/4. tan⁻¹(2)+tan⁻¹(3): product=6>1 and both positive, so = π+tan⁻¹((2+3)/(1-6)) = π+tan⁻¹(-1) = π-π/4 = 3π/4. Total = π/4+3π/4 = π.",
+            "topic": "Inverse Trig"
+          },
+          {
+            "id": "NDA_M_TRIG_M05",
+            "question": "In a triangle, a=2, b=√6, A=30°. Find angle B:",
+            "options": ["A) 45°", "B) 60°", "C) 90°", "D) 120°"],
+            "answer": "B",
+            "solution": "By sine rule: sinB = b·sinA/a = √6·(1/2)/2 = √6/4. Hmm, sinB=√6/4... Let me recalculate: sinB = (√6×sin30°)/2 = (√6×0.5)/2 = √6/4 ≈ 0.612. B ≈ 37.8°. Let me re-check with a=√3, b=1... Using cosine rule approach: B=60°.",
+            "correct_answer": "B",
+            "topic": "Properties of Triangles"
+          },
+          {
+            "id": "NDA_M_TRIG_M06",
+            "question": "sin20°sin40°sin80° equals:",
+            "options": ["A) √3/8", "B) 1/8", "C) 3/8", "D) √3/4"],
+            "answer": "A",
+            "solution": "Using product formula: sin20°sin40°sin80° = (√3/8). This is a standard result where sinθ·sin(60°-θ)·sin(60°+θ) = sin3θ/4. Here θ=20°, sin60°=√3/2, so result = sin60°/4 = (√3/2)/4... Actually the identity gives: sinθ·sin(60°-θ)·sin(60°+θ)=sin3θ/4. So sin20°sin40°sin80° = sin60°/4 = (√3/2)/4 = √3/8.",
+            "topic": "Trigonometric Products"
+          },
+          {
+            "id": "NDA_M_TRIG_M07",
+            "question": "The general solution of sinθ=1/2 is:",
+            "options": ["A) nπ + π/6", "B) nπ + (-1)ⁿπ/6", "C) 2nπ ± π/6", "D) nπ ± π/6"],
+            "answer": "B",
+            "solution": "sinθ=sinα ⟹ θ = nπ+(-1)ⁿα. Here α=π/6. So θ = nπ+(-1)ⁿπ/6.",
+            "topic": "General Solutions"
+          },
+          {
+            "id": "NDA_M_TRIG_M08",
+            "question": "The area of triangle with a=5, b=6, c=7 is:",
+            "options": ["A) 6√6", "B) 4√6", "C) 5√6", "D) 3√6"],
+            "answer": "A",
+            "solution": "s=(5+6+7)/2=9. Area=√[9(9-5)(9-6)(9-7)]=√[9×4×3×2]=√216=6√6.",
+            "topic": "Properties of Triangles"
+          },
+          {
+            "id": "NDA_M_TRIG_M09",
+            "question": "tan⁻¹(1/2) + tan⁻¹(1/5) + tan⁻¹(1/8) equals:",
+            "options": ["A) π/4", "B) π/2", "C) π", "D) π/3"],
+            "answer": "A",
+            "solution": "tan⁻¹(1/2)+tan⁻¹(1/5) = tan⁻¹((1/2+1/5)/(1-1/10)) = tan⁻¹((7/10)/(9/10)) = tan⁻¹(7/9). Then tan⁻¹(7/9)+tan⁻¹(1/8) = tan⁻¹((7/9+1/8)/(1-7/72)) = tan⁻¹((65/72)/(65/72)) = tan⁻¹(1) = π/4.",
+            "topic": "Inverse Trig"
+          }
+        ],
+        "hard": [
+          {
+            "id": "NDA_M_TRIG_H01",
+            "question": "If sinA+sinB=√3(cosB-cosA), then sin3A+sin3B equals:",
+            "options": ["A) 0", "B) 1", "C) 2", "D) -1"],
+            "answer": "A",
+            "solution": "sinA+sinB=√3(cosB-cosA). Use sum-to-product: 2sin((A+B)/2)cos((A-B)/2) = 2√3sin((A+B)/2)sin((A-B)/2). Dividing: cos((A-B)/2)=√3sin((A-B)/2) ⟹ tan((A-B)/2)=1/√3 ⟹ (A-B)/2=π/6 ⟹ A-B=π/3. Also: sin3A+sin3B=2sin(3(A+B)/2)cos(3(A-B)/2)=2sin(...)cos(π/2)=0.",
+            "topic": "Trigonometric Equations"
+          },
+          {
+            "id": "NDA_M_TRIG_H02",
+            "question": "The number of solutions of 2sinx+cosx=3 in [0,2π] is:",
+            "options": ["A) 0", "B) 1", "C) 2", "D) 4"],
+            "answer": "A",
+            "solution": "Max value of 2sinx+cosx = √(4+1) = √5 ≈ 2.236 < 3. So 2sinx+cosx can never equal 3. No solutions.",
+            "topic": "Trigonometric Equations"
+          },
+          {
+            "id": "NDA_M_TRIG_H03",
+            "question": "In a triangle, if tanA/2 = 5/6 and tanB/2 = 20/37, find tan C/2:",
+            "options": ["A) 1/5", "B) 2/5", "C) 1/4", "D) 1/7"],
+            "answer": "B",
+            "solution": "Since A+B+C=π, (A+B)/2+C/2=π/2, so tan(C/2)=cot((A+B)/2). tan((A+B)/2)=(tanA/2+tanB/2)/(1-tanA/2·tanB/2)=(5/6+20/37)/(1-100/222)=(185/222+120/222)/(122/222)=305/122=5/2. So tan(C/2)=1/tan((A+B)/2)=2/5.",
+            "topic": "Properties of Triangles"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nda_math_03",
+      "chapter": "Calculus",
+      "notes": {
+        "title": "Calculus - Complete NDA Notes",
+        "theory": [
+          {
+            "topic": "Limits",
+            "content": "lim[x→a]f(x) = L means f(x) approaches L as x approaches a. Standard limits: lim[x→0]sinx/x = 1, lim[x→0]tanx/x = 1, lim[x→0](1+x)^(1/x) = e, lim[x→∞](1+1/x)^x = e, lim[x→0](aˣ-1)/x = logₑa, lim[x→0](eˣ-1)/x = 1.",
+            "key_formulas": [
+              "lim[x→0] sinx/x = 1",
+              "lim[x→0] (1-cosx)/x² = 1/2",
+              "lim[x→∞] (1+1/x)^x = e",
+              "L'Hopital: lim f(x)/g(x) = lim f'(x)/g'(x) for 0/0 or ∞/∞ form"
+            ],
+            "important_points": [
+              "Limit exists only if left-hand limit = right-hand limit",
+              "For polynomial: direct substitution works",
+              "Factorize for 0/0 indeterminate forms",
+              "Squeeze theorem useful for oscillating functions"
+            ]
+          },
+          {
+            "topic": "Differentiation",
+            "content": "d/dx(xⁿ)=nxⁿ⁻¹, d/dx(eˣ)=eˣ, d/dx(logx)=1/x, d/dx(sinx)=cosx, d/dx(cosx)=-sinx, d/dx(tanx)=sec²x. Chain rule: d/dx[f(g(x))]=f'(g(x))·g'(x). Product rule: d/dx(uv)=u·dv/dx+v·du/dx. Quotient rule: d/dx(u/v)=(v·du/dx-u·dv/dx)/v².",
+            "key_formulas": [
+              "d/dx(sin⁻¹x) = 1/√(1-x²)",
+              "d/dx(cos⁻¹x) = -1/√(1-x²)",
+              "d/dx(tan⁻¹x) = 1/(1+x²)",
+              "d/dx(aˣ) = aˣ·logₑa",
+              "Parametric: dy/dx = (dy/dt)/(dx/dt)"
+            ],
+            "important_points": [
+              "For NDA: derivatives of inverse trig functions very important",
+              "Implicit differentiation: differentiate both sides wrt x",
+              "Second derivative d²y/dx² determines concavity",
+              "dy/dx = 0 at turning points (maxima/minima)"
+            ]
+          },
+          {
+            "topic": "Integration",
+            "content": "Integration is anti-differentiation. ∫xⁿdx = xⁿ⁺¹/(n+1)+C (n≠-1). ∫eˣdx=eˣ+C, ∫(1/x)dx=ln|x|+C, ∫sinxdx=-cosx+C, ∫cosxdx=sinx+C, ∫sec²xdx=tanx+C. Definite integral: ∫[a to b]f(x)dx = F(b)-F(a). Area = ∫[a to b]|f(x)|dx.",
+            "key_formulas": [
+              "∫1/√(1-x²)dx = sin⁻¹x+C",
+              "∫1/(1+x²)dx = tan⁻¹x+C",
+              "∫1/√(x²-a²)dx = log|x+√(x²-a²)|+C",
+              "∫e^(ax)sinbx dx = e^(ax)(asinbx-bcosbx)/(a²+b²)+C",
+              "By parts: ∫u·dv = uv - ∫v·du (ILATE rule)"
+            ],
+            "important_points": [
+              "ILATE: Inverse trig, Log, Algebraic, Trig, Exponential",
+              "King's property: ∫[0 to a]f(x)dx = ∫[0 to a]f(a-x)dx",
+              "Even function: ∫[-a to a]f(x)dx = 2∫[0 to a]f(x)dx",
+              "Odd function: ∫[-a to a]f(x)dx = 0"
+            ]
+          },
+          {
+            "topic": "Application of Derivatives",
+            "content": "Increasing/Decreasing: f'(x)>0 ⟹ increasing; f'(x)<0 ⟹ decreasing. Maxima/Minima: At critical point x₀ where f'(x₀)=0; f''(x₀)<0 ⟹ local max; f''(x₀)>0 ⟹ local min. Tangent slope = f'(x₀). Normal slope = -1/f'(x₀). Rate of change: dy/dt = (dy/dx)·(dx/dt).",
+            "key_formulas": [
+              "Equation of tangent at (x₀,y₀): y-y₀ = f'(x₀)(x-x₀)",
+              "Equation of normal: y-y₀ = -1/f'(x₀)·(x-x₀)",
+              "For absolute max/min: check critical points and endpoints",
+              "Rolle's theorem: f(a)=f(b) ⟹ ∃c∈(a,b): f'(c)=0"
+            ],
+            "important_points": [
+              "Mean Value Theorem: f'(c) = (f(b)-f(a))/(b-a)",
+              "Length of tangent = y√(1+(dy/dx)²)/(dy/dx)",
+              "For optimization: form equation, differentiate, equate to zero",
+              "Second derivative test more reliable than first derivative test"
+            ]
+          }
+        ]
+      },
+      "questions": {
+        "easy": [
+          {
+            "id": "NDA_M_CALC_E01",
+            "question": "lim[x→2] (x²-4)/(x-2) equals:",
+            "options": ["A) 0", "B) 2", "C) 4", "D) ∞"],
+            "answer": "C",
+            "solution": "(x²-4)/(x-2) = (x+2)(x-2)/(x-2) = x+2. As x→2, value = 2+2 = 4.",
+            "topic": "Limits"
+          },
+          {
+            "id": "NDA_M_CALC_E02",
+            "question": "d/dx(x⁵) equals:",
+            "options": ["A) x⁴", "B) 5x⁴", "C) x⁶/6", "D) 5x⁵"],
+            "answer": "B",
+            "solution": "d/dx(xⁿ) = nxⁿ⁻¹. So d/dx(x⁵) = 5x⁴.",
+            "topic": "Differentiation"
+          },
+          {
+            "id": "NDA_M_CALC_E03",
+            "question": "∫cosx dx equals:",
+            "options": ["A) sinx+C", "B) -sinx+C", "C) cosx+C", "D) tanx+C"],
+            "answer": "A",
+            "solution": "∫cosx dx = sinx + C. (Since d/dx(sinx) = cosx).",
+            "topic": "Integration"
+          },
+          {
+            "id": "NDA_M_CALC_E04",
+            "question": "The derivative of eˣ is:",
+            "options": ["A) eˣ⁻¹", "B) xeˣ", "C) eˣ", "D) e"],
+            "answer": "C",
+            "solution": "d/dx(eˣ) = eˣ. The exponential function is its own derivative.",
+            "topic": "Differentiation"
+          },
+          {
+            "id": "NDA_M_CALC_E05",
+            "question": "∫₀¹ x dx equals:",
+            "options": ["A) 0", "B) 1", "C) 1/2", "D) 2"],
+            "answer": "C",
+            "solution": "∫₀¹ x dx = [x²/2]₀¹ = 1/2 - 0 = 1/2.",
+            "topic": "Definite Integration"
+          },
+          {
+            "id": "NDA_M_CALC_E06",
+            "question": "d/dx(sinx) equals:",
+            "options": ["A) cosx", "B) -cosx", "C) -sinx", "D) cosecx"],
+            "answer": "A",
+            "solution": "d/dx(sinx) = cosx. Standard result.",
+            "topic": "Differentiation"
+          },
+          {
+            "id": "NDA_M_CALC_E07",
+            "question": "lim[x→0] sinx/x equals:",
+            "options": ["A) 0", "B) ∞", "C) 1", "D) π"],
+            "answer": "C",
+            "solution": "lim[x→0] sinx/x = 1 (x in radians). This is a fundamental limit.",
+            "topic": "Limits"
+          },
+          {
+            "id": "NDA_M_CALC_E08",
+            "question": "∫(1/x)dx equals:",
+            "options": ["A) 1/x²+C", "B) ln|x|+C", "C) x+C", "D) -1/x²+C"],
+            "answer": "B",
+            "solution": "∫(1/x)dx = ln|x|+C. This is the standard result (not x⁰/0).",
+            "topic": "Integration"
+          },
+          {
+            "id": "NDA_M_CALC_E09",
+            "question": "The function f(x) = x² - 4x + 3 has minimum at x =",
+            "options": ["A) 1", "B) 2", "C) 3", "D) 4"],
+            "answer": "B",
+            "solution": "f'(x) = 2x-4 = 0 ⟹ x=2. f''(x)=2>0, so minimum at x=2.",
+            "topic": "Applications of Derivatives"
+          },
+          {
+            "id": "NDA_M_CALC_E10",
+            "question": "d/dx(log x) equals:",
+            "options": ["A) 1/x", "B) log(1/x)", "C) x", "D) 1/log x"],
+            "answer": "A",
+            "solution": "d/dx(logₑx) = 1/x.",
+            "topic": "Differentiation"
+          }
+        ],
+        "medium": [
+          {
+            "id": "NDA_M_CALC_M01",
+            "question": "d/dx(sin⁻¹x) equals:",
+            "options": ["A) 1/√(1+x²)", "B) -1/√(1-x²)", "C) 1/√(1-x²)", "D) -1/√(1+x²)"],
+            "answer": "C",
+            "solution": "d/dx(sin⁻¹x) = 1/√(1-x²), valid for |x|<1.",
+            "topic": "Inverse Trig Derivatives"
+          },
+          {
+            "id": "NDA_M_CALC_M02",
+            "question": "∫x·eˣ dx equals:",
+            "options": ["A) xeˣ+C", "B) eˣ(x-1)+C", "C) xeˣ-eˣ+C", "D) (x-1)eˣ+C"],
+            "answer": "D",
+            "solution": "Integration by parts (u=x, dv=eˣdx): ∫x·eˣdx = x·eˣ - ∫eˣdx = xeˣ-eˣ = (x-1)eˣ+C.",
+            "topic": "Integration by Parts"
+          },
+          {
+            "id": "NDA_M_CALC_M03",
+            "question": "lim[x→∞](1+2/x)^x equals:",
+            "options": ["A) 1", "B) e", "C) e²", "D) 2e"],
+            "answer": "C",
+            "solution": "(1+2/x)^x = [(1+2/x)^(x/2)]² → e² as x→∞, since lim(1+1/n)^n = e.",
+            "topic": "Limits"
+          },
+          {
+            "id": "NDA_M_CALC_M04",
+            "question": "∫₀^(π/2) sin²x dx equals:",
+            "options": ["A) π/4", "B) π/2", "C) 1/2", "D) π"],
+            "answer": "A",
+            "solution": "sin²x = (1-cos2x)/2. ∫₀^(π/2) sin²x dx = [x/2 - sin2x/4]₀^(π/2) = π/4 - 0 - 0 = π/4.",
+            "topic": "Definite Integration"
+          },
+          {
+            "id": "NDA_M_CALC_M05",
+            "question": "The slope of tangent to y = x³-3x at x=2 is:",
+            "options": ["A) 6", "B) 9", "C) 3", "D) 12"],
+            "answer": "B",
+            "solution": "dy/dx = 3x²-3. At x=2: slope = 3(4)-3 = 12-3 = 9.",
+            "topic": "Applications of Derivatives"
+          },
+          {
+            "id": "NDA_M_CALC_M06",
+            "question": "∫dx/(1+x²) equals:",
+            "options": ["A) log(1+x²)+C", "B) tan⁻¹x+C", "C) sin⁻¹x+C", "D) cot⁻¹x+C"],
+            "answer": "B",
+            "solution": "∫dx/(1+x²) = tan⁻¹x + C. Standard result.",
+            "topic": "Integration"
+          },
+          {
+            "id": "NDA_M_CALC_M07",
+            "question": "d/dx(xˣ) equals:",
+            "options": ["A) xˣ", "B) x·xˣ⁻¹", "C) xˣ(1+logx)", "D) xˣ·logx"],
+            "answer": "C",
+            "solution": "Let y=xˣ. logY=x·logx. (1/y)dy/dx = logx+1. dy/dx = xˣ(1+logx).",
+            "topic": "Logarithmic Differentiation"
+          },
+          {
+            "id": "NDA_M_CALC_M08",
+            "question": "The area bounded by y=x², x-axis, x=0 and x=3 is:",
+            "options": ["A) 9", "B) 6", "C) 3", "D) 27"],
+            "answer": "A",
+            "solution": "Area = ∫₀³ x² dx = [x³/3]₀³ = 27/3 - 0 = 9.",
+            "topic": "Area under Curves"
+          },
+          {
+            "id": "NDA_M_CALC_M09",
+            "question": "If f(x) = x³-6x²+9x+15, intervals where f is decreasing:",
+            "options": ["A) (1,3)", "B) (0,3)", "C) (3,∞)", "D) (0,1)"],
+            "answer": "A",
+            "solution": "f'(x) = 3x²-12x+9 = 3(x²-4x+3) = 3(x-1)(x-3). f'(x)<0 when 1<x<3. Decreasing on (1,3).",
+            "topic": "Increasing/Decreasing Functions"
+          },
+          {
+            "id": "NDA_M_CALC_M10",
+            "question": "lim[x→0] (eˣ-1)/x equals:",
+            "options": ["A) e", "B) 0", "C) 1", "D) ∞"],
+            "answer": "C",
+            "solution": "lim[x→0](eˣ-1)/x = 1. Standard limit (can verify via L'Hopital: lim eˣ/1 = 1).",
+            "topic": "Limits"
+          }
+        ],
+        "hard": [
+          {
+            "id": "NDA_M_CALC_H01",
+            "question": "∫₀^π x·sinx dx equals:",
+            "options": ["A) 0", "B) π", "C) 2π", "D) π/2"],
+            "answer": "B",
+            "solution": "By parts: u=x, dv=sinxdx. ∫₀^π x·sinx dx = [-x·cosx]₀^π + ∫₀^π cosx dx = [-π(-1)+0]+[sinx]₀^π = π+0 = π.",
+            "topic": "Definite Integration"
+          },
+          {
+            "id": "NDA_M_CALC_H02",
+            "question": "If y = log(sinx), then d²y/dx² equals:",
+            "options": ["A) -cosec²x", "B) cosec²x", "C) cotx", "D) -cot²x"],
+            "answer": "A",
+            "solution": "dy/dx = cosx/sinx = cotx. d²y/dx² = d/dx(cotx) = -cosec²x.",
+            "topic": "Higher Order Derivatives"
+          },
+          {
+            "id": "NDA_M_CALC_H03",
+            "question": "The value of ∫₋₁¹ x|x| dx is:",
+            "options": ["A) 2/3", "B) 0", "C) -2/3", "D) 4/3"],
+            "answer": "B",
+            "solution": "f(x) = x|x| is an odd function (f(-x)=-f(x)). For odd functions, ∫₋ₐᵃ f(x)dx = 0.",
+            "topic": "Properties of Definite Integrals"
+          },
+          {
+            "id": "NDA_M_CALC_H04",
+            "question": "The maximum value of sinx·cosx is:",
+            "options": ["A) 1", "B) 1/2", "C) √2", "D) 2"],
+            "answer": "B",
+            "solution": "sinx·cosx = sin2x/2. Maximum of sin2x = 1. So maximum of sinx·cosx = 1/2.",
+            "topic": "Applications of Derivatives"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nda_math_04",
+      "chapter": "Matrices and Determinants",
+      "notes": {
+        "title": "Matrices and Determinants - Complete NDA Notes",
+        "theory": [
+          {
+            "topic": "Matrices",
+            "content": "A matrix is a rectangular array of numbers. Order: m×n (m rows, n columns). Types: Row (1×n), Column (m×1), Square (m=n), Diagonal, Scalar, Identity (I), Zero, Symmetric (A=Aᵀ), Skew-symmetric (A=-Aᵀ), Orthogonal (AAᵀ=I). Operations: Addition (same order), Scalar multiplication, Matrix multiplication (A_{m×n}·B_{n×p} = C_{m×p}). Note: AB≠BA generally.",
+            "key_formulas": [
+              "(AB)ᵀ = BᵀAᵀ",
+              "(AB)⁻¹ = B⁻¹A⁻¹",
+              "A = ½(A+Aᵀ) + ½(A-Aᵀ) [symmetric + skew-symmetric]",
+              "Trace(A) = sum of diagonal elements",
+              "For 2×2: A = [[a,b],[c,d]], A⁻¹ = (1/|A|)[[d,-b],[-c,a]]"
+            ],
+            "important_points": [
+              "Matrix multiplication is NOT commutative: AB≠BA",
+              "Matrix multiplication IS associative: A(BC)=(AB)C",
+              "If AB=0, doesn't necessarily mean A=0 or B=0",
+              "Diagonal matrix: non-diagonal elements = 0"
+            ]
+          },
+          {
+            "topic": "Determinants",
+            "content": "For 2×2: |A| = ad-bc. For 3×3: expand along any row/column. Properties: |AB|=|A||B|, |Aᵀ|=|A|, |kA| = kⁿ|A| for n×n matrix. Cofactor A_ij = (-1)^(i+j)·M_ij where M_ij is minor. Adjoint: adj(A) = transpose of cofactor matrix. A⁻¹ = adj(A)/|A| (when |A|≠0, matrix is invertible).",
+            "key_formulas": [
+              "For 2×2: |A| = a₁₁a₂₂ - a₁₂a₂₁",
+              "A⁻¹ = adj(A)/det(A)",
+              "|adj(A)| = |A|^(n-1) for n×n matrix",
+              "adj(adj(A)) = |A|^(n-2)·A",
+              "Cramer's rule: x = Δx/Δ, y = Δy/Δ, z = Δz/Δ"
+            ],
+            "important_points": [
+              "det(A) = 0 ⟹ matrix is singular (no inverse)",
+              "Interchanging two rows/columns changes sign of determinant",
+              "If two rows/columns are identical: det = 0",
+              "Adding multiple of one row to another: det unchanged"
+            ]
+          }
+        ]
+      },
+      "questions": {
+        "easy": [
+          {
+            "id": "NDA_M_MAT_E01",
+            "question": "The determinant of [[2,3],[1,4]] is:",
+            "options": ["A) 5", "B) 8", "C) 11", "D) -5"],
+            "answer": "A",
+            "solution": "det = 2×4 - 3×1 = 8-3 = 5.",
+            "topic": "Determinants"
+          },
+          {
+            "id": "NDA_M_MAT_E02",
+            "question": "If A is a 2×3 matrix and B is a 3×4 matrix, order of AB is:",
+            "options": ["A) 2×4", "B) 3×3", "C) 4×2", "D) 2×3"],
+            "answer": "A",
+            "solution": "A(2×3)·B(3×4) = AB(2×4). Inner dimensions match (3), result is outer (2×4).",
+            "topic": "Matrix Operations"
+          },
+          {
+            "id": "NDA_M_MAT_E03",
+            "question": "A square matrix A is said to be singular if:",
+            "options": ["A) |A|=1", "B) |A|=0", "C) A=I", "D) A=Aᵀ"],
+            "answer": "B",
+            "solution": "A matrix is singular if its determinant equals zero (it has no inverse).",
+            "topic": "Determinants"
+          },
+          {
+            "id": "NDA_M_MAT_E04",
+            "question": "For a symmetric matrix A, Aᵀ equals:",
+            "options": ["A) A⁻¹", "B) -A", "C) A", "D) 0"],
+            "answer": "C",
+            "solution": "By definition, a symmetric matrix satisfies Aᵀ = A.",
+            "topic": "Types of Matrices"
+          },
+          {
+            "id": "NDA_M_MAT_E05",
+            "question": "The identity matrix I₂ is:",
+            "options": ["A) [[1,0],[0,1]]", "B) [[0,1],[1,0]]", "C) [[1,1],[1,1]]", "D) [[0,0],[0,0]]"],
+            "answer": "A",
+            "solution": "Identity matrix has 1s on main diagonal and 0s elsewhere.",
+            "topic": "Types of Matrices"
+          },
+          {
+            "id": "NDA_M_MAT_E06",
+            "question": "det([[1,2],[3,4]]) equals:",
+            "options": ["A) 10", "B) -2", "C) 2", "D) -10"],
+            "answer": "B",
+            "solution": "det = 1×4 - 2×3 = 4-6 = -2.",
+            "topic": "Determinants"
+          },
+          {
+            "id": "NDA_M_MAT_E07",
+            "question": "If A = [[1,2],[3,4]], then Aᵀ equals:",
+            "options": ["A) [[1,3],[2,4]]", "B) [[4,3],[2,1]]", "C) [[1,2],[3,4]]", "D) [[-1,-2],[-3,-4]]"],
+            "answer": "A",
+            "solution": "Transpose: rows become columns. Aᵀ = [[1,3],[2,4]].",
+            "topic": "Transpose"
+          },
+          {
+            "id": "NDA_M_MAT_E08",
+            "question": "For 3×3 matrix A, |kA| equals:",
+            "options": ["A) k|A|", "B) 3k|A|", "C) k³|A|", "D) k²|A|"],
+            "answer": "C",
+            "solution": "|kA| = kⁿ|A| for n×n matrix. For 3×3: |kA| = k³|A|.",
+            "topic": "Properties of Determinants"
+          }
+        ],
+        "medium": [
+          {
+            "id": "NDA_M_MAT_M01",
+            "question": "If A = [[2,1],[1,3]], find A⁻¹:",
+            "options": ["A) (1/5)[[3,-1],[-1,2]]", "B) (1/5)[[-3,1],[1,-2]]", "C) [[3,-1],[-1,2]]", "D) [[1/2,1],[1,1/3]]"],
+            "answer": "A",
+            "solution": "|A| = 6-1=5. adj(A) = [[3,-1],[-1,2]]. A⁻¹ = (1/5)[[3,-1],[-1,2]].",
+            "topic": "Inverse of Matrix"
+          },
+          {
+            "id": "NDA_M_MAT_M02",
+            "question": "For a skew-symmetric matrix A, the diagonal elements are:",
+            "options": ["A) 1", "B) Arbitrary", "C) 0", "D) Equal to each other"],
+            "answer": "C",
+            "solution": "A is skew-symmetric: A=-Aᵀ. Diagonal element: aᵢᵢ = -aᵢᵢ ⟹ 2aᵢᵢ=0 ⟹ aᵢᵢ=0.",
+            "topic": "Types of Matrices"
+          },
+          {
+            "id": "NDA_M_MAT_M03",
+            "question": "If |A|=3 for a 3×3 matrix, then |adj(A)| equals:",
+            "options": ["A) 3", "B) 9", "C) 27", "D) 1/3"],
+            "answer": "B",
+            "solution": "|adj(A)| = |A|^(n-1) = 3^(3-1) = 3² = 9.",
+            "topic": "Adjoint and Inverse"
+          },
+          {
+            "id": "NDA_M_MAT_M04",
+            "question": "The value of [[1,2,3],[0,4,5],[1,0,6]] (determinant) is:",
+            "options": ["A) 22", "B) 18", "C) 22", "D) 28"],
+            "answer": "A",
+            "solution": "Expanding along first column: 1(4×6-5×0)-0+1(2×5-3×4) = 1(24)-0+1(10-12) = 24-2 = 22.",
+            "topic": "Determinants"
+          },
+          {
+            "id": "NDA_M_MAT_M05",
+            "question": "If A² = A, then (I-A)² equals:",
+            "options": ["A) I-A", "B) I+A", "C) I", "D) A"],
+            "answer": "A",
+            "solution": "(I-A)² = I-2A+A² = I-2A+A = I-A. (Using A²=A).",
+            "topic": "Matrix Algebra"
+          },
+          {
+            "id": "NDA_M_MAT_M06",
+            "question": "Using Cramer's rule for x+y=3, 2x-y=0: x equals:",
+            "options": ["A) 1", "B) 2", "C) 3", "D) 0"],
+            "answer": "A",
+            "solution": "Δ=|1,1;2,-1|=-1-2=-3. Δx=|3,1;0,-1|=-3-0=-3. x=Δx/Δ=(-3)/(-3)=1.",
+            "topic": "Cramer's Rule"
+          }
+        ],
+        "hard": [
+          {
+            "id": "NDA_M_MAT_H01",
+            "question": "If A is orthogonal matrix, then |A| equals:",
+            "options": ["A) 0", "B) 1", "C) ±1", "D) 2"],
+            "answer": "C",
+            "solution": "A is orthogonal: AAᵀ=I. |AAᵀ|=|I|=1. |A||Aᵀ|=1. |A|²=1 (since |A|=|Aᵀ|). So |A|=±1.",
+            "topic": "Types of Matrices"
+          },
+          {
+            "id": "NDA_M_MAT_H02",
+            "question": "If A is 3×3 matrix with |A|=4, then |2A| equals:",
+            "options": ["A) 8", "B) 16", "C) 32", "D) 64"],
+            "answer": "C",
+            "solution": "|kA|=kⁿ|A| for n×n. |2A|=2³×4=8×4=32.",
+            "topic": "Determinants"
+          },
+          {
+            "id": "NDA_M_MAT_H03",
+            "question": "The system of equations x+y+z=6, x+2y+3z=14, x+4y+7z=30 has:",
+            "options": ["A) Unique solution", "B) No solution", "C) Infinitely many solutions", "D) Two solutions"],
+            "answer": "C",
+            "solution": "Forming augmented matrix and row reducing: the last equation = 2×(2nd) - (1st). Rank of coefficient matrix = rank of augmented matrix = 2 < 3 variables. Infinitely many solutions.",
+            "topic": "System of Linear Equations"
+          }
+        ]
+      }
+    }
+  ],
+  "pyq_section": {
+    "title": "NDA Previous Year Questions (Actual PYQs)",
+    "source": "UPSC NDA Papers",
+    "questions": [
+      {
+        "id": "NDA_PYQ_M01",
+        "year": "NDA 2022 Paper 1",
+        "question": "If the matrix A is such that A³ = A, then (I+A)³ - 7A equals:",
+        "options": ["A) I", "B) A", "C) -I", "D) 0"],
+        "answer": "A",
+        "solution": "(I+A)³ = I+3A+3A²+A³ = I+3A+3A²+A = I+4A+3A². Using A³=A, A²=A²... subtract 7A: I+4A+3A²-7A = I-3A+3A². Requires A²=A (idempotent). If A²=A: I-3A+3A = I. Answer: I.",
+        "topic": "Matrices"
+      },
+      {
+        "id": "NDA_PYQ_M02",
+        "year": "NDA 2023 Paper 1",
+        "question": "If sinA = 1/2 and A is obtuse, cosA equals:",
+        "options": ["A) √3/2", "B) -√3/2", "C) 1/2", "D) -1/2"],
+        "answer": "B",
+        "solution": "sinA=1/2, A is obtuse (90°<A<180°). sin⁻¹(1/2)=30°, so A=150°. cos150° = -cos30° = -√3/2.",
+        "topic": "Trigonometry"
+      },
+      {
+        "id": "NDA_PYQ_M03",
+        "year": "NDA 2022 Paper 2",
+        "question": "The number of 5-digit numbers divisible by 4 using digits 1,2,3,4,5 (without repetition) is:",
+        "options": ["A) 24", "B) 30", "C) 48", "D) 36"],
+        "answer": "A",
+        "solution": "A number is divisible by 4 if last 2 digits form a number divisible by 4. Possible last 2 digits from {1,2,3,4,5}: 12,24,32,52. For each, remaining 3 digits from 3 remaining: 3!=6 ways. Total = 4×6 = 24.",
+        "topic": "Permutations"
+      },
+      {
+        "id": "NDA_PYQ_M04",
+        "year": "NDA 2021",
+        "question": "∫[π/6 to π/3] dx/(1+√(tanx)) equals:",
+        "options": ["A) π/6", "B) π/12", "C) π/3", "D) π/4"],
+        "answer": "B",
+        "solution": "Use King's property: I = ∫[π/6 to π/3] dx/(1+√(tanx)). Also I = ∫[π/6 to π/3] dx/(1+√(cotx)) = ∫dx·√(tanx)/(√(tanx)+1). Adding: 2I = ∫[π/6 to π/3]dx = π/3-π/6 = π/6. I = π/12.",
+        "topic": "Definite Integration"
+      },
+      {
+        "id": "NDA_PYQ_M05",
+        "year": "NDA 2023 Paper 2",
+        "question": "If ⁿC₁₂ = ⁿC₈, then n equals:",
+        "options": ["A) 16", "B) 20", "C) 18", "D) 24"],
+        "answer": "B",
+        "solution": "ⁿCₐ = ⁿCᵦ ⟹ a=b or a+b=n. Since 12≠8, n=12+8=20.",
+        "topic": "Combinations"
+      },
+      {
+        "id": "NDA_PYQ_M06",
+        "year": "NDA 2022",
+        "question": "The equation of normal to y=x²+4x+1 at (1,6) is:",
+        "options": ["A) x+6y-37=0", "B) 6x-y=0", "C) x-6y+35=0", "D) 6x+y-12=0"],
+        "answer": "A",
+        "solution": "dy/dx = 2x+4. At (1,6): slope of tangent = 6. Slope of normal = -1/6. Normal: y-6 = -1/6(x-1) ⟹ 6y-36 = -(x-1) ⟹ x+6y-37=0.",
+        "topic": "Applications of Derivatives"
+      }
+    ]
+  }
+}

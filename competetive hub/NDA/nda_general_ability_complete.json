@@ -1,0 +1,837 @@
+{
+  "exam": "NDA",
+  "subject": "General Ability Test (GAT)",
+  "paper": "Paper II",
+  "total_questions": 150,
+  "sections": [
+    {
+      "id": "nda_gat_english",
+      "section": "English",
+      "max_marks": 200,
+      "notes": {
+        "grammar_rules": [
+          {
+            "topic": "Tenses",
+            "content": "12 tenses in English. Simple Present: habit/fact (She sings). Present Continuous: ongoing action (She is singing). Present Perfect: completed with present relevance (She has sung). Past Perfect: earlier past action (She had sung before he arrived). Future Perfect: action complete before future time (She will have sung by evening). Key markers: already/yet/just → Present Perfect; by the time → Past/Future Perfect; since/for with present → Present Perfect.",
+            "common_errors": [
+              "Using 'since' with duration (wrong: since 3 hours) → use 'for 3 hours'",
+              "Using 'since' with point of time (correct: since 2020)",
+              "Mixing Past Simple with Present Perfect for just/already",
+              "Incorrect sequence of tenses in reported speech"
+            ]
+          },
+          {
+            "topic": "Subject-Verb Agreement",
+            "rules": [
+              "Either/Neither (singular verb): Neither of them IS correct",
+              "Each/Every (singular): Each student HAS a book",
+              "Collective nouns (usually singular): The team IS playing",
+              "News/Mathematics/Physics (singular): The news IS good",
+              "Neither...nor/Either...or: verb agrees with nearer subject",
+              "With 'as well as', verb agrees with first subject",
+              "Data/Criteria/Phenomena are PLURAL (datum/criterion/phenomenon singular)"
+            ]
+          },
+          {
+            "topic": "Articles",
+            "rules": [
+              "Use 'a' before consonant sounds: a university (y-sound), a one-rupee note (w-sound)",
+              "Use 'an' before vowel sounds: an hour (silent h), an MBA",
+              "The: specific things, superlatives, unique objects (the sun, the Himalayas)",
+              "No article: proper nouns, languages, sports, meals generally",
+              "The + adjective = plural noun: the rich = rich people"
+            ]
+          },
+          {
+            "topic": "Prepositions",
+            "rules": [
+              "In: enclosed spaces (in a room), months/years (in June)",
+              "At: specific points/times (at the door, at 5pm)",
+              "On: surfaces, days (on Monday, on the table)",
+              "Since: point of time (since 2010)",
+              "For: duration (for 3 years)",
+              "By: not later than (by Monday); near (by the river)",
+              "With: instrument/means (write with a pen)"
+            ]
+          }
+        ],
+        "vocabulary": {
+          "commonly_tested_pairs": [
+            "Affect (verb) vs Effect (noun)",
+            "Principal (head) vs Principle (rule)",
+            "Eminent (famous) vs Imminent (about to happen)",
+            "Complement (complete) vs Compliment (praise)",
+            "Discreet (careful) vs Discrete (separate)",
+            "Continual (repeated) vs Continuous (unbroken)",
+            "Farther (distance) vs Further (additional)"
+          ],
+          "one_word_substitutions": [
+            "Philatelist - stamp collector",
+            "Omnivore - eats everything",
+            "Insolvent - unable to pay debts",
+            "Bibliophile - lover of books",
+            "Teetotaller - one who doesn't drink alcohol",
+            "Posthumous - occurring after death",
+            "Ambidextrous - using both hands equally well",
+            "Misanthrope - hater of mankind",
+            "Narcissism - excessive self-love",
+            "Pedantic - overly focused on minor details"
+          ]
+        }
+      },
+      "questions": {
+        "easy": [
+          {
+            "id": "NDA_E_ENG_E01",
+            "question": "Choose the correct sentence:",
+            "options": [
+              "A) The news are shocking",
+              "B) The news is shocking",
+              "C) The news were shocking",
+              "D) The news have shocked"
+            ],
+            "answer": "B",
+            "solution": "'News' is an uncountable noun that takes a singular verb despite ending in 's'. So 'The news IS shocking' is correct.",
+            "topic": "Subject-Verb Agreement"
+          },
+          {
+            "id": "NDA_E_ENG_E02",
+            "question": "Fill in the blank: She has been working __ 2019.",
+            "options": ["A) for", "B) from", "C) since", "D) during"],
+            "answer": "C",
+            "solution": "'Since' is used with a point of time (2019). 'For' is used with a duration. Present Perfect Continuous + since = correct.",
+            "topic": "Prepositions"
+          },
+          {
+            "id": "NDA_E_ENG_E03",
+            "question": "Choose the correct article: He is __ honest man.",
+            "options": ["A) a", "B) an", "C) the", "D) No article"],
+            "answer": "B",
+            "solution": "'Honest' begins with a silent 'h', so the vowel sound /ɒ/ is heard. Use 'an' before vowel sounds.",
+            "topic": "Articles"
+          },
+          {
+            "id": "NDA_E_ENG_E04",
+            "question": "The synonym of 'Benevolent' is:",
+            "options": ["A) Cruel", "B) Kind", "C) Strict", "D) Indifferent"],
+            "answer": "B",
+            "solution": "Benevolent means well-meaning, generous, kind. Antonym would be malevolent.",
+            "topic": "Vocabulary"
+          },
+          {
+            "id": "NDA_E_ENG_E05",
+            "question": "Which sentence is in Past Perfect tense?",
+            "options": [
+              "A) He was eating dinner",
+              "B) He had eaten dinner before she arrived",
+              "C) He ate dinner yesterday",
+              "D) He will eat dinner soon"
+            ],
+            "answer": "B",
+            "solution": "Past Perfect = had + past participle. 'He had eaten' is Past Perfect, indicating action completed before another past action.",
+            "topic": "Tenses"
+          },
+          {
+            "id": "NDA_E_ENG_E06",
+            "question": "Find the error: 'Each of the boys have submitted their assignment.'",
+            "options": [
+              "A) Each of the boys",
+              "B) have submitted",
+              "C) their assignment",
+              "D) No error"
+            ],
+            "answer": "B",
+            "solution": "'Each' takes a singular verb. Correct: 'Each of the boys HAS submitted his assignment.'",
+            "topic": "Subject-Verb Agreement"
+          },
+          {
+            "id": "NDA_E_ENG_E07",
+            "question": "The antonym of 'Verbose' is:",
+            "options": ["A) Talkative", "B) Concise", "C) Elaborate", "D) Wordy"],
+            "answer": "B",
+            "solution": "Verbose means using too many words. Its antonym is Concise (brief, to the point).",
+            "topic": "Vocabulary"
+          },
+          {
+            "id": "NDA_E_ENG_E08",
+            "question": "'Philatelist' means:",
+            "options": ["A) Coin collector", "B) Stamp collector", "C) Book lover", "D) Art lover"],
+            "answer": "B",
+            "solution": "A Philatelist is a person who collects and studies postage stamps.",
+            "topic": "One-Word Substitution"
+          }
+        ],
+        "medium": [
+          {
+            "id": "NDA_E_ENG_M01",
+            "question": "Choose the correct indirect speech: He said, 'I am going to Delhi tomorrow.'",
+            "options": [
+              "A) He said that he was going to Delhi the next day",
+              "B) He said that he is going to Delhi tomorrow",
+              "C) He said that he had gone to Delhi the next day",
+              "D) He told that he was going to Delhi tomorrow"
+            ],
+            "answer": "A",
+            "solution": "In indirect speech: 'am going'→'was going', 'tomorrow'→'the next day', 'said'+'I'→'he'. 'said that' (not 'told that' without object).",
+            "topic": "Reported Speech"
+          },
+          {
+            "id": "NDA_E_ENG_M02",
+            "question": "Identify the figure of speech: 'The camel is the ship of the desert.'",
+            "options": ["A) Simile", "B) Metaphor", "C) Personification", "D) Hyperbole"],
+            "answer": "B",
+            "solution": "A Metaphor directly calls something something else (without 'like/as'). Simile uses 'like/as'. Here camel IS CALLED ship — Metaphor.",
+            "topic": "Figures of Speech"
+          },
+          {
+            "id": "NDA_E_ENG_M03",
+            "question": "The idiom 'To burn the midnight oil' means:",
+            "options": [
+              "A) To waste resources",
+              "B) To work or study late into the night",
+              "C) To be in financial trouble",
+              "D) To celebrate excessively"
+            ],
+            "answer": "B",
+            "solution": "Originally referred to working by candlelight. Now means to study or work late at night.",
+            "topic": "Idioms"
+          },
+          {
+            "id": "NDA_E_ENG_M04",
+            "question": "Choose the correct passive voice: 'People speak English all over the world.'",
+            "options": [
+              "A) English has been spoken all over the world",
+              "B) English is spoken all over the world by people",
+              "C) English is spoken all over the world",
+              "D) English was spoken all over the world"
+            ],
+            "answer": "C",
+            "solution": "Active (Simple Present): Subject + V1 → Passive: Object + is/am/are + V3. 'by people' is redundant (understood). Best answer: 'English is spoken all over the world.'",
+            "topic": "Active-Passive Voice"
+          },
+          {
+            "id": "NDA_E_ENG_M05",
+            "question": "Rearrange: 'yesterday / I / completed / assignment / the' correctly:",
+            "options": [
+              "A) Yesterday I the assignment completed",
+              "B) I completed the assignment yesterday",
+              "C) The assignment I completed yesterday",
+              "D) Completed I the assignment yesterday"
+            ],
+            "answer": "B",
+            "solution": "Standard English sentence structure: Subject (I) + Verb (completed) + Object (the assignment) + Time (yesterday).",
+            "topic": "Sentence Structure"
+          }
+        ],
+        "hard": [
+          {
+            "id": "NDA_E_ENG_H01",
+            "question": "Spot the error: 'Neither the teacher nor the students was present in the class.'",
+            "options": [
+              "A) Neither the teacher",
+              "B) nor the students",
+              "C) was present",
+              "D) in the class"
+            ],
+            "answer": "C",
+            "solution": "With 'neither...nor', verb agrees with the nearer subject ('students'—plural). So it should be 'WERE present' not 'WAS present'.",
+            "topic": "Subject-Verb Agreement"
+          },
+          {
+            "id": "NDA_E_ENG_H02",
+            "question": "He is too weak __ walk. The correct conjunction/infinitive is:",
+            "options": ["A) for to walk", "B) to walking", "C) to walk", "D) for walking"],
+            "answer": "C",
+            "solution": "Too...to structure: 'too + adjective + to + base verb'. 'He is too weak to walk.' This expresses inability.",
+            "topic": "Connectors"
+          },
+          {
+            "id": "NDA_E_ENG_H03",
+            "question": "The word 'Sanguine' means:",
+            "options": ["A) Pessimistic", "B) Blood-red or optimistic", "C) Angry", "D) Tired"],
+            "answer": "B",
+            "solution": "Sanguine has two meanings: blood-red (from Latin sanguis=blood) or optimistic/positive about outcomes. In NDA context, it typically means optimistic.",
+            "topic": "Vocabulary"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nda_gat_physics",
+      "section": "Physics",
+      "notes": {
+        "chapters": [
+          {
+            "topic": "Mechanics - Motion",
+            "content": "Equations of motion (uniform acceleration): v=u+at; s=ut+½at²; v²=u²+2as; s_n = u+a(2n-1)/2. Projectile motion: Range R=u²sin2θ/g (max at 45°); Max height H=u²sin²θ/2g; Time of flight T=2usinθ/g. Circular motion: Centripetal acceleration = v²/r = ω²r; Centripetal force = mv²/r. For banking: tanθ = v²/rg.",
+            "key_formulas": [
+              "v = u + at",
+              "s = ut + ½at²",
+              "v² = u² + 2as",
+              "Range = u²sin2θ/g",
+              "Centripetal Force = mv²/r"
+            ],
+            "important_points": [
+              "g = 9.8 m/s² ≈ 10 m/s² for NDA calculations",
+              "At max height of projectile: vertical velocity = 0",
+              "Horizontal velocity in projectile is CONSTANT",
+              "For max range from top of tower: angle = 45° (but consider height)"
+            ]
+          },
+          {
+            "topic": "Newton's Laws and Friction",
+            "content": "Newton's 1st Law: Body at rest stays at rest; body in motion stays in motion unless external force acts (Inertia). Newton's 2nd Law: F=ma. Newton's 3rd Law: Every action has equal and opposite reaction. Friction: Static friction ≤ μₛN; Kinetic friction = μₖN. Always μₛ > μₖ. For body on incline: component along slope = mgsinθ; normal = mgcosθ.",
+            "key_formulas": [
+              "F = ma",
+              "Friction force f = μN",
+              "For incline: a = g(sinθ - μcosθ)",
+              "Impulse = F×t = change in momentum",
+              "Momentum p = mv"
+            ]
+          },
+          {
+            "topic": "Work, Energy, Power",
+            "content": "Work = F·d·cosθ (angle between F and d). KE = ½mv². PE (gravitational) = mgh. Conservation: KE+PE = constant (no friction). Work-Energy theorem: Work done = Change in KE. Power = Work/time = F·v. Elastic collision: both KE and momentum conserved. Inelastic: only momentum conserved.",
+            "key_formulas": [
+              "W = Fdcosθ",
+              "KE = ½mv², PE = mgh",
+              "P = W/t = Fv",
+              "Elastic collision: e=1; Perfectly inelastic: e=0"
+            ]
+          },
+          {
+            "topic": "Waves and Sound",
+            "content": "Wave equation: v = fλ. Speed of sound in air: 332 m/s at 0°C, ~340 m/s at room temperature. Doppler effect: f_observed = f_source×(v±v_observer)/(v∓v_source). '+' when approaching, '-' when receding. Resonance occurs when frequency matches natural frequency. Beats: number per second = |f₁-f₂|.",
+            "key_formulas": [
+              "v = fλ",
+              "Speed of sound at t°C: v = 332+0.6t m/s",
+              "Beats per second = |f₁-f₂|",
+              "For closed pipe: L = λ/4 (fundamental)",
+              "For open pipe: L = λ/2 (fundamental)"
+            ]
+          },
+          {
+            "topic": "Electricity and Magnetism",
+            "content": "Ohm's law: V=IR. Power: P=VI=I²R=V²/R. Series: R_total=R₁+R₂+... ; same current, different voltage. Parallel: 1/R_total=1/R₁+1/R₂+...; same voltage, different current. Kirchhoff's laws: KCL (current in = current out at node), KVL (sum of EMF = sum of IR in loop). Magnetic force on current: F=BIL; on charge: F=qvB.",
+            "key_formulas": [
+              "V = IR, P = I²R = V²/R",
+              "Series: R_eq = R₁+R₂",
+              "Parallel: 1/R_eq = 1/R₁+1/R₂",
+              "F = BIL (force on wire)",
+              "F = qvB (force on charge)"
+            ]
+          },
+          {
+            "topic": "Optics",
+            "content": "Reflection: angle of incidence = angle of reflection. Refraction: n₁sinθ₁=n₂sinθ₂ (Snell's law). Mirror formula: 1/v+1/u=1/f. Lens formula: 1/v-1/u=1/f. Magnification: m=-v/u (mirrors), m=v/u (lens). Convex lens: converging; Concave lens: diverging. Concave mirror: f = R/2 (converging). Power of lens: P = 1/f (in metres), unit dioptre.",
+            "key_formulas": [
+              "n₁sinθ₁ = n₂sinθ₂",
+              "Mirror: 1/v+1/u = 1/f, f=R/2",
+              "Lens: 1/v-1/u = 1/f",
+              "P = 1/f(m) in diopters",
+              "Critical angle: sinC = 1/n (for TIR)"
+            ]
+          }
+        ]
+      },
+      "questions": {
+        "easy": [
+          {
+            "id": "NDA_GAT_PHY_E01",
+            "question": "A body is thrown vertically up with velocity 20 m/s. Maximum height reached (g=10 m/s²) is:",
+            "options": ["A) 10 m", "B) 20 m", "C) 40 m", "D) 200 m"],
+            "answer": "B",
+            "solution": "v²=u²-2gh. At max height v=0. h=u²/2g = 400/20 = 20 m.",
+            "topic": "Mechanics"
+          },
+          {
+            "id": "NDA_GAT_PHY_E02",
+            "question": "Speed of sound in air is approximately:",
+            "options": ["A) 300 m/s", "B) 332 m/s", "C) 3×10⁸ m/s", "D) 1500 m/s"],
+            "answer": "B",
+            "solution": "Speed of sound in air at 0°C = 332 m/s. Speed of light = 3×10⁸ m/s. Sound in water ≈ 1500 m/s.",
+            "topic": "Waves"
+          },
+          {
+            "id": "NDA_GAT_PHY_E03",
+            "question": "Unit of electric resistance is:",
+            "options": ["A) Ampere", "B) Volt", "C) Ohm", "D) Watt"],
+            "answer": "C",
+            "solution": "Resistance is measured in Ohms (Ω). Named after Georg Ohm who formulated Ohm's law V=IR.",
+            "topic": "Electricity"
+          },
+          {
+            "id": "NDA_GAT_PHY_E04",
+            "question": "A projectile has maximum range when launched at angle:",
+            "options": ["A) 30°", "B) 45°", "C) 60°", "D) 90°"],
+            "answer": "B",
+            "solution": "Range R = u²sin2θ/g. Maximum when sin2θ=1, i.e., 2θ=90°, θ=45°.",
+            "topic": "Projectile Motion"
+          },
+          {
+            "id": "NDA_GAT_PHY_E05",
+            "question": "Newton's second law states that:",
+            "options": [
+              "A) Every action has equal and opposite reaction",
+              "B) Force = mass × acceleration",
+              "C) Body continues in its state unless force acts",
+              "D) Momentum is always conserved"
+            ],
+            "answer": "B",
+            "solution": "Newton's 2nd Law: F=ma. 1st Law is inertia, 3rd is action-reaction.",
+            "topic": "Newton's Laws"
+          },
+          {
+            "id": "NDA_GAT_PHY_E06",
+            "question": "A convex lens forms a virtual image when object is:",
+            "options": [
+              "A) At infinity",
+              "B) Beyond 2F",
+              "C) Between F and optical centre",
+              "D) At F"
+            ],
+            "answer": "C",
+            "solution": "Convex lens forms virtual, erect, magnified image when object is between focus (F) and optical centre. This is how a magnifying glass works.",
+            "topic": "Optics"
+          },
+          {
+            "id": "NDA_GAT_PHY_E07",
+            "question": "Kinetic energy of a body of mass 2 kg moving at 3 m/s is:",
+            "options": ["A) 6 J", "B) 9 J", "C) 18 J", "D) 3 J"],
+            "answer": "B",
+            "solution": "KE = ½mv² = ½×2×9 = 9 J.",
+            "topic": "Energy"
+          },
+          {
+            "id": "NDA_GAT_PHY_E08",
+            "question": "Three resistors of 2Ω each are connected in series. Total resistance is:",
+            "options": ["A) 2/3 Ω", "B) 6 Ω", "C) 2 Ω", "D) 3 Ω"],
+            "answer": "B",
+            "solution": "Series: R_total = R₁+R₂+R₃ = 2+2+2 = 6 Ω.",
+            "topic": "Electricity"
+          },
+          {
+            "id": "NDA_GAT_PHY_E09",
+            "question": "Snell's law states:",
+            "options": [
+              "A) n₁sinθ₁ = n₂sinθ₂",
+              "B) n₁cosθ₁ = n₂cosθ₂",
+              "C) sin i / sin r = constant only for specific colors",
+              "D) Reflected angle = incident angle"
+            ],
+            "answer": "A",
+            "solution": "Snell's law of refraction: n₁sinθ₁ = n₂sinθ₂ where n is refractive index and θ is angle with normal.",
+            "topic": "Optics"
+          },
+          {
+            "id": "NDA_GAT_PHY_E10",
+            "question": "SI unit of power is:",
+            "options": ["A) Joule", "B) Newton", "C) Watt", "D) Erg"],
+            "answer": "C",
+            "solution": "Power = Work/Time. SI unit: Watt (W) = Joule/second. 1 horsepower = 746 W.",
+            "topic": "Work and Power"
+          }
+        ],
+        "medium": [
+          {
+            "id": "NDA_GAT_PHY_M01",
+            "question": "A train moving at 60 m/s whistles at 500 Hz. Frequency heard by stationary observer as train approaches (v_sound=340 m/s):",
+            "options": ["A) 595 Hz", "B) 425 Hz", "C": "607 Hz", "D) 500 Hz"],
+            "answer": "C",
+            "solution": "Doppler (source approaching, observer stationary): f' = f×v/(v-vs) = 500×340/(340-60) = 500×340/280 = 607 Hz.",
+            "topic": "Doppler Effect"
+          },
+          {
+            "id": "NDA_GAT_PHY_M02",
+            "question": "A 10 kg body slides down a frictionless incline of 30°. Acceleration is (g=10):",
+            "options": ["A) 5 m/s²", "B) 8.66 m/s²", "C) 10 m/s²", "D) 2.5 m/s²"],
+            "answer": "A",
+            "solution": "On frictionless incline: a = gsinθ = 10×sin30° = 10×0.5 = 5 m/s².",
+            "topic": "Mechanics"
+          },
+          {
+            "id": "NDA_GAT_PHY_M03",
+            "question": "Two bulbs 60W and 100W are connected in series to 220V. Which glows brighter?",
+            "options": [
+              "A) 100W bulb",
+              "B) 60W bulb",
+              "C) Both equally",
+              "D) Neither glows"
+            ],
+            "answer": "B",
+            "solution": "R = V²/P. R₆₀ = 220²/60 > R₁₀₀ = 220²/100. In series, same current. P = I²R. Higher resistance → more power → 60W bulb glows brighter.",
+            "topic": "Electricity"
+          },
+          {
+            "id": "NDA_GAT_PHY_M04",
+            "question": "The critical angle for glass-air interface (n_glass=1.5) is approximately:",
+            "options": ["A) 35°", "B) 42°", "C) 48°", "D) 60°"],
+            "answer": "B",
+            "solution": "sinC = 1/n = 1/1.5 = 2/3. C = sin⁻¹(2/3) ≈ 41.8° ≈ 42°.",
+            "topic": "Optics"
+          },
+          {
+            "id": "NDA_GAT_PHY_M05",
+            "question": "A body moves in a circle of radius 2m at 4 m/s. Centripetal acceleration is:",
+            "options": ["A) 2 m/s²", "B) 8 m/s²", "C) 16 m/s²", "D) 4 m/s²"],
+            "answer": "B",
+            "solution": "Centripetal acceleration a = v²/r = 16/2 = 8 m/s².",
+            "topic": "Circular Motion"
+          },
+          {
+            "id": "NDA_GAT_PHY_M06",
+            "question": "Two wires of same material and length, but areas A and 2A. Ratio of their resistances R₁:R₂ is:",
+            "options": ["A) 1:2", "B) 2:1", "C) 1:4", "D) 4:1"],
+            "answer": "B",
+            "solution": "R = ρL/A. Same ρ and L. R₁/R₂ = A₂/A₁ = 2A/A = 2. So R₁:R₂ = 2:1.",
+            "topic": "Electricity"
+          }
+        ],
+        "hard": [
+          {
+            "id": "NDA_GAT_PHY_H01",
+            "question": "A body projected at 60° to horizontal with u=20 m/s. Horizontal range is (g=10):",
+            "options": ["A) 20√3 m", "B) 40 m", "C) 20 m", "D) 40√3 m"],
+            "answer": "A",
+            "solution": "R = u²sin2θ/g = 400×sin120°/10 = 40×(√3/2) = 20√3 m.",
+            "topic": "Projectile Motion"
+          },
+          {
+            "id": "NDA_GAT_PHY_H02",
+            "question": "A lens of focal length 20 cm forms image at 60 cm from lens. Object distance is:",
+            "options": ["A) 30 cm", "B) 40 cm", "C) 15 cm", "D) 12 cm"],
+            "answer": "A",
+            "solution": "Lens formula: 1/v-1/u=1/f. 1/60-1/u=1/20. 1/u=1/60-1/20=1/60-3/60=-2/60=-1/30. u=-30 cm. Object is 30 cm from lens.",
+            "topic": "Optics"
+          },
+          {
+            "id": "NDA_GAT_PHY_H03",
+            "question": "A ball of mass 0.5 kg hits a wall at 5 m/s and bounces back at 3 m/s. Impulse is:",
+            "options": ["A) 1 N·s", "B) 4 N·s", "C) 8 N·s", "D) 2.5 N·s"],
+            "answer": "B",
+            "solution": "Impulse = change in momentum = m(v₂-v₁) = 0.5(3-(-5)) = 0.5×8 = 4 N·s. Taking bounce-back as positive.",
+            "topic": "Momentum and Impulse"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nda_gat_history",
+      "section": "History of India",
+      "notes": {
+        "chapters": [
+          {
+            "topic": "Ancient India",
+            "key_points": [
+              "Indus Valley Civilization (3300-1300 BCE): Harappa, Mohenjo-daro, Lothal (dockyard), Kalibangan. Features: town planning, drainage, no clear weapons found, weights & measures, pictographic script (undeciphered).",
+              "Vedic Period: Early Vedic (Rig Veda, pastoral), Later Vedic (agriculture, caste). Sixteen Mahajanapadas. Rise of Buddhism (Siddhartha Gautama, 563-483 BCE, 4 Noble Truths, Eightfold Path) and Jainism (Mahavira, 599-527 BCE, Triratna).",
+              "Mauryan Empire: Chandragupta Maurya (founded with Chanakya's help 322 BCE). Bindusara. Ashoka (268-232 BCE): Kalinga War 261 BCE, embraced Buddhism, Dhamma policy, rock edicts. Decline after Ashoka.",
+              "Gupta Period (Golden Age): Chandragupta I, Samudragupta, Chandragupta II (Vikramaditya). Literature: Kalidasa (Shakuntala, Meghaduta). Mathematics: Aryabhata (zero, π, heliocentric). Fa Hien visited India."
+            ]
+          },
+          {
+            "topic": "Medieval India",
+            "key_points": [
+              "Delhi Sultanate (1206-1526): Slave/Mamluk (Qutb-ud-din Aibak, Iltutmish, Razia Sultana, Balban), Khilji (Alauddin's market reforms, Mongol repulsion), Tughlaq (Muhammad bin Tughlaq's ill-conceived schemes, Firuz Shah), Sayyid, Lodi. Ibn Battuta visited during Muhammad bin Tughlaq.",
+              "Vijayanagara Empire: Founded 1336 by Harihara and Bukka. Peak under Krishna Deva Raya (1509-1529). Battle of Talikota (1565) ended empire. Capital: Hampi.",
+              "Mughal Empire: Babur (Panipat 1526, Khanwa 1527, Chanderi 1528, Ghaghra 1529). Humayun. Akbar (Din-i-Ilahi, Navratnas, Rajput policy, Mansabdari). Jahangir (Nur Jahan influence). Shah Jahan (Taj Mahal). Aurangzeb (expanded to maximum, Jizia reimposed, decline began).",
+              "Maratha Empire: Shivaji (1627-1680), guerrilla warfare, Ashtapradhan. Peshwas. Three Battles of Panipat: 1526 (Babur vs Ibrahim Lodi), 1556 (Akbar vs Hemu), 1761 (Maratha defeat)."
+            ]
+          },
+          {
+            "topic": "Modern India / Freedom Struggle",
+            "key_points": [
+              "British East India Company: Plassey 1757, Buxar 1764 (consolidated British power). Subsidiary Alliance (Wellesley). Doctrine of Lapse (Dalhousie): Satara, Jhansi, Nagpur annexed.",
+              "Revolt of 1857: Sepoy Mutiny, started Meerut May 10, spread by Mangal Pandey (Barrackpore). Leaders: Bahadur Shah Zafar (Delhi), Rani Lakshmibai (Jhansi), Tantia Tope, Kunwar Singh. First War of Independence (nationalist view) or Sepoy Mutiny (British view).",
+              "Indian National Congress: Founded 1885, A.O. Hume. Moderate phase: Dadabhai Naoroji (Drain Theory), Gopal Krishna Gokhale. Extremist phase: Bal Gangadhar Tilak ('Swaraj is my birthright'), Lala Lajpat Rai, Bipin Chandra Pal (Lal-Bal-Pal).",
+              "Gandhi era: Non-Cooperation (1920), Civil Disobedience/Dandi March 1930 (Salt), Quit India 1942 ('Do or Die'). Simon Commission 1927 (boycotted). Round Table Conferences. CR Formula 1944. Subhash Chandra Bose: INA, 'Jai Hind'. Mountbatten Plan → Independence August 15, 1947."
+            ]
+          }
+        ]
+      },
+      "questions": {
+        "easy": [
+          {
+            "id": "NDA_GAT_HIS_E01",
+            "question": "Dandi March was associated with:",
+            "options": ["A) Non-Cooperation Movement", "B) Civil Disobedience Movement", "C) Quit India Movement", "D) Swadeshi Movement"],
+            "answer": "B",
+            "solution": "Gandhi's Dandi March (March-April 1930) began the Civil Disobedience Movement, protesting against the Salt Tax. He marched 241 miles to Dandi to make salt.",
+            "topic": "Freedom Struggle"
+          },
+          {
+            "id": "NDA_GAT_HIS_E02",
+            "question": "Chandragupta II was also known as:",
+            "options": ["A) Samudragupta", "B) Vikramaditya", "C) Ashoka", "D) Bindusara"],
+            "answer": "B",
+            "solution": "Chandragupta II (375-415 CE) was also known as Vikramaditya. His reign is considered the Golden Age of India, with Kalidasa in his court.",
+            "topic": "Ancient India - Guptas"
+          },
+          {
+            "id": "NDA_GAT_HIS_E03",
+            "question": "Battle of Plassey (1757) was fought between:",
+            "options": [
+              "A) British and Mughals",
+              "B) British and Nawab of Bengal",
+              "C) British and Marathas",
+              "D) Mughals and Marathas"
+            ],
+            "answer": "B",
+            "solution": "Battle of Plassey was fought between Robert Clive (British East India Company) and Siraj-ud-Daula (Nawab of Bengal), with Mir Jafar betraying the Nawab.",
+            "topic": "British India"
+          },
+          {
+            "id": "NDA_GAT_HIS_E04",
+            "question": "The Doctrine of Lapse was introduced by:",
+            "options": ["A) Lord Wellesley", "B) Lord Cornwallis", "C) Lord Dalhousie", "D) Lord Curzon"],
+            "answer": "C",
+            "solution": "Lord Dalhousie introduced the Doctrine of Lapse — states without natural heir would be annexed. Satara (1848), Jhansi (1853), Nagpur (1854) were annexed using this doctrine.",
+            "topic": "British India"
+          },
+          {
+            "id": "NDA_GAT_HIS_E05",
+            "question": "Indian National Congress was founded in:",
+            "options": ["A) 1857", "B) 1875", "C) 1885", "D) 1906"],
+            "answer": "C",
+            "solution": "INC was founded in 1885 by Allan Octavian Hume, with Dadabhai Naoroji as first president. First session in Bombay.",
+            "topic": "Freedom Struggle"
+          },
+          {
+            "id": "NDA_GAT_HIS_E06",
+            "question": "Ashoka fought the Kalinga War in:",
+            "options": ["A) 272 BCE", "B) 261 BCE", "C) 268 BCE", "D) 250 BCE"],
+            "answer": "B",
+            "solution": "Kalinga War was fought in 261 BCE. It caused immense bloodshed and led Ashoka to embrace Buddhism and his Dhamma policy of non-violence.",
+            "topic": "Ancient India - Mauryas"
+          },
+          {
+            "id": "NDA_GAT_HIS_E07",
+            "question": "Quit India Movement was launched in:",
+            "options": ["A) 1940", "B) 1941", "C) 1942", "D) 1943"],
+            "answer": "C",
+            "solution": "Quit India Movement was launched on August 8, 1942. Gandhi gave the slogan 'Do or Die'. It was the most aggressive mass movement of the freedom struggle.",
+            "topic": "Freedom Struggle"
+          },
+          {
+            "id": "NDA_GAT_HIS_E08",
+            "question": "Harappa civilization is associated with river:",
+            "options": ["A) Ganga", "B) Indus/Ravi", "C) Yamuna", "D) Godavari"],
+            "answer": "B",
+            "solution": "Harappa was situated on the banks of river Ravi (a tributary of Indus) in present-day Pakistan. The civilization is named after the Indus River.",
+            "topic": "Ancient India"
+          }
+        ],
+        "medium": [
+          {
+            "id": "NDA_GAT_HIS_M01",
+            "question": "The 'Drain of Wealth' theory was propounded by:",
+            "options": ["A) Bal Gangadhar Tilak", "B) Gopal Krishna Gokhale", "C) Dadabhai Naoroji", "D) Bipin Chandra Pal"],
+            "answer": "C",
+            "solution": "Dadabhai Naoroji (called Grand Old Man of India) propounded the Drain of Wealth theory — British were extracting India's wealth without adequate return. Detailed in his book 'Poverty and Un-British Rule in India'.",
+            "topic": "Freedom Struggle"
+          },
+          {
+            "id": "NDA_GAT_HIS_M02",
+            "question": "Ashtapradhan was a council of ministers under:",
+            "options": ["A) Akbar", "B) Shivaji", "C) Aurangzeb", "D) Peshwa Bajirao"],
+            "answer": "B",
+            "solution": "Ashtapradhan (council of eight ministers) was established by Chhatrapati Shivaji Maharaj. Key ministers: Peshwa (PM), Amatya (Finance), Mantri (Interior), Sachiv (Correspondence), Senapati (Army), Sumant (Foreign), Nyayadhish (Justice), Panditrao (Religious).",
+            "topic": "Maratha History"
+          },
+          {
+            "id": "NDA_GAT_HIS_M03",
+            "question": "Din-i-Ilahi was promoted by which Mughal emperor?",
+            "options": ["A) Babur", "B) Humayun", "C) Akbar", "D) Jahangir"],
+            "answer": "C",
+            "solution": "Din-i-Ilahi (Divine Faith) was a syncretic religion introduced by Akbar around 1582, attempting to merge elements of Islam, Hinduism, Zoroastrianism, Christianity, and Jainism. Birbal was the only Hindu to adopt it.",
+            "topic": "Mughal Empire"
+          },
+          {
+            "id": "NDA_GAT_HIS_M04",
+            "question": "Which battle ended Vijayanagara Empire's power?",
+            "options": ["A) Panipat 1526", "B) Talikota 1565", "C) Buxar 1764", "D) Plassey 1757"],
+            "answer": "B",
+            "solution": "Battle of Talikota (1565) was fought between Vijayanagara (under Rama Raya) and a confederacy of Deccan Sultanates. Vijayanagara was defeated and sacked. Capital Hampi was destroyed.",
+            "topic": "Medieval India"
+          }
+        ],
+        "hard": [
+          {
+            "id": "NDA_GAT_HIS_H01",
+            "question": "The Subsidiary Alliance system was devised by:",
+            "options": ["A) Lord Cornwallis", "B) Lord Wellesley", "C) Lord Hastings", "D) Warren Hastings"],
+            "answer": "B",
+            "solution": "Lord Wellesley introduced the Subsidiary Alliance (1798). Under it, Indian rulers surrendered foreign affairs to British, maintained British troops, and in return got protection. First applied to Hyderabad (1798), then Mysore, Tanjore, Awadh.",
+            "topic": "British India"
+          },
+          {
+            "id": "NDA_GAT_HIS_H02",
+            "question": "Arrange chronologically: (i) Dandi March (ii) Non-Cooperation (iii) Quit India (iv) Simon Commission:",
+            "options": [
+              "A) ii, iv, i, iii",
+              "B) iv, ii, i, iii",
+              "C) ii, i, iv, iii",
+              "D) i, ii, iv, iii"
+            ],
+            "answer": "A",
+            "solution": "Non-Cooperation: 1920-22; Simon Commission: 1927; Dandi March/CDM: 1930; Quit India: 1942. Correct order: ii(1920), iv(1927), i(1930), iii(1942).",
+            "topic": "Freedom Struggle - Chronology"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nda_gat_polity",
+      "section": "Indian Polity and Constitution",
+      "notes": {
+        "chapters": [
+          {
+            "topic": "Constitutional Framework",
+            "key_points": [
+              "Constitution adopted: November 26, 1949. Came into effect: January 26, 1950. Constituent Assembly President: Dr. Rajendra Prasad. Drafting Committee Chairman: Dr. B.R. Ambedkar.",
+              "Preamble: 'We the people of India...SOVEREIGN SOCIALIST SECULAR DEMOCRATIC REPUBLIC' (Socialist, Secular added by 42nd Amendment 1976). Preamble is not justiciable.",
+              "Fundamental Rights: Part III (Articles 12-35). Right to Equality (14-18), Freedom (19-22), Against Exploitation (23-24), Religion (25-28), Cultural/Educational (29-30), Constitutional Remedies (32) — 'Heart and Soul' per Ambedkar.",
+              "Directive Principles (Part IV): Non-justiciable but fundamental to governance. Fundamental Duties (Part IV-A, Article 51A): Added by 42nd Amendment; 10 duties, 11th added by 86th Amendment 2002.",
+              "Amendment: Article 368. Simple majority for some. Special majority (2/3rd present + >50% total) for most. Special majority + ratification by half states for federal provisions.",
+              "Emergency: National (Article 352, proclaimed thrice: 1962, 1971, 1975), State (Article 356, President's Rule, 365+ times), Financial (Article 360, never proclaimed)."
+            ]
+          },
+          {
+            "topic": "Government Structure",
+            "key_points": [
+              "Parliament: Rajya Sabha (250 members max; 238 elected, 12 nominated; not dissolved; Chairman=VP), Lok Sabha (552 max; 543 elected, 2 Anglo-Indian nominated until 104th Amendment 2019; Speaker presides; 5 year term).",
+              "President: Elected by elected members of both Houses + State assemblies. 5-year term. Impeachment: Article 61. Powers: Real vs nominal (Constitutional head; PM is real executive). Can return bill once, must sign if sent again.",
+              "PM and Council of Ministers: Article 74 (CoM aids and advises President). Collective responsibility to Lok Sabha. Individual ministers to PM.",
+              "Supreme Court: Chief Justice + 33 judges (currently). Original, Appellate, Advisory jurisdiction. Judicial Review power. National Judicial Appointments Commission (struck down 2015).",
+              "UPSC: Article 315-323. Independent constitutional body. Conducts Civil Services, NDA, CDS, IES exams. Chairman appointed/removed by President."
+            ]
+          }
+        ]
+      },
+      "questions": {
+        "easy": [
+          {
+            "id": "NDA_GAT_POL_E01",
+            "question": "The Constitution of India came into effect on:",
+            "options": ["A) Aug 15, 1947", "B) Nov 26, 1949", "C) Jan 26, 1950", "D) Jan 26, 1949"],
+            "answer": "C",
+            "solution": "Constitution was adopted on Nov 26, 1949 (Constitution Day/Law Day) but came into effect on January 26, 1950 (celebrated as Republic Day).",
+            "topic": "Indian Constitution"
+          },
+          {
+            "id": "NDA_GAT_POL_E02",
+            "question": "Fundamental Rights are contained in which Part of Constitution?",
+            "options": ["A) Part II", "B) Part III", "C) Part IV", "D) Part V"],
+            "answer": "B",
+            "solution": "Fundamental Rights are in Part III (Articles 12-35). Part IV contains Directive Principles of State Policy.",
+            "topic": "Fundamental Rights"
+          },
+          {
+            "id": "NDA_GAT_POL_E03",
+            "question": "Who is the Chairman of Rajya Sabha?",
+            "options": ["A) President", "B) Prime Minister", "C) Speaker", "D) Vice President"],
+            "answer": "D",
+            "solution": "Vice President of India is the ex-officio Chairman of Rajya Sabha. Speaker presides over Lok Sabha.",
+            "topic": "Parliament"
+          },
+          {
+            "id": "NDA_GAT_POL_E04",
+            "question": "Right to Constitutional Remedies is under Article:",
+            "options": ["A) 19", "B) 21", "C) 32", "D) 44"],
+            "answer": "C",
+            "solution": "Article 32 provides Right to Constitutional Remedies — right to move Supreme Court for enforcement of Fundamental Rights. Dr. Ambedkar called it 'Heart and Soul of Constitution'.",
+            "topic": "Fundamental Rights"
+          },
+          {
+            "id": "NDA_GAT_POL_E05",
+            "question": "National Emergency under Article 352 was proclaimed for the first time in:",
+            "options": ["A) 1947", "B) 1962", "C) 1971", "D) 1975"],
+            "answer": "B",
+            "solution": "First National Emergency was proclaimed in 1962 during the Indo-China War. Second in 1971 (India-Pakistan War). Third in 1975 (Internal disturbance — the famous Emergency under Indira Gandhi).",
+            "topic": "Emergency Provisions"
+          },
+          {
+            "id": "NDA_GAT_POL_E06",
+            "question": "DPSP (Directive Principles of State Policy) are:",
+            "options": [
+              "A) Justiciable",
+              "B) Non-justiciable",
+              "C) Enforceable in High Courts only",
+              "D) Fundamental Rights"
+            ],
+            "answer": "B",
+            "solution": "DPSPs (Part IV) are non-justiciable — they cannot be enforced by courts. But they are fundamental to governance and state has duty to apply them. Borrowed from Irish Constitution.",
+            "topic": "DPSP"
+          },
+          {
+            "id": "NDA_GAT_POL_E07",
+            "question": "The Preamble of India describes it as:",
+            "options": [
+              "A) Sovereign Democratic Republic",
+              "B) Sovereign Socialist Secular Democratic Republic",
+              "C) Federal Socialist Republic",
+              "D) Sovereign Secular Federal Republic"
+            ],
+            "answer": "B",
+            "solution": "Current Preamble (after 42nd Amendment 1976): Sovereign Socialist Secular Democratic Republic. 'Socialist' and 'Secular' were added by 42nd Amendment.",
+            "topic": "Preamble"
+          }
+        ],
+        "medium": [
+          {
+            "id": "NDA_GAT_POL_M01",
+            "question": "Which writ is used to release a person from illegal detention?",
+            "options": ["A) Mandamus", "B) Certiorari", "C) Habeas Corpus", "D) Prohibition"],
+            "answer": "C",
+            "solution": "Habeas Corpus (Latin: 'to have the body') — court orders production of detained person to examine legality of detention. Mandamus = order to perform duty. Certiorari = quash lower court order. Prohibition = stop lower court proceedings.",
+            "topic": "Writs"
+          },
+          {
+            "id": "NDA_GAT_POL_M02",
+            "question": "The 'Doctrine of Basic Structure' was established by Supreme Court in:",
+            "options": ["A) Golaknath Case 1967", "B) Kesavananda Bharati Case 1973", "C) Minerva Mills Case 1980", "D) Maneka Gandhi Case 1978"],
+            "answer": "B",
+            "solution": "Kesavananda Bharati vs State of Kerala (1973) — Supreme Court held that Parliament can amend the Constitution but cannot destroy its Basic Structure. Basic features include: supremacy of Constitution, democratic republic, federal character, separation of powers, judicial review.",
+            "topic": "Constitutional Amendments"
+          },
+          {
+            "id": "NDA_GAT_POL_M03",
+            "question": "President of India is elected by:",
+            "options": [
+              "A) Direct election by all citizens",
+              "B) Elected MPs of both Houses only",
+              "C) Elected members of Parliament and State Legislative Assemblies",
+              "D) Parliament alone"
+            ],
+            "answer": "C",
+            "solution": "President is elected by an Electoral College comprising: elected members of both Houses of Parliament + elected members of all State Legislative Assemblies + Union Territories with legislatures (Delhi, Puducherry). Nominated members don't vote.",
+            "topic": "President"
+          }
+        ],
+        "hard": [
+          {
+            "id": "NDA_GAT_POL_H01",
+            "question": "Which Constitutional Amendment added Fundamental Duties to the Constitution?",
+            "options": ["A) 42nd Amendment", "B) 44th Amendment", "C) 86th Amendment", "D) 73rd Amendment"],
+            "answer": "A",
+            "solution": "42nd Amendment 1976 (Swaran Singh Committee recommendations) added Part IV-A (Article 51A) with 10 Fundamental Duties. 86th Amendment 2002 added the 11th duty — parents/guardians to provide education to children aged 6-14.",
+            "topic": "Constitutional Amendments"
+          },
+          {
+            "id": "NDA_GAT_POL_H02",
+            "question": "Money Bill can be introduced in:",
+            "options": [
+              "A) Either House",
+              "B) Rajya Sabha only",
+              "C) Lok Sabha only",
+              "D) Joint sitting only"
+            ],
+            "answer": "C",
+            "solution": "A Money Bill (Article 110) can only be introduced in Lok Sabha. Rajya Sabha can suggest amendments but not reject. If Lok Sabha doesn't accept amendments, it is deemed passed as sent. Speaker certifies whether a bill is a Money Bill.",
+            "topic": "Parliament - Legislative Process"
+          }
+        ]
+      }
+    }
+  ]
+}
