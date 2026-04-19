@@ -46,18 +46,21 @@ const DoubtSolver = ({ retryableFetch }) => {
         if (containerRef.current) {
             containerRef.current.scrollTop = 0;
         }
+        let intervalId;
         const timer = setTimeout(() => {
-            const interval = setInterval(() => {
+            intervalId = setInterval(() => {
                 i++;
                 setTypedGreeting(fullText.slice(0, i));
                 if (i >= fullText.length) {
-                    clearInterval(interval);
+                    clearInterval(intervalId);
                     setTimeout(() => setShowChatUI(true), 600);
                 }
             }, 60);
-            return () => clearInterval(interval);
         }, 400);
-        return () => clearTimeout(timer);
+        return () => {
+            clearTimeout(timer);
+            if (intervalId) clearInterval(intervalId);
+        };
     }, [currentUser]);
 
     useEffect(() => {

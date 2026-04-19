@@ -147,7 +147,7 @@ export const PodcastProvider = ({ children }) => {
             if (audioRef.current?.paused && audioRef.current?.currentTime > 0) {
                 audioRef.current.play();
             } else {
-                playLine(currentLineIndex === -1 ? 0 : currentLineIndex);
+                playLine(currentLineIndex === -1 ? 0 : currentLineIndex, podcastScript);
             }
         }
     };

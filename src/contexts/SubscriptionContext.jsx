@@ -114,32 +114,66 @@ export const SubscriptionProvider = ({ children }) => {
         loadSubscription();
     }, [currentUser]);
 
-    // Load usage from localStorage on mount
+    // Load usage from localStorage and Firebase on mount
     useEffect(() => {
-        const storedData = localStorage.getItem('aurem_usage');
-        if (storedData) {
-            try {
-                const parsed = JSON.parse(storedData);
-                const today = new Date().toDateString();
+        const loadUsage = async () => {
+            const today = new Date().toDateString();
+            let finalUsage = {};
 
-                // Reset if it's a new day
-                if (parsed.date !== today) {
-                    setDailyUsage({});
-                    localStorage.setItem('aurem_usage', JSON.stringify({ date: today, usage: {} }));
-                } else {
-                    setDailyUsage(parsed.usage || {});
-                }
-            } catch {
-                setDailyUsage({});
+            // 1. Load from localStorage
+            const storedData = localStorage.getItem('aurem_usage');
+            if (storedData) {
+                try {
+                    const parsed = JSON.parse(storedData);
+                    if (parsed.date === today) {
+                        finalUsage = parsed.usage || {};
+                    }
+                } catch {}
             }
-        }
-    }, []);
 
-    // Save usage to localStorage when it changes
+            // 2. Load from Firebase if user is logged in
+            if (currentUser?.uid) {
+                try {
+                    const userDocRef = doc(db, 'users', currentUser.uid);
+                    const docSnap = await getDoc(userDocRef);
+                    if (docSnap.exists() && docSnap.data().dailyUsage) {
+                        const cloudUsage = docSnap.data().dailyUsage;
+                        if (cloudUsage.date === today) {
+                            // Merge local and cloud, taking max to be safe
+                            for (const key in cloudUsage.usage) {
+                                finalUsage[key] = Math.max(finalUsage[key] || 0, cloudUsage.usage[key]);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to load usage from cloud", e);
+                }
+            }
+
+            setDailyUsage(finalUsage);
+            localStorage.setItem('aurem_usage', JSON.stringify({ date: today, usage: finalUsage }));
+        };
+        loadUsage();
+    }, [currentUser]);
+
+    // Save usage to localStorage and Firebase when it changes
     useEffect(() => {
         const today = new Date().toDateString();
         localStorage.setItem('aurem_usage', JSON.stringify({ date: today, usage: dailyUsage }));
-    }, [dailyUsage]);
+
+        if (currentUser?.uid && Object.keys(dailyUsage).length > 0) {
+            const saveUsageToCloud = async () => {
+                try {
+                    const userDocRef = doc(db, 'users', currentUser.uid);
+                    await setDoc(userDocRef, { dailyUsage: { date: today, usage: dailyUsage } }, { merge: true });
+                } catch (e) {
+                    console.error("Failed to save usage to cloud", e);
+                }
+            };
+            const timeoutId = setTimeout(saveUsageToCloud, 1000);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [dailyUsage, currentUser]);
 
     // Check if user can use a feature
     const canUseFeature = (feature) => {
@@ -204,6 +238,7 @@ export const SubscriptionProvider = ({ children }) => {
                 await setDoc(userDocRef, { subscriptionTier: 'go' }, { merge: true });
             } catch (err) {
                 console.error('[Subscription] Firestore save error:', err);
+                alert("Failed to sync premium status to cloud. Please contact support.");
             }
         }
     };
@@ -220,6 +255,7 @@ export const SubscriptionProvider = ({ children }) => {
                 console.log('[Subscription] Upgraded to Pro - saved to Firestore');
             } catch (err) {
                 console.error('[Subscription] Firestore save error:', err);
+                alert("Failed to sync premium status to cloud. Please contact support.");
             }
         }
     };
@@ -236,6 +272,7 @@ export const SubscriptionProvider = ({ children }) => {
                 console.log('[Subscription] Downgraded to Basic - saved to Firestore');
             } catch (err) {
                 console.error('[Subscription] Firestore save error:', err);
+                alert("Failed to sync premium status to cloud. Please contact support.");
             }
         }
     };

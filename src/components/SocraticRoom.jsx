@@ -16,6 +16,11 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
     const chatEndRef = useRef(null);
     const recognitionRef = useRef(null);
     const audioRef = useRef(null);
+    const messagesRef = useRef(messages); // To fix stale closure in voice handler
+
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     // Stop audio on unmount
     useEffect(() => {
@@ -162,13 +167,13 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
         setIsThinking(true);
 
         try {
-            const history = messages.map(m => `${m.role === 'user' ? 'Student' : 'Grandmaster'}: ${m.text}`).join('\n');
+            const history = messagesRef.current.map(m => `${m.role === 'user' ? 'Student' : 'Grandmaster'}: ${m.text}`).join('\n');
             const prompt = `
                 HISTORY:
                 ${history}
                 
                 STUDENT RESPONSE:
-                ${userMsg}
+                ${transcriptText}
                 
                 Analyze the response. Check for logical fallacies or shallow explanations. 
                 Construct your rebuttal or next probing question.

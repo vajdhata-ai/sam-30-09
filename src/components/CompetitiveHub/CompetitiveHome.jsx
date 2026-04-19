@@ -19,6 +19,7 @@ const CompetitiveHome = ({ onStartStudy, onViewProgress, onExitHub, onSetupNewEx
     const [loading, setLoading] = useState(true);
     const [showUpgrade, setShowUpgrade] = useState(false);
     const [dataError, setDataError] = useState(false);
+    const [showApology, setShowApology] = useState(false);
 
     const uid = currentUser?.uid;
     const greeting = getGreeting(currentUser?.displayName || 'Student');
@@ -26,6 +27,12 @@ const CompetitiveHome = ({ onStartStudy, onViewProgress, onExitHub, onSetupNewEx
     useEffect(() => {
         if (uid) loadData();
     }, [uid]);
+
+    useEffect(() => {
+        // Show Aura apology shortly after the dashboard mounts
+        const timer = setTimeout(() => setShowApology(true), 2000);
+        return () => clearTimeout(timer);
+    }, []);
 
     const loadData = async (retryCount = 0) => {
         setLoading(true);
@@ -593,6 +600,27 @@ const CompetitiveHome = ({ onStartStudy, onViewProgress, onExitHub, onSetupNewEx
                 isOpen={showUpgrade} 
                 onClose={() => setShowUpgrade(false)} 
             />
+
+            {/* Aura Floating Apology */}
+            <div className={`fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${showApology ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className={`relative flex flex-col items-center max-w-lg w-full transition-all duration-700 transform ${showApology ? 'translate-y-0 scale-100' : 'translate-y-10 scale-95'}`}>
+                    <div className="flex items-center justify-center p-6 rounded-full bg-pink-500/10 border-2 border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.4)] mb-6 animate-bounce-slow">
+                        <span className="text-6xl drop-shadow-2xl">✨</span>
+                    </div>
+                    <div className="relative px-8 py-10 rounded-[2.5rem] bg-theme-surface/95 backdrop-blur-3xl border border-pink-500/50 shadow-[0_10px_50px_rgba(236,72,153,0.3)] text-center w-full">
+                        <p className="font-serif italic font-light text-pink-400 text-xl mb-4">Aura</p>
+                        <h2 className="text-3xl font-black text-white mb-6">Under Development</h2>
+                        <p className="text-theme-text font-medium text-lg leading-relaxed tracking-wide px-4">
+                            I'm sorry Voyager, but the Competitive Hub is currently under development. Your selected campaigns will be fully active starting <span className="text-pink-500 font-black uppercase tracking-widest block mt-2 text-xl">late May</span>.
+                        </p>
+                        {onExitHub && (
+                            <button onClick={onExitHub} className="mt-10 px-10 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 text-white font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-pink-500/20">
+                                Return to Dashboard
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

@@ -639,8 +639,8 @@ You are writing a comprehensive textbook chapter.`;
     // ═══════════════════════════════════════════════
 
     const renderInputView = () => (
-        <div className="max-w-5xl mx-auto py-16 px-6 space-y-16 animate-in fade-in duration-700">
-            <div className="text-center space-y-5 relative">
+        <div className="max-w-5xl mx-auto py-4 px-6 space-y-10 animate-in fade-in duration-700">
+            <div className="text-center space-y-4 relative">
                 <div className="absolute inset-x-0 top-0 h-40 bg-theme-primary/5 blur-[100px] pointer-events-none"></div>
 
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border border-theme-primary/20 bg-theme-primary/5 mb-4 transition-transform duration-500 hover:scale-105 cursor-none relative group">

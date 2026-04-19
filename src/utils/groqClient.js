@@ -40,7 +40,7 @@ export async function callGroq(messages, model, isVision = false, options = {}) 
         // since it has a separate token-per-day pool on the free tier.
         if (response.status === 429 && groqModel.includes('70b')) {
             console.warn("[Groq Client] Daily Limit hit on 70B model. Falling back to 8B instant model...");
-            return callGroq(messages, "llama-3.1-8b-instant", isVision);
+            return callGroq(messages, "llama-3.1-8b-instant", isVision, options);
         }
 
         console.error(`[Groq] API Error ${response.status}:`, errText);

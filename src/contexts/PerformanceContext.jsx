@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { db } from '../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const PerformanceContext = createContext();
 
@@ -9,31 +11,51 @@ export const PerformanceProvider = ({ children }) => {
     const { currentUser } = useAuth();
     const [performanceData, setPerformanceData] = useState([]);
 
-    // Load from localStorage on mount or user change
+    // Load from localStorage and Firebase on mount or user change
     useEffect(() => {
-        if (!currentUser?.uid) {
-            setPerformanceData([]);
-            return;
-        }
-
-        const stored = localStorage.getItem(`aurem_perf_${currentUser.uid}`);
-        if (stored) {
-            try {
-                setPerformanceData(JSON.parse(stored));
-            } catch (e) {
-                console.error("Failed to parse performance data", e);
+        const loadPerformance = async () => {
+            if (!currentUser?.uid) {
                 setPerformanceData([]);
+                return;
             }
-        } else {
-            setPerformanceData([]);
-        }
+
+            try {
+                const stored = localStorage.getItem(`aurem_perf_${currentUser.uid}`);
+                if (stored) {
+                    setPerformanceData(JSON.parse(stored));
+                }
+
+                // Sync from Firebase
+                const docRef = doc(db, 'userPerformance', currentUser.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists() && docSnap.data().performanceData) {
+                    const cloudData = docSnap.data().performanceData;
+                    setPerformanceData(cloudData);
+                    localStorage.setItem(`aurem_perf_${currentUser.uid}`, JSON.stringify(cloudData));
+                }
+            } catch (e) {
+                console.error("Failed to load performance data", e);
+            }
+        };
+        loadPerformance();
     }, [currentUser]);
 
-    // Save to localStorage whenever it changes
+    // Save to localStorage and Firebase whenever it changes
     useEffect(() => {
-        if (currentUser?.uid && performanceData.length > 0) {
-            localStorage.setItem(`aurem_perf_${currentUser.uid}`, JSON.stringify(performanceData));
-        }
+        if (!currentUser?.uid || performanceData.length === 0) return;
+        
+        const savePerformance = async () => {
+            try {
+                localStorage.setItem(`aurem_perf_${currentUser.uid}`, JSON.stringify(performanceData));
+                const docRef = doc(db, 'userPerformance', currentUser.uid);
+                await setDoc(docRef, { performanceData }, { merge: true });
+            } catch (e) {
+                console.error("Failed to save performance data to cloud", e);
+            }
+        };
+        
+        const timeoutId = setTimeout(savePerformance, 1500);
+        return () => clearTimeout(timeoutId);
     }, [performanceData, currentUser]);
 
     // Add a new performance record (score out of 100)

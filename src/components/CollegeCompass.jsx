@@ -1159,9 +1159,9 @@ CRITICAL: If the profile is mostly empty (e.g. they didn't use the Career or Col
                             <ChevronLeft className="w-4 h-4" /> Back to Home
                         </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto px-6 pt-24 pb-8 custom-scrollbar">
-                    <div className="max-w-5xl mx-auto py-12 space-y-16 animate-in fade-in zoom-in-95 duration-700">
-                        <div className="text-center space-y-5 relative">
+                    <div className="flex-1 overflow-y-auto px-6 pt-8 pb-8 custom-scrollbar">
+                    <div className="max-w-5xl mx-auto py-4 space-y-10 animate-in fade-in zoom-in-95 duration-700">
+                        <div className="text-center space-y-4 relative">
                             <div className="absolute inset-x-0 top-0 h-40 bg-theme-primary/5 blur-[100px] pointer-events-none"></div>
 
                             {/* ═══ 3D ANIMATED COMPASS ═══ */}

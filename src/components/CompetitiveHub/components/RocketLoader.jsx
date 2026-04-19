@@ -217,12 +217,12 @@ const RocketLoader = ({ mode = 'launch', title = "Loading", onExit, onComplete }
                         <div className="relative flex flex-col items-center"
                              style={{
                                  transformOrigin: 'bottom center',
-                                 marginBottom: (phase === 'preflight' || phase === 'countdown' || phase === 'ignition') ? '80px' : '0',
+                                 marginBottom: (phase === 'preflight' || phase === 'countdown' || phase === 'ignition') ? '60px' : '0',
                                  transform:
-                                 phase === 'preflight' ? 'translateY(0) scale(1.8)' :
-                                 phase === 'countdown' ? 'translateY(0) scale(1.8)' :
-                                 phase === 'ignition' ? 'translateY(-8px) scale(1.8)' :
-                                 phase === 'liftoff' ? 'translateY(-130vh) scale(1.5)' :
+                                 phase === 'preflight' ? 'translateY(0) scale(1.0)' :
+                                 phase === 'countdown' ? 'translateY(0) scale(1.0)' :
+                                 phase === 'ignition' ? 'translateY(-8px) scale(1.0)' :
+                                 phase === 'liftoff' ? 'translateY(-130vh) scale(1.1)' :
                                  'translateY(-200vh) scale(1.0)',
                              transition:
                                  phase === 'ignition' ? 'all 2s ease-in-out' :
@@ -256,11 +256,11 @@ const RocketLoader = ({ mode = 'launch', title = "Loading", onExit, onComplete }
                         <div className="relative flex flex-col items-center"
                              style={{
                                  transformOrigin: 'bottom center',
-                                 marginBottom: phase === 'touchdown' || isDone ? '80px' : '0',
+                                 marginBottom: phase === 'touchdown' || isDone ? '60px' : '0',
                                  transform:
-                                 phase === 'orbit' ? 'translateY(-60vh) scale(0.8)' :
-                                 phase === 'descending' ? 'translateY(0) scale(1.5)' :
-                                 'translateY(0) scale(1.8)',
+                                 phase === 'orbit' ? 'translateY(-60vh) scale(0.6)' :
+                                 phase === 'descending' ? 'translateY(0) scale(1.0)' :
+                                 'translateY(0) scale(1.0)',
                              transition:
                                  phase === 'descending' ? 'all 3s cubic-bezier(0.2, 0, 0.4, 1)' :
                                  phase === 'touchdown' ? 'all 1.5s ease-out' : 'all 0.5s ease',
@@ -297,7 +297,7 @@ const RocketLoader = ({ mode = 'launch', title = "Loading", onExit, onComplete }
                 {mode === 'launch' && (
                     <div className={`w-full transition-all duration-[2000ms] ${
                         isFlying || isDone ? 'opacity-0 translate-y-20' : 'opacity-100'
-                    }`} style={{ transform: 'scale(1.4)', transformOrigin: 'bottom center', paddingBottom: '20px' }}>
+                    }`} style={{ transform: 'scale(1.0)', transformOrigin: 'bottom center', paddingBottom: '20px' }}>
                         <LaunchPad isActive={phase === 'ignition' || (phase === 'countdown' && count <= 3)} />
                     </div>
                 )}
@@ -306,7 +306,7 @@ const RocketLoader = ({ mode = 'launch', title = "Loading", onExit, onComplete }
                 {mode === 'landing' && (
                     <div className={`w-full transition-all duration-[2000ms] ${
                         phase === 'orbit' ? 'opacity-0 translate-y-20' : 'opacity-100'
-                    }`} style={{ transform: 'scale(1.4)', transformOrigin: 'bottom center', paddingBottom: '20px' }}>
+                    }`} style={{ transform: 'scale(1.0)', transformOrigin: 'bottom center', paddingBottom: '20px' }}>
                         {phase === 'touchdown' && <GroundSmoke />}
                         <div className="relative">
                             <div className="absolute -top-32 left-0 right-0 h-32"

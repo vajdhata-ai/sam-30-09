@@ -107,7 +107,7 @@ const LandingPage = ({ onNavigate }) => {
                     RAG-Powered · Hallucination-Resistant
                 </div>
 
-                <h1 className="lp-hero-title" style={{ color: 'white', fontSize: '64px', fontWeight: 800, zIndex: 9999, position: 'relative', opacity: 1, display: 'block', textShadow: '0 0 20px rgba(0,0,0,0.5)' }}>
+                <h1 className="lp-hero-title">
                     <span className="lp-word-1">Learn Smarter.</span><br />
                     <span className="lp-word-2">Master Everything.</span>
                 </h1>
@@ -167,10 +167,11 @@ const LandingPage = ({ onNavigate }) => {
                         <div className="lp-feature-title translate-z-20">Adaptive Assessments</div>
                         <div className="lp-feature-desc translate-z-10">Diagnostic quizzes that pinpoint exactly what you don't know — then generate a remediation plan targeting only those gaps.</div>
                     </div>
-                    <div className="lp-card-3d">
+                    <div className="lp-card-3d" style={{ position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: '16px', right: '16px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#fbbf24', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.25)', padding: '4px 10px', borderRadius: '999px' }}>Coming Soon</div>
                         <div className="lp-feature-icon lp-icon-yellow translate-z-50">🏆</div>
                         <div className="lp-feature-title translate-z-20">Competitive Exam Hub</div>
-                        <div className="lp-feature-desc translate-z-10">Personalized dashboards for JEE, NEET, SAT, ACT, IELTS, UPSC and more. Daily study plans, mock tests, AI explainer videos.</div>
+                        <div className="lp-feature-desc translate-z-10">Personalized dashboards for JEE, NEET, SAT, ACT, IELTS, UPSC and more. Daily study plans, mock tests, AI explainer videos. <em style={{ color: 'rgba(251,191,36,0.7)', fontStyle: 'italic' }}>Launching late May 2026.</em></div>
                     </div>
                     <div className="lp-card-3d">
                         <div className="lp-feature-icon lp-icon-pink translate-z-50">🎙️</div>
@@ -297,7 +298,7 @@ const LandingPage = ({ onNavigate }) => {
             <section className="lp-section" id="exams">
                 <span className="lp-section-tag lp-reveal">Competitive Exam Hub</span>
                 <h2 className="lp-section-title lp-reveal">Your exam. Your dashboard.<br />Your plan.</h2>
-                <p className="lp-section-desc lp-reveal">Select your target exam and get a personalized syllabus, daily study queue, video lessons, AI podcasts, and mock tests — all in one place.</p>
+                <p className="lp-section-desc lp-reveal">Select your target exam and get a personalized syllabus, daily study queue, video lessons, AI podcasts, and mock tests — all in one place. <span style={{ color: '#fbbf24', fontWeight: 700 }}>Coming late May 2026.</span></p>
 
                 <div className="lp-exam-scroll lp-reveal">
                     {exams.map(exam => (
@@ -315,7 +316,7 @@ const LandingPage = ({ onNavigate }) => {
                     <div className="lp-dash-header">
                         <div className="lp-dash-title">
                             🇮🇳 JEE Main Dashboard
-                            <div className="lp-dash-badge">Active</div>
+                            <div className="lp-dash-badge" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>Coming Soon</div>
                         </div>
                         <div style={{ fontSize: '13px', color: 'var(--lp-text3)' }}>Exam in 87 days · 4h/day</div>
                     </div>

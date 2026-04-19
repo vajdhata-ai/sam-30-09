@@ -293,6 +293,13 @@ const PodcastGenerator = () => {
             setIsLoadingAudio(false);
             setTtsProgress('');
 
+            // Stop previous audio before starting new one
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.onended = null;
+                audioRef.current.onerror = null;
+            }
+
             // Create and play audio
             const audio = new Audio(audioUrl);
             audio.volume = volume;

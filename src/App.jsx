@@ -79,8 +79,7 @@ const AppContent = () => {
     const [phase, setPhase] = useState('splash');
     const [currentView, setCurrentView] = useState('doubt-solver');
     const [showOnboarding, setShowOnboarding] = useState(false);
-
-    const hasVisited = localStorage.getItem('hasVisited') === 'true';
+    const [hasVisited, setHasVisited] = useState(() => localStorage.getItem('hasVisited') === 'true');
 
     // Initial splash completes
     const handleSplashComplete = () => {
@@ -98,6 +97,7 @@ const AppContent = () => {
     // Landing page "Get Started" clicked
     const handleGetStarted = () => {
         localStorage.setItem('hasVisited', 'true');
+        setHasVisited(true);
         setPhase('splash-to-login');
     };
 

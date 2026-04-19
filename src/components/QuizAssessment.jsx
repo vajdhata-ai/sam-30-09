@@ -39,7 +39,7 @@ const QuizAssessment = ({ retryableFetch, onNavigate }) => {
     useEffect(() => {
         const loadDocs = async () => {
             try {
-                const docs = await CloudService.listDocuments();
+                const docs = await CloudService.getAllDocuments();
                 setDocuments(docs);
             } catch (e) {
                 console.error("Failed to load documents", e);
@@ -204,7 +204,15 @@ You will be FIRED if you include content from wrong class levels.`;
             });
 
             const text = result.choices?.[0]?.message?.content || "";
-            const parsedQuiz = RagService.extractJson(text);
+            let parsedQuiz = RagService.extractJson(text);
+            
+            // Normalize: extractJson may return a raw array
+            if (Array.isArray(parsedQuiz)) {
+                parsedQuiz = { questions: parsedQuiz };
+            }
+            if (!parsedQuiz.questions || parsedQuiz.questions.length === 0) {
+                throw new Error("AI returned no questions. Please try again.");
+            }
 
             // Post-processing to ensure sections exist if missing in simple mode
             if (!parsedQuiz.questions[0].section) {
@@ -298,7 +306,14 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
         } finally { setIsLoading(false); }
     };
 
-    const handleRetake = () => { /* ... existing retake logic ... */ };
+    const handleRetake = () => {
+        setQuizData(null);
+        setAnswers({});
+        setGradingResult(null);
+        setAssessmentStats(null);
+        setError(null);
+        setStep('setup');
+    };
 
     // Helper to group questions by section for display
     const groupQuestionsBySection = (questions) => {

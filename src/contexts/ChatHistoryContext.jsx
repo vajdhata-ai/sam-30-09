@@ -1,10 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { db } from '../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const ChatHistoryContext = createContext();
 
 export const useChatHistory = () => useContext(ChatHistoryContext);
 
 export const ChatHistoryProvider = ({ children }) => {
+    const { currentUser } = useAuth();
     // Structure: [{ id: string, feature: string, title: string, messages: [], updatedAt: number }]
     const [chats, setChats] = useState([]);
     const [activeChatId, setActiveChatId] = useState(null);
@@ -25,27 +29,51 @@ export const ChatHistoryProvider = ({ children }) => {
         }
     };
 
-    // Load from local storage
+    // Load from local storage and Firebase
     useEffect(() => {
-        try {
-            const savedChats = localStorage.getItem('aurem_global_chats');
-            if (savedChats) {
-                setChats(JSON.parse(savedChats));
+        const loadChats = async () => {
+            try {
+                const savedChats = localStorage.getItem('aurem_global_chats');
+                if (savedChats) {
+                    setChats(JSON.parse(savedChats));
+                }
+                
+                if (currentUser?.uid && isHistoryEnabled) {
+                    const docRef = doc(db, 'userChats', currentUser.uid);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const cloudChats = docSnap.data().chats || [];
+                        setChats(cloudChats);
+                        localStorage.setItem('aurem_global_chats', JSON.stringify(cloudChats));
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load chats', err);
             }
-        } catch (err) {
-            console.error('Failed to load chats from local storage', err);
-        }
-    }, []);
+        };
+        loadChats();
+    }, [currentUser, isHistoryEnabled]);
 
-    // Save to local storage whenever chats change
+    // Save to local storage and Firebase whenever chats change
     useEffect(() => {
         if (!isHistoryEnabled) return;
-        try {
-            localStorage.setItem('aurem_global_chats', JSON.stringify(chats));
-        } catch (err) {
-            console.error('Failed to save chats to local storage', err);
-        }
-    }, [chats, isHistoryEnabled]);
+        
+        const saveChats = async () => {
+            try {
+                localStorage.setItem('aurem_global_chats', JSON.stringify(chats));
+                if (currentUser?.uid && chats.length > 0) {
+                    const docRef = doc(db, 'userChats', currentUser.uid);
+                    await setDoc(docRef, { chats }, { merge: true });
+                }
+            } catch (err) {
+                console.error('Failed to save chats', err);
+            }
+        };
+        
+        // Debounce saving to Firestore to avoid too many writes
+        const timeoutId = setTimeout(saveChats, 1000);
+        return () => clearTimeout(timeoutId);
+    }, [chats, isHistoryEnabled, currentUser]);
 
     const startNewChat = (feature, initialMessages = [], title = 'New Conversation') => {
         const id = Date.now().toString();
@@ -56,7 +84,10 @@ export const ChatHistoryProvider = ({ children }) => {
             messages: initialMessages,
             updatedAt: Date.now()
         };
-        setChats(prev => [newChat, ...prev]);
+        setChats(prev => {
+            const updated = [newChat, ...prev];
+            return updated.slice(0, 50); // Cap at 50 chats to prevent overflow
+        });
         setActiveChatId(id);
         return id;
     };
@@ -93,6 +124,9 @@ export const ChatHistoryProvider = ({ children }) => {
         setChats([]);
         setActiveChatId(null);
         localStorage.removeItem('aurem_global_chats');
+        if (currentUser?.uid) {
+            setDoc(doc(db, 'userChats', currentUser.uid), { chats: [] }, { merge: true }).catch(console.error);
+        }
     };
 
     // Generate a context string representing recent discussions across all features.

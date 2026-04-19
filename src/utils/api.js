@@ -112,6 +112,7 @@ export const retryableFetch = async (url, options = {}, retries = 2) => {
 
         if (response.status === 429 && retries > 0) {
             console.warn(`[AI] Rate limit hit, retrying... (${retries} left)`);
+            await new Promise(r => setTimeout(r, 1000 * (3 - retries + 1))); // Exponential backoff
             return retryableFetch(url, options, retries - 1);
         }
 
@@ -140,6 +141,7 @@ export const retryableFetch = async (url, options = {}, retries = 2) => {
     } catch (err) {
         if (retries > 0) {
             console.warn(`[AI] Network error: ${err.message}. Retrying...`);
+            await new Promise(r => setTimeout(r, 1000 * (3 - retries + 1)));
             return retryableFetch(url, options, retries - 1);
         }
         

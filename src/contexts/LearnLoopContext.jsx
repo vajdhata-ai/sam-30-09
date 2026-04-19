@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { db } from '../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const LearnLoopContext = createContext(undefined);
 
@@ -28,8 +30,54 @@ export const LearnLoopProvider = ({ children }) => {
         contentGenerated: false
     });
 
-    // History of eradicated doubts (persisted eventually)
+    // History of eradicated doubts
     const [masteryHistory, setMasteryHistory] = useState([]);
+
+    // Load from localStorage and Firebase
+    useEffect(() => {
+        const loadMastery = async () => {
+            if (!currentUser?.uid) {
+                setMasteryHistory([]);
+                return;
+            }
+
+            try {
+                const stored = localStorage.getItem(`aurem_mastery_${currentUser.uid}`);
+                if (stored) {
+                    setMasteryHistory(JSON.parse(stored));
+                }
+
+                const docRef = doc(db, 'userMastery', currentUser.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists() && docSnap.data().masteryHistory) {
+                    const cloudData = docSnap.data().masteryHistory;
+                    setMasteryHistory(cloudData);
+                    localStorage.setItem(`aurem_mastery_${currentUser.uid}`, JSON.stringify(cloudData));
+                }
+            } catch (e) {
+                console.error("Failed to load mastery history", e);
+            }
+        };
+        loadMastery();
+    }, [currentUser]);
+
+    // Save to localStorage and Firebase
+    useEffect(() => {
+        if (!currentUser?.uid || masteryHistory.length === 0) return;
+
+        const saveMastery = async () => {
+            try {
+                localStorage.setItem(`aurem_mastery_${currentUser.uid}`, JSON.stringify(masteryHistory));
+                const docRef = doc(db, 'userMastery', currentUser.uid);
+                await setDoc(docRef, { masteryHistory }, { merge: true });
+            } catch (e) {
+                console.error("Failed to save mastery history to cloud", e);
+            }
+        };
+
+        const timeoutId = setTimeout(saveMastery, 1500);
+        return () => clearTimeout(timeoutId);
+    }, [masteryHistory, currentUser]);
 
     const startLoop = (topic) => {
         console.log(`[LearnLoop] Starting loop for topic: ${topic}`);

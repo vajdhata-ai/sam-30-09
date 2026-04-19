@@ -38,9 +38,10 @@ export async function triggerCompanionReaction(eventType, storeSetters) {
     } else {
       setIsSpeaking(false);
       setSpeechAudioLevel(0);
+      if (frame) cancelAnimationFrame(frame);
     }
   };
 
   simulateVolume();
-  return transcript;
+  return { transcript, cancel: () => { if (frame) cancelAnimationFrame(frame); } };
 }
