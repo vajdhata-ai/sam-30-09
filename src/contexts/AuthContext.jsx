@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, getAdditionalUserInfo, deleteUser } from 'firebase/auth';
+import { ensureUserDocument } from '../utils/firestoreSubscription';
 
 const AuthContext = createContext();
 
@@ -17,6 +18,16 @@ export const AuthProvider = ({ children }) => {
             if (additionalInfo && additionalInfo.isNewUser) {
                 localStorage.setItem('showOnboarding', 'true');
             }
+
+            // Ensure Firestore user document exists (creates with default "basic" plan if new)
+            try {
+                await ensureUserDocument(result.user);
+                console.log('[Auth] Firestore user document ensured after Google sign-in');
+            } catch (firestoreErr) {
+                console.error('[Auth] Firestore ensureUserDocument failed (non-blocking):', firestoreErr);
+                // Non-blocking — auth still succeeds even if Firestore write fails
+            }
+
             return result.user;
         } catch (error) {
             console.error("Google Sign In Error:", error);
@@ -41,10 +52,19 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         console.log("AuthContext: Setting up listener");
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             console.log("AuthContext: User Changed", user);
             setCurrentUser(user);
             setLoading(false);
+
+            // On auth state restored (page reload, returning user), ensure Firestore doc exists
+            if (user) {
+                try {
+                    await ensureUserDocument(user);
+                } catch (err) {
+                    console.error('[Auth] ensureUserDocument on auth restore failed (non-blocking):', err);
+                }
+            }
         }, (error) => {
             console.error("AuthContext: Error", error);
             setLoading(false);

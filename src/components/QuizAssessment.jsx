@@ -327,9 +327,9 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
     };
 
     return (
-        <div className={`flex flex-col h-full bg-theme-bg text-theme-primary relative overflow-y - auto custom-scrollbar p-4 md:p-8 transition-colors duration-300 section-quiz`}>
-            <div className={`absolute top-0 right-0 w - [600px] h - [600px] bg-theme-primary /5 rounded-full blur - [100px] - z-10 pointer-events-none`} />
-            <div className={`absolute bottom-0 left-0 w - [400px] h - [400px] bg-theme-secondary /5 rounded-full blur - [100px] - z-10 pointer-events-none`} />
+        <div className={`flex flex-col h-full bg-theme-bg text-theme-primary relative overflow-y-auto custom-scrollbar p-4 md:p-8 transition-colors duration-300 section-quiz`}>
+            <div className={`absolute top-0 right-0 w-[] h-[] bg-theme-/ rounded-full blur-[] -z-10 pointer-events-none`} />
+            <div className={`absolute bottom-0 left-0 w-[] h-[] bg-theme-/ rounded-full blur-[] -z-10 pointer-events-none`} />
 
             {/* View Mode Toggle / Header logic if needed could go here, but we put it inside setup for now */}
 
@@ -557,7 +557,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                                                     <div>
                                                         <p className="text-lg font-medium text-theme-primary leading-relaxed">{q.question}</p>
                                                         {q.image_description && (
-                                                            <div className={`mt-4 p-5 rounded-2xl bg-theme-primary /5 border-theme-primary /20 border-2 border-dashed`}>
+                                                            <div className={`mt-4 p-5 rounded-2xl bg-theme-/ border-theme-/ border-2 border-dashed`}>
                                                                 <div className="flex items-center gap-3 mb-3">
                                                                     <div className="p-2 rounded-xl bg-indigo-500/20">
                                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" /></svg>
@@ -567,7 +567,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                                                                         <p className="text-xs text-theme-muted">Visualize this for the question</p>
                                                                     </div>
                                                                 </div>
-                                                                <div className={`p-4 rounded-xl bg-theme-bg /50 text-theme-secondary leading-relaxed`}>
+                                                                <div className={`p-4 rounded-xl bg-theme-/ text-theme-secondary leading-relaxed`}>
                                                                     {q.image_description}
                                                                 </div>
                                                             </div>
@@ -580,7 +580,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {q.options.map((opt, idx) => (
                                                             <label key={idx} className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all ${answers[q.id] === opt ? 'bg-theme-primary/20 border-theme-primary shadow-md' : 'bg-theme-surface border-transparent hover:bg-theme-surface/80'} `}>
-                                                                <input type="radio" name={`q - ${q.id} `} value={opt} checked={answers[q.id] === opt} onChange={() => setAnswers({ ...answers, [q.id]: opt })} className="hidden" />
+                                                                <input type="radio" name={`q-`} value={opt} checked={answers[q.id] === opt} onChange={() => setAnswers({ ...answers, [q.id]: opt })} className="hidden" />
                                                                 <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center flex-shrink-0 ${answers[q.id] === opt ? 'border-theme-primary bg-theme-primary' : 'border-theme-muted'} `}>
                                                                     {answers[q.id] === opt && <div className="w-2 h-2 rounded-full bg-theme-bg" />}
                                                                 </div>
@@ -612,7 +612,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                     {/* ... Result View (Kept mostly same, just ensuring variables match) ... */}
                     <div className="space-y-8 pb-10">
                         {/* Score Dashboard */}
-                        <div className={`glass-panel p-8 rounded - [32px] relative overflow-hidden perspective-2000 tilt-card bg-theme-surface border border-theme-border /20`}>
+                        <div className={`glass-panel p-8 rounded-[] relative overflow-hidden perspective-2000 tilt-card bg-theme-/`}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center preserve-3d">
                                 {/* Main Score */}
                                 <div className="md:col-span-1 flex flex-col items-center justify-center translate-z-50">
@@ -626,19 +626,19 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
 
                                 {/* Stats Grid */}
                                 <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-bg /5 border-theme-border /20 shadow-lg`}>
+                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-/ border-theme-/ shadow-lg`}>
                                         <p className="text-3xl font-black text-emerald-500">{assessmentStats.correct}</p>
                                         <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Correct</p>
                                     </div>
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-bg /5 border-theme-border /20 shadow-lg`}>
+                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-/ border-theme-/ shadow-lg`}>
                                         <p className="text-3xl font-black text-rose-500">{assessmentStats.total - assessmentStats.correct}</p>
                                         <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Incorrect</p>
                                     </div>
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-bg /5 border-theme-border /20 shadow-lg`}>
+                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-/ border-theme-/ shadow-lg`}>
                                         <p className="text-3xl font-black text-purple-500">{assessmentStats.total}</p>
                                         <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Total MCQs</p>
                                     </div>
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-bg /5 border-theme-border /20 shadow-lg`}>
+                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-/ border-theme-/ shadow-lg`}>
                                         <p className="text-3xl font-black text-indigo-500">{config.difficulty}</p>
                                         <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Difficulty</p>
                                     </div>
@@ -647,7 +647,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
 
                             {/* AI Feedback */}
                             {assessmentStats.analysis?.overall_feedback && (
-                                <div className={`mt-6 p-4 rounded-xl bg-theme-surface border border-theme-primary /20`}>
+                                <div className={`mt-6 p-4 rounded-xl bg-theme-/`}>
                                     <p className="text-theme-secondary text-center">💡 {assessmentStats.analysis.overall_feedback}</p>
                                 </div>
                             )}

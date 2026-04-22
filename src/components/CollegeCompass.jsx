@@ -227,6 +227,7 @@ const CollegeCompass = ({ retryableFetch, onExit }) => {
     const [chatHistory, setChatHistory] = useState([defaultChatMsg]);
 
     // Sync local counselor chat with global history
+    // Sync local counselor chat with global history
     useEffect(() => {
         const activeChat = chats.find(c => c.id === activeChatId);
         if (activeChat && activeChat.feature === 'college-compass') {
@@ -246,7 +247,7 @@ const CollegeCompass = ({ retryableFetch, onExit }) => {
     const callAI = async (userQuery, systemPrompt, temperature = 0.4) => {
         const payload = {
             ...formatGroqPayload(userQuery, systemPrompt, { temperature, max_tokens: 8192 }),
-            model: "llama-3.3-70b-versatile",
+            model: "gemini-1.5-pro",
             temperature: temperature
         };
         const result = await retryableFetch(GROQ_API_URL, {

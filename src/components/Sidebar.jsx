@@ -85,6 +85,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                             return (
                                 <button
                                     key={item.id}
+                                    title={item.label}
                                     onClick={() => {
                                         setCurrentView(item.id);
                                         // Trigger Assistant Voice Line based on view
@@ -138,6 +139,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                     <div className="p-3 space-y-1.5 border-t border-theme-border">
                         {/* Settings */}
                         <button
+                            title="Settings"
                             onClick={() => setCurrentView('settings')}
                             className={`w-full p-2.5 rounded-xl flex items-center gap-3 transition-colors duration-200 cursor-none
                                 ${currentView === 'settings'
@@ -156,6 +158,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                         {/* Upgrade / Pro Badge */}
                         {!isPro && !isDevMode ? (
                             <button
+                                title="Upgrade to Pro"
                                 onClick={() => triggerUpgradeModal('upgrade')}
                                 className={`w-full p-2.5 rounded-xl flex items-center gap-2.5 transition-colors duration-300
                                     bg-theme-primary text-theme-bg hover:bg-theme-secondary cursor-none

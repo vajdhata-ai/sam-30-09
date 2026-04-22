@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { db } from '../firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { updateUserSubscription as firestoreUpdateSubscription } from '../utils/firestoreSubscription';
 
 const SubscriptionContext = createContext();
 
@@ -50,110 +51,134 @@ const getDefaultTier = () => {
 export const SubscriptionProvider = ({ children }) => {
     const { currentUser } = useAuth();
     const [tier, setTier] = useState(getDefaultTier());
+    const [subscriptionStatus, setSubscriptionStatus] = useState('active');
+    const [subscriptionExpiry, setSubscriptionExpiry] = useState(null);
     const [dailyUsage, setDailyUsage] = useState({});
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [upgradeFeature, setUpgradeFeature] = useState('');
     const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
+    const unsubscribeSnapshotRef = useRef(null);
 
-    // Load subscription tier from Firestore (primary) with localStorage fallback
+    // ═══════════════════════════════════
+    // REAL-TIME FIRESTORE LISTENER
+    // ═══════════════════════════════════
+    // Uses onSnapshot for instant subscription updates (no stale reads)
+
     useEffect(() => {
-        const loadSubscription = async () => {
-            if (!currentUser?.uid) {
-                setTier(getDefaultTier());
-                setIsLoadingSubscription(false);
-                return;
-            }
+        // Cleanup previous listener
+        if (unsubscribeSnapshotRef.current) {
+            unsubscribeSnapshotRef.current();
+            unsubscribeSnapshotRef.current = null;
+        }
 
-            setIsLoadingSubscription(true);
+        if (!currentUser?.uid) {
+            setTier(getDefaultTier());
+            setSubscriptionStatus('active');
+            setSubscriptionExpiry(null);
+            setIsLoadingSubscription(false);
+            return;
+        }
 
-            try {
-                // Try Firestore first (source of truth)
-                const userDocRef = doc(db, 'users', currentUser.uid);
-                const userDoc = await getDoc(userDocRef);
+        setIsLoadingSubscription(true);
 
-                if (userDoc.exists() && userDoc.data().subscriptionTier) {
-                    const firestoreTier = userDoc.data().subscriptionTier;
-                    console.log('[Subscription] Loaded from Firestore:', firestoreTier);
-                    setTier(firestoreTier);
-                    localStorage.setItem(`aurem_tier_${currentUser.uid}`, firestoreTier);
-                } else {
-                    // Check localStorage as fallback (and migrate to Firestore)
-                    const storedTier = localStorage.getItem(`aurem_tier_${currentUser.uid}`);
-                    if (storedTier === 'pro' || storedTier === 'dev' || storedTier === 'go') {
-                        const targetTier = storedTier === 'dev' ? 'pro' : storedTier;
-                        console.log('[Subscription] Migrating from localStorage to Firestore:', targetTier);
-                        // Migrate to Firestore
-                        await setDoc(userDocRef, {
-                            subscriptionTier: targetTier,
-                            upgradedAt: new Date().toISOString()
-                        }, { merge: true });
+        // Immediately load from localStorage cache for fast UI render
+        const cachedTier = localStorage.getItem(`aurem_tier_${currentUser.uid}`);
+        if (cachedTier === 'pro' || cachedTier === 'go' || cachedTier === 'dev') {
+            setTier(cachedTier === 'dev' ? 'pro' : cachedTier);
+        }
 
-                        // Persist locally to survive reload and update state
-                        if (currentUser?.uid) {
-                            localStorage.setItem(`aurem_tier_${currentUser.uid}`, targetTier);
-                        }
-                        setTier(targetTier);
-                    } else {
-                        // If no stored tier exists locally but they had older access, don't brutally overwrite
-                        setTier(getDefaultTier());
+        // Set up real-time Firestore listener (source of truth)
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const unsubscribe = onSnapshot(userDocRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+
+                // Read subscription fields (backward compatible with old field names)
+                const firestorePlan = data.subscriptionPlan || data.subscriptionTier || 'basic';
+                const firestoreStatus = data.subscriptionStatus || 'active';
+                const firestoreExpiry = data.subscriptionExpiry || null;
+
+                // Check if subscription has expired
+                let effectivePlan = firestorePlan;
+                let effectiveStatus = firestoreStatus;
+
+                if (firestoreExpiry && effectiveStatus === 'active') {
+                    const expiryDate = firestoreExpiry.toDate ? firestoreExpiry.toDate() : new Date(firestoreExpiry);
+                    if (expiryDate < new Date()) {
+                        effectiveStatus = 'expired';
+                        effectivePlan = 'basic'; // Revert to basic if expired
                     }
                 }
-            } catch (error) {
-                console.error('[Subscription] Firestore load error:', error);
-                const storedTier = localStorage.getItem(`aurem_tier_${currentUser.uid}`);
-                if (storedTier === 'pro' || storedTier === 'dev' || storedTier === 'go') {
-                    setTier(storedTier === 'dev' ? 'pro' : storedTier);
-                } else {
-                    setTier(getDefaultTier());
+
+                console.log('[Subscription] Firestore snapshot:', effectivePlan, effectiveStatus);
+                setTier(effectivePlan);
+                setSubscriptionStatus(effectiveStatus);
+                setSubscriptionExpiry(firestoreExpiry);
+
+                // Update localStorage cache
+                localStorage.setItem(`aurem_tier_${currentUser.uid}`, effectivePlan);
+
+                // Also sync daily usage from Firestore if present
+                if (data.dailyUsage) {
+                    const today = new Date().toDateString();
+                    if (data.dailyUsage.date === today) {
+                        setDailyUsage(prev => {
+                            const merged = { ...prev };
+                            for (const key in data.dailyUsage.usage) {
+                                merged[key] = Math.max(merged[key] || 0, data.dailyUsage.usage[key]);
+                            }
+                            return merged;
+                        });
+                    }
                 }
-            } finally {
-                setIsLoadingSubscription(false);
+            } else {
+                // Document doesn't exist yet — AuthContext should create it
+                // Fall back to defaults
+                console.warn('[Subscription] No Firestore document found for user, using defaults');
+                setTier(getDefaultTier());
+                setSubscriptionStatus('active');
+                setSubscriptionExpiry(null);
+            }
+
+            setIsLoadingSubscription(false);
+        }, (error) => {
+            console.error('[Subscription] Firestore onSnapshot error:', error);
+            // Fallback to localStorage on error
+            const storedTier = localStorage.getItem(`aurem_tier_${currentUser.uid}`);
+            if (storedTier === 'pro' || storedTier === 'dev' || storedTier === 'go') {
+                setTier(storedTier === 'dev' ? 'pro' : storedTier);
+            } else {
+                setTier(getDefaultTier());
+            }
+            setIsLoadingSubscription(false);
+        });
+
+        unsubscribeSnapshotRef.current = unsubscribe;
+
+        return () => {
+            if (unsubscribeSnapshotRef.current) {
+                unsubscribeSnapshotRef.current();
+                unsubscribeSnapshotRef.current = null;
             }
         };
-
-        loadSubscription();
     }, [currentUser]);
 
-    // Load usage from localStorage and Firebase on mount
+    // ═══════════════════════════════════
+    // DAILY USAGE MANAGEMENT
+    // ═══════════════════════════════════
+
+    // Load usage from localStorage on mount
     useEffect(() => {
-        const loadUsage = async () => {
-            const today = new Date().toDateString();
-            let finalUsage = {};
-
-            // 1. Load from localStorage
-            const storedData = localStorage.getItem('aurem_usage');
-            if (storedData) {
-                try {
-                    const parsed = JSON.parse(storedData);
-                    if (parsed.date === today) {
-                        finalUsage = parsed.usage || {};
-                    }
-                } catch {}
-            }
-
-            // 2. Load from Firebase if user is logged in
-            if (currentUser?.uid) {
-                try {
-                    const userDocRef = doc(db, 'users', currentUser.uid);
-                    const docSnap = await getDoc(userDocRef);
-                    if (docSnap.exists() && docSnap.data().dailyUsage) {
-                        const cloudUsage = docSnap.data().dailyUsage;
-                        if (cloudUsage.date === today) {
-                            // Merge local and cloud, taking max to be safe
-                            for (const key in cloudUsage.usage) {
-                                finalUsage[key] = Math.max(finalUsage[key] || 0, cloudUsage.usage[key]);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("Failed to load usage from cloud", e);
+        const today = new Date().toDateString();
+        const storedData = localStorage.getItem('aurem_usage');
+        if (storedData) {
+            try {
+                const parsed = JSON.parse(storedData);
+                if (parsed.date === today) {
+                    setDailyUsage(parsed.usage || {});
                 }
-            }
-
-            setDailyUsage(finalUsage);
-            localStorage.setItem('aurem_usage', JSON.stringify({ date: today, usage: finalUsage }));
-        };
-        loadUsage();
+            } catch {}
+        }
     }, [currentUser]);
 
     // Save usage to localStorage and Firebase when it changes
@@ -174,6 +199,10 @@ export const SubscriptionProvider = ({ children }) => {
             return () => clearTimeout(timeoutId);
         }
     }, [dailyUsage, currentUser]);
+
+    // ═══════════════════════════════════
+    // FEATURE GATING
+    // ═══════════════════════════════════
 
     // Check if user can use a feature
     const canUseFeature = (feature) => {
@@ -228,58 +257,59 @@ export const SubscriptionProvider = ({ children }) => {
         setShowUpgradeModal(true);
     };
 
-    // Upgrade to Go - persists to Firestore AND localStorage
-    const upgradeToGo = async () => {
+    // ═══════════════════════════════════
+    // SUBSCRIPTION MUTATIONS
+    // ═══════════════════════════════════
+
+    // Upgrade to Go - persists to Firestore via utility function
+    const upgradeToGo = useCallback(async () => {
         setTier('go');
         if (currentUser?.uid) {
             localStorage.setItem(`aurem_tier_${currentUser.uid}`, 'go');
             try {
-                const userDocRef = doc(db, 'users', currentUser.uid);
-                await setDoc(userDocRef, { subscriptionTier: 'go' }, { merge: true });
+                await firestoreUpdateSubscription(currentUser.uid, 'go', 'active', null);
             } catch (err) {
                 console.error('[Subscription] Firestore save error:', err);
                 alert("Failed to sync premium status to cloud. Please contact support.");
             }
         }
-    };
+    }, [currentUser]);
 
-    // Upgrade to pro - persists to Firestore AND localStorage
-    const upgradeToPro = async () => {
+    // Upgrade to pro - persists to Firestore via utility function
+    const upgradeToPro = useCallback(async () => {
         setTier('pro');
         if (currentUser?.uid) {
             localStorage.setItem(`aurem_tier_${currentUser.uid}`, 'pro');
-            // Persist to Firestore (survives cache clears)
             try {
-                const userDocRef = doc(db, 'users', currentUser.uid);
-                await setDoc(userDocRef, { subscriptionTier: 'pro' }, { merge: true });
+                await firestoreUpdateSubscription(currentUser.uid, 'pro', 'active', null);
                 console.log('[Subscription] Upgraded to Pro - saved to Firestore');
             } catch (err) {
                 console.error('[Subscription] Firestore save error:', err);
                 alert("Failed to sync premium status to cloud. Please contact support.");
             }
         }
-    };
+    }, [currentUser]);
 
-    // Downgrade to basic - persists to Firestore AND localStorage
-    const downgradeToBasic = async () => {
+    // Downgrade to basic - persists to Firestore via utility function
+    const downgradeToBasic = useCallback(async () => {
         setTier('basic');
         if (currentUser?.uid) {
             localStorage.removeItem(`aurem_tier_${currentUser.uid}`);
-            // Update Firestore
             try {
-                const userDocRef = doc(db, 'users', currentUser.uid);
-                await setDoc(userDocRef, { subscriptionTier: 'basic' }, { merge: true });
+                await firestoreUpdateSubscription(currentUser.uid, 'basic', 'active', null);
                 console.log('[Subscription] Downgraded to Basic - saved to Firestore');
             } catch (err) {
                 console.error('[Subscription] Firestore save error:', err);
                 alert("Failed to sync premium status to cloud. Please contact support.");
             }
         }
-    };
+    }, [currentUser]);
 
     const value = {
         tier,
         setTier,
+        subscriptionStatus,
+        subscriptionExpiry,
         canUseFeature,
         incrementUsage,
         getRemainingUses,
@@ -293,7 +323,7 @@ export const SubscriptionProvider = ({ children }) => {
         isDevMode: isDevMode(),
         isGo: tier === 'go',
         isPro: tier === 'pro' || tier === 'dev' || isDevMode(),
-        isLoadingSubscription, // New: for loading states in UI
+        isLoadingSubscription,
         BASIC_LIMITS,
         GO_LIMITS
     };

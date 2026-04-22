@@ -83,6 +83,17 @@ export const PodcastProvider = ({ children }) => {
         return audioUrl;
     };
 
+    const prefetchNextLine = async (index, script) => {
+        if (index < script.length) {
+            const line = script[index];
+            try {
+                await fetchTTS(line.text, line.speaker);
+            } catch (e) {
+                // Ignore prefetch errors silently
+            }
+        }
+    };
+
     const playLine = useCallback(async (index, scriptOverride = null) => {
         const script = scriptOverride || podcastScript;
         if (index >= script.length) {
@@ -125,6 +136,10 @@ export const PodcastProvider = ({ children }) => {
             };
             
             await audio.play();
+            
+            // Background prefetch the next line to eliminate delay
+            prefetchNextLine(index + 1, script);
+            
         } catch (err) {
             console.error('[PodcastContext] TTS Error:', err);
             setIsLoadingAudio(false);

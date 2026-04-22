@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTheme, THEMES } from '../contexts/ThemeContext';
-import { Moon, Sun, Crown, Settings as SettingsIcon, Eye, ChevronRight } from './Icons';
+import { Moon, Sun, Crown, Settings as SettingsIcon, Eye, ChevronRight, Sparkles, Zap, Shield } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { useChatHistory } from '../contexts/ChatHistoryContext';
 import { useAssistant } from '../contexts/AssistantContext';
 
@@ -68,6 +69,7 @@ const SettingsSection = ({ title, icon: Icon, children, isDark }) => (
 const Settings = () => {
     const { isDark, theme, setTheme, customColors, setCustomColors } = useTheme();
     const { currentUser, logout, deleteAccount } = useAuth();
+    const { tier, subscriptionStatus, subscriptionExpiry, isLoadingSubscription, triggerUpgradeModal, isPro, isGo } = useSubscription();
     const { isHistoryEnabled, setHistoryEnabled } = useChatHistory();
     const { speak } = useAssistant();
 
@@ -90,6 +92,17 @@ const Settings = () => {
             }
         }
     };
+
+    // Plan display config
+    const planConfig = {
+        basic: { label: 'Basic', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30', icon: Shield, gradient: '' },
+        go: { label: 'Aurem Go', color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30', icon: Zap, gradient: 'from-emerald-500 to-teal-500' },
+        pro: { label: 'Aurem Pro', color: 'text-orange-400', bg: 'bg-orange-500/20', border: 'border-orange-500/30', icon: Sparkles, gradient: 'from-amber-400 via-orange-500 to-rose-500' },
+        dev: { label: 'Developer', color: 'text-violet-400', bg: 'bg-violet-500/20', border: 'border-violet-500/30', icon: Crown, gradient: 'from-violet-500 to-fuchsia-500' },
+    };
+
+    const currentPlanConfig = planConfig[tier] || planConfig.basic;
+    const PlanIcon = currentPlanConfig.icon;
 
     return (
         <div className={`h-full overflow-y-auto custom-scrollbar p-6 md:p-10 pb-32 bg-transparent`}>
@@ -172,6 +185,71 @@ const Settings = () => {
                             </button>
                         </div>
                     </div>
+                </SettingsSection>
+
+                {/* Subscription */}
+                <SettingsSection title="Subscription" icon={Crown} isDark={isDark}>
+                    {isLoadingSubscription ? (
+                        <div className="flex items-center justify-center py-6">
+                            <div className="w-5 h-5 border-2 border-theme-primary border-t-transparent rounded-full animate-spin mr-3" />
+                            <span className="text-theme-muted text-sm">Loading subscription...</span>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {/* Plan Badge Card */}
+                            <div className={`flex items-center justify-between p-4 rounded-2xl border ${currentPlanConfig.bg} ${currentPlanConfig.border}`}>
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2.5 rounded-xl ${currentPlanConfig.bg}`}>
+                                        <PlanIcon className={`w-5 h-5 ${currentPlanConfig.color}`} />
+                                    </div>
+                                    <div>
+                                        <h4 className={`font-black text-sm ${currentPlanConfig.color}`}>
+                                            {currentPlanConfig.label}
+                                        </h4>
+                                        <p className="text-xs text-theme-muted mt-0.5">
+                                            {isPro ? 'Unlimited access to all features' :
+                                             isGo ? 'Extended daily limits' :
+                                             'Free tier with daily limits'}
+                                        </p>
+                                    </div>
+                                </div>
+                                {/* Status dot */}
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-2 h-2 rounded-full ${subscriptionStatus === 'active' ? 'bg-green-400 shadow-lg shadow-green-400/50' : 'bg-red-400 shadow-lg shadow-red-400/50'}`} />
+                                    <span className={`text-xs font-semibold uppercase tracking-wider ${subscriptionStatus === 'active' ? 'text-green-400' : 'text-red-400'}`}>
+                                        {subscriptionStatus}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Expiry info */}
+                            {subscriptionExpiry && (
+                                <div className={`flex items-center justify-between py-2.5 px-1 border-b border-theme-border`}>
+                                    <span className="text-theme-muted text-sm">Expires</span>
+                                    <span className="font-mono text-xs text-theme-text">
+                                        {subscriptionExpiry.toDate ? subscriptionExpiry.toDate().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date(subscriptionExpiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Sync indicator */}
+                            <div className="flex items-center gap-2 px-1">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                                <span className="text-xs text-theme-muted">Synced with cloud • Data persists across devices</span>
+                            </div>
+
+                            {/* Upgrade CTA (only for non-Pro users) */}
+                            {!isPro && (
+                                <button
+                                    onClick={() => triggerUpgradeModal('upgrade')}
+                                    className="w-full py-3 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white rounded-xl font-black text-sm shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 mt-2"
+                                >
+                                    <Sparkles className="w-4 h-4" />
+                                    Upgrade to Pro
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </SettingsSection>
 
                 {/* Privacy */}

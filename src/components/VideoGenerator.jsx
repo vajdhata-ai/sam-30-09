@@ -51,8 +51,25 @@ const VideoGenerator = () => {
     const currentTier = TIERS[userTier];
 
     return (
-        <div className={`h-full overflow-y-auto custom-scrollbar p-6 bg-theme-bg text-theme-text`}>
-            <div className="max-w-4xl mx-auto space-y-8">
+        <div className={`h-full overflow-y-auto custom-scrollbar p-6 bg-theme-bg text-theme-text relative`}>
+            {/* Coming Soon Overlay */}
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-theme-bg/60 backdrop-blur-md">
+                <div className="text-center p-10 rounded-[40px] border border-theme-primary/30 bg-theme-surface/80 shadow-2xl glass-3d max-w-md w-full mx-4 transform transition-all hover:scale-105 hover:border-theme-primary/50">
+                    <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-tr from-theme-primary via-theme-secondary to-theme-primary flex items-center justify-center shadow-[0_0_40px_rgba(201,165,90,0.4)] relative">
+                        <div className="absolute inset-0 rounded-full border-2 border-theme-primary/50 animate-ping"></div>
+                        <Video className="w-12 h-12 text-theme-bg" />
+                    </div>
+                    <h2 className="text-4xl font-black mb-3 bg-gradient-to-r from-theme-primary via-theme-secondary to-theme-primary bg-clip-text text-transparent">Coming in Late May</h2>
+                    <p className="text-theme-muted mb-8 text-lg leading-relaxed">
+                        The Visual Synthesis Engine is undergoing final AI training. Get ready to generate stunning educational videos from plain text.
+                    </p>
+                    <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-theme-primary/10 border border-theme-primary/20 text-theme-primary text-sm font-black uppercase tracking-widest">
+                        <Sparkles className="w-4 h-4" /> Final Polish Phase
+                    </div>
+                </div>
+            </div>
+
+            <div className="max-w-4xl mx-auto space-y-8 opacity-30 pointer-events-none blur-md select-none">
 
                 {/* Header */}
                 <div className="text-center pt-6">

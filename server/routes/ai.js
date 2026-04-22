@@ -16,7 +16,23 @@ const router = express.Router();
 
 // --- Configuration ---
 const GROQ_API_KEY = (process.env.GROQ_API_KEY || "").trim();
-const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || "").trim();
+const GEMINI_API_KEYS = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "").split(',').map(k => k.trim()).filter(Boolean);
+let currentGeminiKeyIndex = 0;
+
+const getNextGeminiKey = () => {
+    if (GEMINI_API_KEYS.length === 0) return null;
+    const key = GEMINI_API_KEYS[currentGeminiKeyIndex];
+    currentGeminiKeyIndex = (currentGeminiKeyIndex + 1) % GEMINI_API_KEYS.length;
+    return key;
+};
+
+// In-Memory Cache for Zero Budget Optimization
+const responseCache = new Map();
+const generateCacheKey = (messages, model) => {
+    const text = messages.map(m => typeof m.content === 'string' ? m.content : JSON.stringify(m.content)).join('|');
+    return `${model}-${text.length}-${text.substring(0, 50)}-${text.substring(text.length - 50)}`;
+};
+
 const GROQ_MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
 const GROQ_VISION_MODEL = "llama-3.2-11b-vision-preview"; // Stable vision model on Groq
 const REQUEST_TIMEOUT = 30000;
@@ -29,7 +45,8 @@ console.log(`[AI Service] VERSION 9.0 (STABILITY UPDATE) ACTIVE`);
 
 const callGroqVision = async (messages) => {
     // We are routing Vision calls to Gemini 1.5 Flash due to Groq Vision restrictions
-    if (!GEMINI_API_KEY) throw new Error("Missing Gemini API Key for Vision Fallback");
+    const geminiKey = getNextGeminiKey();
+    if (!geminiKey) throw new Error("Missing Gemini API Key for Vision Fallback");
 
     const model = "gemini-1.5-flash";
 
@@ -39,7 +56,7 @@ const callGroqVision = async (messages) => {
         const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${GEMINI_API_KEY}`,
+                "Authorization": `Bearer ${geminiKey}`,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -62,6 +79,47 @@ const callGroqVision = async (messages) => {
     } catch (error) {
         console.error("[AI] Gemini Vision Network Error:", error.message);
         throw new Error(`Vision Service Unavailable: ${error.message}`);
+    }
+};
+
+// --- Helper: Standard Gemini Text Call (For College Compass & Pro users) ---
+const callGeminiText = async (messages, requestedModel = null) => {
+    const geminiKey = getNextGeminiKey();
+    if (!geminiKey) throw new Error("Missing Gemini API Key");
+
+    const model = requestedModel && requestedModel.includes('gemini') ? requestedModel : "gemini-1.5-pro";
+    console.log(`[Gemini] Sending text request to ${model}`);
+
+    try {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${geminiKey}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: 6000
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            console.error(`[Gemini] Service Error (${response.status}):`, err);
+            
+            // Fallback to flash if pro hits limit
+            if (response.status === 429 && model.includes('pro')) {
+                console.warn("[Gemini] Rate Limit hit on Pro model. Falling back to Flash...");
+                return await callGeminiText(messages, "gemini-1.5-flash");
+            }
+            throw new Error(`Gemini Service Error: ${err}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("[Gemini] Network Error:", error.message);
+        throw error;
     }
 };
 
@@ -287,10 +345,20 @@ Begin with a hook that makes the listener immediately curious. Dive DEEP.`;
 // --- Route: Groq (Chat) ---
 router.post('/groq', verifyToken, validateAIRequest, async (req, res) => {
     try {
-        const { messages } = req.body;
+        const { messages, model } = req.body;
 
         // Vision Detection
         const hasImages = messages.some(m => Array.isArray(m.content));
+
+        // Cache Check (Only for non-vision, to save memory/complexity on images)
+        let cacheKey = null;
+        if (!hasImages) {
+            cacheKey = generateCacheKey(messages, model || "default");
+            if (responseCache.has(cacheKey)) {
+                console.log(`[Cache Hit] Returning cached response for ${model}`);
+                return res.json(responseCache.get(cacheKey));
+            }
+        }
 
         let result;
 
@@ -304,7 +372,22 @@ router.post('/groq', verifyToken, validateAIRequest, async (req, res) => {
                     : msg.content
             }));
 
-            result = await callGroqStealth(textMessages, req.body.model);
+            // Route to Gemini if requested, otherwise Groq
+            if (model && model.includes('gemini')) {
+                result = await callGeminiText(textMessages, model);
+            } else {
+                result = await callGroqStealth(textMessages, model);
+            }
+        }
+
+        // Save to cache (limit size to prevent memory leaks)
+        if (!hasImages && cacheKey && result && result.choices && result.choices.length > 0) {
+            if (responseCache.size > 500) {
+                // Delete oldest
+                const firstKey = responseCache.keys().next().value;
+                responseCache.delete(firstKey);
+            }
+            responseCache.set(cacheKey, result);
         }
 
         res.json(result);

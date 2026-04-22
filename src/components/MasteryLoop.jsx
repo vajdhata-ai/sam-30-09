@@ -182,8 +182,9 @@ DO NOT include pleasantries. Start immediately with the headers.`;
     const generateRemedialCards = async () => {
         setLoadingCards(true);
         try {
-            const prompt = `Generate EXACTLY 10 intense, highly targeted flashcards to help a student memorize these exact concepts they failed in a quiz: [${feedback.join(", ")}].
-CRITICAL RULE: The flashcard "answer" MUST be incredibly concise (maximum 1-3 short sentences). Do not write paragraphs or the text will overflow the card UI. Use punchy, impactful statements.
+            const prompt = `Generate EXACTLY 20 to 30 intense, highly targeted flashcards to help a student absolutely master these exact concepts they failed in a quiz: [${feedback.join(", ")}].
+CRITICAL RULE 1: The flashcard "answer" MUST be incredibly concise (maximum 1-3 short sentences). Do not write paragraphs or the text will overflow the card UI. Use punchy, impactful statements.
+CRITICAL RULE 2: You MUST include a vivid real-world Concept Analogy inside the answer to ensure they remember it forever.
 Output strictly as a JSON object: { "flashcards": [{ "question": "...", "answer": "..." }] }`;
             const r = await fetchGroq(prompt);
 

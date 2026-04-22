@@ -334,8 +334,9 @@ STRUCTURAL PROTOCOL:
 - **Visual Intelligence**: Integrate complex tables (| Comparison | Synthesis |), deep-dive boxes (> Blockquotes), and numbered sequences.
 - **Bold Lexicon**: **Bold** every critical term, formula, and axiom on first mention.
 - **Math & Equations**: Write mathematical signs and symbols in a refined, simple, and readable way. Use standard text/unicode (e.g., √, ±, ∫, ∑, π, θ, x²) rather than complex LaTeX blocks that may break formatting.
-- **Problem Solving (PCM)**: If the topic involves Physics, Chemistry, Mathematics, or any problem-solving field, you MUST provide at least 3-5 step-by-step solved examples per module. These examples must scale in difficulty based on the target mastery level.
+- **Problem Solving & PCM Dominance**: If the topic involves Physics, Chemistry, Mathematics, or any conceptual field, you MUST use extremely high-level, brilliant real-world examples to explain the concepts perfectly without failing. Do not give basic examples; give rigorous, mastery-level analogies and step-by-step solved applications tailored strictly to the user's level.
 - **Case Synthesis**: Include specialized "Deep-Dive" case studies or analytical examples for every major module.
+- **Exhaustive Notes**: Leave no stone unturned. Provide comprehensive summaries, leaving absolutely nothing out.
 - **Key Takeaways**: Every module MUST end with a high-intensity summary table or list.`;
 
     // --- Helpers: AI Communication ---
@@ -535,7 +536,7 @@ DIVIDER: End with a "---CONTENT_SPLIT---" and then provide a structured, high-in
         setIsLevelUnlocked(false); // Reset mastery state when generating a new quiz
 
         const toolPrompts = {
-            cards: `Generate exactly 10 high-yield flashcards. Make the flashcard "answer" concise (maximum 2-3 sentences max) so it fits beautifully on the card UI without overflowing. Instead of dense paragraphs, use short lists or simple bullet points if necessary. Output strictly as a JSON object: { "flashcards": [{ "question": "...", "answer": "...", "difficulty": "easy|medium|hard" }] }`,
+            cards: `Generate an exhaustive set of 50 to 60 high-yield, high-quality flashcards covering every possible detail of the material. Make the flashcard "answer" concise (maximum 2-3 sentences max) so it fits beautifully on the card UI without overflowing. Instead of dense paragraphs, use short lists or simple bullet points if necessary. Output strictly as a JSON object: { "flashcards": [{ "question": "...", "answer": "...", "difficulty": "easy|medium|hard" }] }`,
             quiz: (() => {
                 const count = masteryLevel === 'Advanced' ? 20 : masteryLevel === 'Intermediate' ? 15 : 10;
                 const typeMix = masteryLevel === 'Beginner' ? "100% MCQ" : masteryLevel === 'Intermediate' ? "70% MCQ, 30% Short Subjective" : "60% MCQ, 40% Case-based Subjective";
