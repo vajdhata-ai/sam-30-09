@@ -2,12 +2,15 @@ import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAssistant } from '../contexts/AssistantContext';
-import { Bot, FileText, LogOut, Moon, Sun, ChevronRight, ChevronLeft, GraduationCap, FilePlus, ClipboardList, Mic, Sparkles, Crown, Eye, Settings, RefreshCw, Video, Trophy, Swords } from './Icons';
+import { usePerformance } from '../contexts/PerformanceContext';
+import { Bot, FileText, LogOut, Moon, Sun, ChevronRight, ChevronLeft, GraduationCap, FilePlus, ClipboardList, Mic, Sparkles, Crown, Eye, Settings, RefreshCw, Video, Trophy, Swords, Flame } from './Icons';
 
 const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen, isCollapsed, setIsCollapsed, user, onLogin, onLogout }) => {
     const { isDark } = useTheme();
     const { tier, isPro, isDevMode, triggerUpgradeModal } = useSubscription();
     const { speak } = useAssistant();
+    const { getLevelInfo } = usePerformance();
+    const levelInfo = getLevelInfo();
 
     const navItems = [
         { id: 'doubt-solver', label: 'Neural Query', icon: Bot },
@@ -69,6 +72,43 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                             }
                         </button>
                     </div>
+
+                    {/* ═══ Gamification Widget ═══ */}
+                    {!isCollapsed && (
+                        <div className="px-5 pb-4">
+                            <div className="bg-theme-surface/50 border border-theme-primary/10 rounded-2xl p-3 flex flex-col gap-2 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
+                                    <Crown className="w-16 h-16 text-theme-primary transform rotate-12" />
+                                </div>
+                                
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-theme-primary to-theme-secondary flex items-center justify-center text-theme-bg font-black text-xs shadow-[0_0_15px_rgba(201,165,90,0.4)]">
+                                            {levelInfo.level}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] uppercase tracking-widest text-theme-primary font-bold">{levelInfo.rankTitle}</p>
+                                            <p className="text-xs font-medium text-theme-text">{levelInfo.xp} XP</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-orange-400 bg-orange-400/10 px-2 py-1 rounded-md border border-orange-400/20">
+                                        <Flame className="w-3 h-3" />
+                                        <span className="text-[10px] font-black">1</span>
+                                    </div>
+                                </div>
+
+                                <div className="relative h-1.5 w-full bg-theme-bg rounded-full overflow-hidden mt-1 z-10">
+                                    <div 
+                                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-theme-primary to-theme-secondary rounded-full shadow-[0_0_10px_rgba(201,165,90,0.8)]"
+                                        style={{ width: `${levelInfo.progressPercentage}%` }}
+                                    />
+                                </div>
+                                <p className="text-[9px] text-theme-muted uppercase tracking-widest text-right z-10">
+                                    {Math.round(levelInfo.progressPercentage)}% to Lvl {levelInfo.level + 1}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ═══ Navigation ═══ */}
                     <nav className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">

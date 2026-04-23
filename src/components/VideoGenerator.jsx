@@ -16,6 +16,93 @@ const TIERS = {
     go: { name: 'Go', videosPerWeek: 5, resolution: 'HD (1080p)', downloadable: false, color: 'from-theme-secondary to-theme-primary' },
     pro: { name: 'Pro', videosPerWeek: 'Unlimited', resolution: 'HD (1080p)', downloadable: true, color: 'from-theme-primary to-theme-secondary' },
 };
+const AuraApologyScreen = () => {
+    const [showContent, setShowContent] = useState(false);
+    const [showBubble, setShowBubble] = useState(false);
+
+    React.useEffect(() => {
+        const t1 = setTimeout(() => setShowContent(true), 300);
+        const t2 = setTimeout(() => setShowBubble(true), 900);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
+    }, []);
+
+    return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
+             style={{ background: 'linear-gradient(135deg, #050510 0%, #0a0a2e 40%, #120828 70%, #050510 100%)' }}>
+
+            {/* Animated stars background */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {Array.from({ length: 60 }).map((_, i) => (
+                    <div key={i} className="absolute rounded-full bg-white"
+                         style={{
+                             width: `${0.5 + Math.random() * 2}px`,
+                             height: `${0.5 + Math.random() * 2}px`,
+                             top: `${Math.random() * 100}%`,
+                             left: `${Math.random() * 100}%`,
+                             opacity: 0.1 + Math.random() * 0.5,
+                             animation: `pulse ${2 + Math.random() * 4}s ease-in-out infinite`,
+                             animationDelay: `${Math.random() * 3}s`,
+                         }} />
+                ))}
+                {/* Nebula glows */}
+                <div className="absolute w-[600px] h-[600px] rounded-full bg-pink-500/[0.08] blur-[150px] -top-40 -right-40" />
+                <div className="absolute w-[500px] h-[500px] rounded-full bg-indigo-500/[0.08] blur-[150px] -bottom-40 -left-40" />
+                <div className="absolute w-[300px] h-[300px] rounded-full bg-violet-500/10 blur-[120px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+
+                {/* Orbital rings */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full border border-white/[0.03]"
+                     style={{ animation: 'auraOrbitSpin 80s linear infinite' }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full border border-dashed border-pink-500/[0.06]"
+                     style={{ animation: 'auraOrbitSpin 120s linear infinite reverse' }} />
+            </div>
+
+            {/* Main content */}
+            <div className={`relative z-10 flex flex-col items-center text-center max-w-lg px-6 transition-all duration-1000 ease-out ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+
+                {/* Aura Avatar */}
+                <div className="relative mb-8">
+                    <div className="absolute inset-0 rounded-full bg-pink-500/20 blur-3xl scale-150 animate-pulse" />
+                    <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-pink-500/20 to-violet-500/20 border-2 border-pink-500/50 flex items-center justify-center shadow-[0_0_60px_rgba(236,72,153,0.3)]"
+                         style={{ animation: 'auraFloat 3s ease-in-out infinite' }}>
+                        <span className="text-5xl" style={{ filter: 'drop-shadow(0 0 12px rgba(236,72,153,0.6))' }}>✨</span>
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-3 h-3 rounded-full bg-pink-400/60 animate-ping" style={{ animationDuration: '2s' }} />
+                    <div className="absolute -bottom-1 -left-3 w-2 h-2 rounded-full bg-violet-400/60 animate-ping" style={{ animationDuration: '3s' }} />
+                </div>
+
+                {/* Aura Name Tag */}
+                <p className="text-pink-400/80 text-xs font-black uppercase tracking-[0.4em] mb-3"
+                   style={{ textShadow: '0 0 20px rgba(236,72,153,0.4)' }}>
+                    AURA • AI COMPANION
+                </p>
+
+                {/* Speech Bubble */}
+                <div className={`relative transition-all duration-700 ease-out ${showBubble ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}>
+                    <div className="relative px-8 py-8 rounded-[2rem] bg-white/[0.04] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                        <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-b from-pink-500/[0.05] to-transparent pointer-events-none" />
+                        <h2 className="relative text-white text-2xl md:text-3xl font-black tracking-tight mb-4 leading-tight">
+                            Under Development
+                        </h2>
+                        <p className="relative text-white/60 text-base md:text-lg font-medium leading-relaxed">
+                            I'm sorry, Voyager. The <span className="text-pink-400 font-bold">Video Studio</span> is
+                            currently undergoing visual training. Your synthesis tools will be fully active starting
+                        </p>
+                        <p className="relative mt-3 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-orange-400 to-amber-400 text-2xl font-black uppercase tracking-[0.15em]">
+                            Late May 2026
+                        </p>
+                    </div>
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rotate-45 bg-white/[0.04] border-l border-t border-white/10" />
+                </div>
+            </div>
+
+            {/* Keyframes */}
+            <style>{`
+                @keyframes auraOrbitSpin { 0% { transform: translate(-50%,-50%) rotate(0deg); } 100% { transform: translate(-50%,-50%) rotate(360deg); } }
+                @keyframes auraFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+            `}</style>
+        </div>
+    );
+};
 
 const VideoGenerator = () => {
     const { isDark } = useTheme();
@@ -53,21 +140,7 @@ const VideoGenerator = () => {
     return (
         <div className={`h-full overflow-y-auto custom-scrollbar p-6 bg-theme-bg text-theme-text relative`}>
             {/* Coming Soon Overlay */}
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-theme-bg/60 backdrop-blur-md">
-                <div className="text-center p-10 rounded-[40px] border border-theme-primary/30 bg-theme-surface/80 shadow-2xl glass-3d max-w-md w-full mx-4 transform transition-all hover:scale-105 hover:border-theme-primary/50">
-                    <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-tr from-theme-primary via-theme-secondary to-theme-primary flex items-center justify-center shadow-[0_0_40px_rgba(201,165,90,0.4)] relative">
-                        <div className="absolute inset-0 rounded-full border-2 border-theme-primary/50 animate-ping"></div>
-                        <Video className="w-12 h-12 text-theme-bg" />
-                    </div>
-                    <h2 className="text-4xl font-black mb-3 bg-gradient-to-r from-theme-primary via-theme-secondary to-theme-primary bg-clip-text text-transparent">Coming in Late May</h2>
-                    <p className="text-theme-muted mb-8 text-lg leading-relaxed">
-                        The Visual Synthesis Engine is undergoing final AI training. Get ready to generate stunning educational videos from plain text.
-                    </p>
-                    <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-theme-primary/10 border border-theme-primary/20 text-theme-primary text-sm font-black uppercase tracking-widest">
-                        <Sparkles className="w-4 h-4" /> Final Polish Phase
-                    </div>
-                </div>
-            </div>
+            <AuraApologyScreen />
 
             <div className="max-w-4xl mx-auto space-y-8 opacity-30 pointer-events-none blur-md select-none">
 

@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import * as pdfjsLib from 'pdfjs-dist';
 import { GROQ_API_URL, formatGroqPayload, useRetryableFetch } from '../utils/api';
-import MindMapViewer from './MindMapViewer';
+import KnowledgeGraph from './KnowledgeGraph';
 import MasteryLoop from './MasteryLoop';
 import SocraticRoom from './SocraticRoom';
 import { extractVideoId, fetchTranscript } from '../utils/youtubeService';
@@ -1185,8 +1185,8 @@ You are writing a comprehensive textbook chapter.`;
                                         <section className="bg-theme-surface border-theme-border border rounded-2xl overflow-hidden shadow-depth">
                                             <div className="p-8 border-b flex justify-between items-center border-theme-border">
                                                 <div>
-                                                    <h3 className="text-xl font-serif italic tracking-wide text-theme-text">Visual Mind Map</h3>
-                                                    <p className="text-theme-muted text-sm font-light mt-1">Spatial representation of core concepts</p>
+                                                    <h3 className="text-xl font-serif italic tracking-wide text-theme-text">Interactive Knowledge Graph</h3>
+                                                    <p className="text-theme-muted text-sm font-light mt-1">Orbital visualization of core concepts</p>
                                                 </div>
                                                 <button
                                                     onClick={() => generateSpecificTool('mindmap')}
@@ -1195,9 +1195,9 @@ You are writing a comprehensive textbook chapter.`;
                                                     Regenerate
                                                 </button>
                                             </div>
-                                            <div className="h-[500px] w-full bg-theme-bg/50">
+                                            <div className="w-full bg-theme-bg/50">
                                                 {mindMapData ? (
-                                                    <MindMapViewer data={mindMapData} />
+                                                    <KnowledgeGraph data={mindMapData} />
                                                 ) : (
                                                     <div className="h-full flex items-center justify-center text-theme-muted font-serif italic">
                                                         Click 'Regenerate' to visualize concepts

@@ -8,10 +8,12 @@ import QuestionSolver from './QuestionSolver';
 import MockTestArena from './MockTestArena';
 import ProgressHub from './ProgressHub';
 import CompetitivePodcast from './CompetitivePodcast';
+import Leaderboard from './Leaderboard';
 import RocketLoader from './components/RocketLoader';
+import PremiumGuard from '../PremiumGuard';
 
 // ⚠️  UNDER DEVELOPMENT FLAG — set to false when the hub is ready for production
-const HUB_UNDER_DEVELOPMENT = true;
+const HUB_UNDER_DEVELOPMENT = false;
 
 /**
  * Main Competitive Hub router.
@@ -98,6 +100,10 @@ const CompetitiveHubRouter = ({ onExitHub }) => {
     const handleViewProgress = (examSlug) => {
         setProgressExamSlug(examSlug);
         setHubView('progress');
+    };
+
+    const handleOpenLeaderboard = () => {
+        setHubView('leaderboard');
     };
 
     const handleBackToHome = () => setHubView('home');
@@ -200,20 +206,28 @@ const CompetitiveHubRouter = ({ onExitHub }) => {
         return <CompetitivePodcast topicName={podcastContext.topicName} examSlug={podcastContext.examSlug} onBack={handleBackToHome} />;
     }
 
+    // ── LEADERBOARD ──
+    if (hubView === 'leaderboard') {
+        return <Leaderboard onBack={handleBackToHome} />;
+    }
+
     // ── HOME ──
     return (
-        <CompetitiveHome
-            onStartStudy={handleStartStudy}
-            onOpenLearning={handleOpenLearning}
-            onOpenSolver={handleOpenSolver}
-            onOpenMockTest={handleOpenMockTest}
-            onViewProgress={handleViewProgress}
-            onSetupNewExam={() => {
-                onboardedRef.current = false; // Reset to ensure we go through onboarding step
-                setHubView('launch');
-            }}
-            onExitHub={onExitHub}
-        />
+        <PremiumGuard featureName="Competitive Hub">
+            <CompetitiveHome
+                onStartStudy={handleStartStudy}
+                onOpenLearning={handleOpenLearning}
+                onOpenSolver={handleOpenSolver}
+                onOpenMockTest={handleOpenMockTest}
+                onOpenLeaderboard={handleOpenLeaderboard}
+                onViewProgress={handleViewProgress}
+                onSetupNewExam={() => {
+                    onboardedRef.current = false; // Reset to ensure we go through onboarding step
+                    setHubView('launch');
+                }}
+                onExitHub={onExitHub}
+            />
+        </PremiumGuard>
     );
 };
 

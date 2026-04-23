@@ -8,7 +8,7 @@ import ProgressRing from './components/ProgressRing';
 import UpgradeModal from './components/UpgradeModal';
 import RocketLoader from './components/RocketLoader';
 
-const CompetitiveHome = ({ onStartStudy, onViewProgress, onExitHub, onSetupNewExam, onOpenSolver, onOpenMockTest, onOpenLearning }) => {
+const CompetitiveHome = ({ onStartStudy, onViewProgress, onExitHub, onSetupNewExam, onOpenSolver, onOpenMockTest, onOpenLearning, onOpenLeaderboard }) => {
     const { currentUser } = useAuth();
     const [userExams, setUserExams] = useState([]);
     const [activeExam, setActiveExam] = useState(null);
@@ -588,6 +588,23 @@ const CompetitiveHome = ({ onStartStudy, onViewProgress, onExitHub, onSetupNewEx
                                     </div>
                                     <div className="w-12 h-12 rounded-full border border-slate-700 group-hover:border-emerald-500/50 flex items-center justify-center transition-colors">
                                         <span className="text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all font-black text-xl">→</span>
+                                    </div>
+                                </div>
+                            </button>
+
+                            {/* Leaderboard — Amber */}
+                            <button
+                                onClick={() => onOpenLeaderboard?.()}
+                                className="w-full relative overflow-hidden py-6 px-6 rounded-[2rem] bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-[0_8px_30px_rgb(245,158,11,0.3)] group hover:-translate-y-1 hover:shadow-[0_15px_40px_rgb(245,158,11,0.5)] transition-all duration-300 text-left border-[3px] border-amber-400/50 mt-2"
+                            >
+                                <div className="absolute top-0 -right-8 w-32 h-32 bg-white/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                                <div className="relative z-10 flex items-center justify-between">
+                                    <div>
+                                        <p className="font-extrabold text-2xl tracking-wide drop-shadow-md">🏆 Leaderboard</p>
+                                        <p className="text-amber-100 font-bold text-[10px] uppercase tracking-widest mt-1">Global Ranks • Hall of Fame</p>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md group-hover:bg-white/30 transition-colors">
+                                        <span className="text-white font-black text-xl group-hover:translate-x-1 transition-transform">→</span>
                                     </div>
                                 </div>
                             </button>

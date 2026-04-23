@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { PODCAST_API_URL } from '../../utils/api';
+import { GROQ_API_URL, formatGroqPayload } from '../../utils/api';
 import { auth } from '../../firebase';
 import { usePodcast } from '../../contexts/PodcastContext';
+import { useRetryableFetch } from '../../utils/api';
+import RagService from '../../utils/ragService';
 
 /**
  * Competitive Hub Podcast — Premium full-screen audio player with Sarvam AI TTS.
@@ -17,6 +19,7 @@ const DURATION_OPTIONS = [
 
 const CompetitivePodcast = ({ topicName, examSlug, onBack }) => {
     const { currentUser } = useAuth();
+    const { retryableFetch } = useRetryableFetch();
     
     // Global Podcast State
     const {
@@ -62,31 +65,44 @@ const CompetitivePodcast = ({ topicName, examSlug, onBack }) => {
         setGenProgress('Generating script...');
 
         try {
-            const headers = await getAuthHeaders();
-            const response = await fetch(PODCAST_API_URL, {
+            const systemPrompt = `You are an expert educational podcast scriptwriter. 
+Create an engaging, 2-person podcast script.
+Speakers:
+1. "Questioner": A curious, enthusiastic host asking great questions.
+2. "Explainer": An expert teacher who gives clear, deep, and intuitive explanations.
+
+Return the script EXACTLY as a JSON array of objects.
+Format:
+[
+  {"speaker": "Questioner", "text": "Welcome to the podcast! Today we are talking about..."},
+  {"speaker": "Explainer", "text": "That's right, and it's a fascinating topic because..."}
+]
+Do not wrap in markdown or backticks. Return raw JSON.`;
+
+            const userPrompt = `Target duration: ${selectedDuration} minutes (generate ${selectedDuration * 15} words).
+Create a comprehensive podcast explaining this competitive exam topic:
+Subject/Exam: ${examSlug || 'General'}
+Topic: ${topicName}
+Make it highly engaging and suitable for a competitive exam student.`;
+
+            const payload = formatGroqPayload(userPrompt, systemPrompt);
+            payload.model = "llama-3.1-8b-instant"; // Lightning fast generation
+
+            const response = await retryableFetch(GROQ_API_URL, {
                 method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    mode: 'syllabus',
-                    provider: 'groq',
-                    tier: 'pro',
-                    duration: selectedDuration,
-                    syllabus: {
-                        subject: examSlug || 'General',
-                        topic: topicName,
-                        level: 'University'
-                    }
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
+            const text = response.choices?.[0]?.message?.content || "";
+            const scriptData = RagService.extractJson(text);
             
-            if (data.script && data.script.length > 0) {
+            if (scriptData && scriptData.length > 0) {
                 // Pre-inform user
                 setGenProgress('Rendering sarvam neural audio... (~3s)');
                 
                 // Mount to global context
-                loadPodcast(data.script, topicName);
+                loadPodcast(scriptData, topicName);
 
                 // Small UX delay to signify processing
                 setTimeout(() => {
@@ -94,7 +110,7 @@ const CompetitivePodcast = ({ topicName, examSlug, onBack }) => {
                     setGenProgress('');
                 }, 1000);
             } else {
-                throw new Error(data.error || 'Failed to generate podcast script');
+                throw new Error('Failed to generate podcast script. AI returned invalid format.');
             }
         } catch (err) {
             console.error('[CompetitivePodcast] Generation error:', err);

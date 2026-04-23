@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, User, Bot, Loader2, Send, BookOpen, Clock, BrainCircuit, Image, X, Upload, Crown, RefreshCw } from './Icons';
+import { Sparkles, User, Bot, Loader2, Send, BookOpen, Clock, BrainCircuit, Image, X, Upload, Crown, RefreshCw, ThumbsUp, ThumbsDown, PenTool } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,6 +27,9 @@ const DoubtSolver = ({ retryableFetch }) => {
 
     const [typedGreeting, setTypedGreeting] = useState('');
     const [showChatUI, setShowChatUI] = useState(false);
+    const [feedbackState, setFeedbackState] = useState({}); // { msgIndex: 'up' | 'down' }
+    const [refineInput, setRefineInput] = useState('');
+    const [refiningMsgIdx, setRefiningMsgIdx] = useState(null);
 
     // Sync local messages with global history
     useEffect(() => {
@@ -182,6 +185,8 @@ const DoubtSolver = ({ retryableFetch }) => {
         -> IF INTERMEDIATE: Balance theory with practical steps, assume some base knowledge.
         -> IF HARD: Be extremely concise, highly technical, and focus on profound insights and advanced applications.
         
+        USER REFINEMENT INSTRUCTION: ${messages.find(m => m.role === 'user' && m.isRefinement)?.content || "None"}
+        
         ${globalContext}`;
 
         try {
@@ -263,6 +268,33 @@ const DoubtSolver = ({ retryableFetch }) => {
     const handleEradicateDoubt = (topic) => {
         const cleanTopic = topic ? topic.substring(0, 50) : "Complex Topic";
         startLoop(cleanTopic);
+    };
+
+    const handleFeedback = (idx, type) => {
+        setFeedbackState(prev => ({ ...prev, [idx]: type }));
+    };
+
+    const submitRefinement = (idx) => {
+        if (!refineInput.trim()) return;
+        const msg = `Refine your previous response: ${refineInput}`;
+        setRefineInput('');
+        setRefiningMsgIdx(null);
+        
+        const newMessage = {
+            role: 'user',
+            content: msg,
+            isRefinement: true,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        setMessages(prev => [...prev, newMessage]);
+        // Trigger handleSendMessage logic for refinement
+        // We'll simulate submitting this specific input:
+        setInput(msg);
+        setTimeout(() => {
+            const formEvent = new Event('submit', { cancelable: true });
+            handleSendMessage({ preventDefault: () => {} });
+        }, 50);
     };
 
 
@@ -407,7 +439,49 @@ const DoubtSolver = ({ retryableFetch }) => {
                                     )}
                                 </div>
 
-
+                                {/* NLP Feedback Tools */}
+                                {msg.role === 'assistant' && !msg.isError && (
+                                    <div className="mt-4 pt-3 border-t border-theme-border flex flex-col gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => handleFeedback(i, 'up')}
+                                                className={`p-1.5 rounded-lg transition-colors duration-200 ${feedbackState[i] === 'up' ? 'bg-emerald-500/20 text-emerald-500' : 'text-theme-muted hover:text-emerald-500 hover:bg-emerald-500/10'}`}
+                                            >
+                                                <ThumbsUp className="w-4 h-4" />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleFeedback(i, 'down')}
+                                                className={`p-1.5 rounded-lg transition-colors duration-200 ${feedbackState[i] === 'down' ? 'bg-rose-500/20 text-rose-500' : 'text-theme-muted hover:text-rose-500 hover:bg-rose-500/10'}`}
+                                            >
+                                                <ThumbsDown className="w-4 h-4" />
+                                            </button>
+                                            <button 
+                                                onClick={() => setRefiningMsgIdx(refiningMsgIdx === i ? null : i)}
+                                                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold text-theme-muted hover:text-theme-primary transition-colors border border-transparent hover:border-theme-primary/30 rounded-lg"
+                                            >
+                                                <PenTool className="w-3 h-3" /> Refine Behavior
+                                            </button>
+                                        </div>
+                                        
+                                        {refiningMsgIdx === i && (
+                                            <div className="flex items-center gap-2 animate-fade-in-up mt-1">
+                                                <input 
+                                                    type="text" 
+                                                    value={refineInput}
+                                                    onChange={(e) => setRefineInput(e.target.value)}
+                                                    placeholder="E.g., Be more concise, use simpler analogies..." 
+                                                    className="flex-1 text-xs px-3 py-2 rounded-lg bg-theme-bg border border-theme-border text-theme-text placeholder:text-theme-muted focus:outline-none focus:border-theme-primary/50"
+                                                />
+                                                <button 
+                                                    onClick={() => submitRefinement(i)}
+                                                    className="p-2 bg-theme-primary/10 text-theme-primary hover:bg-theme-primary hover:text-theme-bg rounded-lg border border-theme-primary/30 transition-colors"
+                                                >
+                                                    <Send className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

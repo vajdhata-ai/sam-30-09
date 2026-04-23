@@ -7,8 +7,9 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import * as pdfjsLib from 'pdfjs-dist';
-import { PODCAST_API_URL, TTS_API_URL, useRetryableFetch } from '../utils/api';
+import { GROQ_API_URL, TTS_API_URL, useRetryableFetch, formatGroqPayload } from '../utils/api';
 import { auth } from '../firebase';
+import RagService from '../utils/ragService';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@5.4.449/build/pdf.worker.min.mjs';
@@ -184,32 +185,53 @@ const PodcastGenerator = () => {
         audioCache.current = {};
 
         try {
-            const imageUrls = pdfImages.length > 0
-                ? pdfImages.map(img => `data:${img.mimeType};base64,${img.data}`)
-                : null;
+            const systemPrompt = `You are an expert educational podcast scriptwriter. 
+Create an engaging, 2-person podcast script.
+Speakers:
+1. "Questioner": A curious, enthusiastic host asking great questions.
+2. "Explainer": An expert teacher who gives clear, deep, and intuitive explanations.
 
-            const response = await retryableFetch(PODCAST_API_URL, {
+Return the script EXACTLY as a JSON array of objects.
+Format:
+[
+  {"speaker": "Questioner", "text": "Welcome to the podcast! Today we are talking about..."},
+  {"speaker": "Explainer", "text": "That's right, and it's a fascinating topic because..."}
+]
+Do not wrap in markdown or backticks. Return raw JSON.`;
+
+            let userPrompt = "";
+            if (activeMode === 'upload') {
+                userPrompt = `Target duration: ${selectedDuration} minutes (generate ${selectedDuration * 15} words).
+Focal points: ${topics}
+Source Material:
+${documentContent.slice(0, 8000)}`;
+            } else {
+                userPrompt = `Target duration: ${selectedDuration} minutes (generate ${selectedDuration * 15} words).
+Create a comprehensive podcast explaining this syllabus topic:
+Subject: ${syllabus.subject}
+Topic: ${syllabus.topic}
+Level: ${syllabus.level}`;
+            }
+
+            const payload = formatGroqPayload(userPrompt, systemPrompt);
+            payload.model = "llama-3.1-8b-instant"; // Lightning fast generation
+
+            const response = await retryableFetch(GROQ_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    mode: activeMode,
-                    provider: 'groq',
-                    tier: isPro ? 'pro' : 'basic',
-                    duration: selectedDuration,
-                    content: activeMode === 'upload' ? documentContent.slice(0, 8000) : null,
-                    topics: activeMode === 'upload' ? topics : null,
-                    syllabus: activeMode === 'syllabus' ? syllabus : null,
-                    images: imageUrls
-                })
+                body: JSON.stringify(payload)
             });
 
-            if (response.script) {
-                setPodcastScript(response.script);
+            const text = response.choices?.[0]?.message?.content || "";
+            const scriptData = RagService.extractJson(text);
+
+            if (scriptData && scriptData.length > 0) {
+                setPodcastScript(scriptData);
                 setCurrentLineIndex(-1);
                 setIsPlaybackFinished(false);
                 incrementUsage('podcast');
             } else {
-                throw new Error("Invalid response format from server");
+                throw new Error("Invalid response format from AI");
             }
         } catch (error) {
             const msg = error.message || "Unknown error";

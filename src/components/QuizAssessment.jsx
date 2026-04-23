@@ -197,6 +197,7 @@ CRITICAL RULES:
 
 You will be FIRED if you include content from wrong class levels.`;
             const payload = formatGroqPayload(prompt, systemMessage);
+            payload.model = "llama-3.1-8b-instant"; // Fast model for instantaneous generation
             const result = await retryableFetch(GROQ_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
