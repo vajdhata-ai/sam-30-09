@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Send, FilePlus, Sparkles, BookOpen, Brain, CreditCard, MessageSquare, Loader2, Bot, User, Upload, Layers, Lightbulb, FileText, X, ChevronRight, Copy, Check, RefreshCw, Crown, ChevronLeft, Shuffle, Eye, Youtube, Trophy, AlertCircle, Play, Video, Target, Calendar, BrainCircuit, ShieldAlert, Zap } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import * as pdfjsLib from 'pdfjs-dist';
 import { GROQ_API_URL, formatGroqPayload, useRetryableFetch } from '../utils/api';
 import KnowledgeGraph from './KnowledgeGraph';
@@ -36,12 +37,12 @@ const MarkdownRenderer = ({ text, isDark }) => {
                 i++;
             }
             elements.push(
-                <div key={`table-${i}`} className="my-10 overflow-x-auto rounded-[20px] border border-theme-border shadow-depth group bg-theme-surface">
+                <div key={`table-${i}`} className="my-12 overflow-x-auto rounded-[24px] border border-theme-border/50 shadow-2xl group bg-theme-surface/60 backdrop-blur-md">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-theme-border text-theme-primary">
+                            <tr className="border-b border-theme-border text-theme-primary bg-theme-primary/5">
                                 {headerCells.map((cell, j) => (
-                                    <th key={j} className="px-6 py-5 text-left font-serif font-black text-[13px] uppercase tracking-[0.2em]">
+                                    <th key={j} className="px-8 py-6 text-left font-serif font-black text-[14px] uppercase tracking-[0.2em] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                                         {renderInline(cell.trim(), isDark)}
                                     </th>
                                 ))}
@@ -49,9 +50,9 @@ const MarkdownRenderer = ({ text, isDark }) => {
                         </thead>
                         <tbody>
                             {rows.map((row, ri) => (
-                                <tr key={ri} className="border-b last:border-0 border-theme-border hover:bg-theme-bg/30 transition-colors duration-300">
+                                <tr key={ri} className="border-b last:border-0 border-theme-border/50 hover:bg-theme-bg/50 transition-colors duration-300">
                                     {row.map((cell, ci) => (
-                                        <td key={ci} className="px-6 py-4 text-sm font-medium text-theme-text leading-relaxed">
+                                        <td key={ci} className="px-8 py-5 text-[15px] font-medium text-theme-text leading-relaxed">
                                             {renderInline(cell.trim(), isDark)}
                                         </td>
                                     ))}
@@ -73,19 +74,21 @@ const MarkdownRenderer = ({ text, isDark }) => {
 
         // Headers
         if (line.startsWith('#### ')) {
-            elements.push(<h4 key={`h4-${i}`} className="text-[17px] font-serif italic mb-3 flex items-center gap-2 text-theme-primary"><Sparkles className="w-3.5 h-3.5 opacity-80" />{renderInline(line.replace('#### ', ''), isDark)}</h4>);
+            elements.push(<h4 key={`h4-${i}`} className="text-[19px] font-serif font-bold italic mb-4 mt-8 flex items-center gap-2 text-theme-primary"><Sparkles className="w-4 h-4 opacity-80" />{renderInline(line.replace('#### ', ''), isDark)}</h4>);
             i++; continue;
         }
         if (line.startsWith('### ')) {
-            elements.push(<h3 key={`h3-${i}`} className="text-[19px] font-serif mb-4 flex items-center gap-2.5 text-theme-text font-medium"><Layers className="w-4 h-4 text-theme-primary opacity-80" />{renderInline(line.replace('### ', ''), isDark)}</h3>);
+            elements.push(<h3 key={`h3-${i}`} className="text-[22px] font-serif mb-6 mt-10 flex items-center gap-3 text-theme-text font-bold"><Layers className="w-5 h-5 text-theme-primary opacity-80" />{renderInline(line.replace('### ', ''), isDark)}</h3>);
             i++; continue;
         }
         if (line.startsWith('## ')) {
             elements.push(
-                <div key={`h2-${i}`} className="mt-16 mb-8 relative p-7 rounded-[20px] border border-theme-border bg-theme-surface overflow-hidden group">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-theme-primary rounded-l-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                    <h2 className="text-[22px] md:text-[26px] tracking-wide font-serif italic relative z-10 text-theme-text">
-                        <span className="text-theme-primary mr-2 not-italic text-lg">✦</span>
+                <div key={`h2-${i}`} className="mt-20 mb-10 relative p-8 md:p-10 rounded-[24px] border border-theme-border/50 bg-theme-surface/80 backdrop-blur-xl shadow-[0_30px_60px_rgba(0,0,0,0.3)] overflow-hidden group">
+                    <div className="absolute inset-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-theme-primary/5 to-transparent pointer-events-none" />
+                    <div className="absolute left-0 top-0 bottom-0 w-2 bg-theme-primary shadow-[0_0_20px_var(--theme-primary)] opacity-80 group-hover:opacity-100 transition-opacity rounded-l-full" />
+                    <h2 className="text-[26px] md:text-[32px] font-bold tracking-wide font-serif italic relative z-10 text-theme-text drop-shadow-md">
+                        <span className="text-theme-primary mr-3 not-italic text-2xl drop-shadow-[0_0_10px_var(--theme-primary)]">✦</span>
                         {renderInline(line.replace('## ', ''), isDark)}
                     </h2>
                 </div>
@@ -93,16 +96,20 @@ const MarkdownRenderer = ({ text, isDark }) => {
             i++; continue;
         }
         if (line.startsWith('# ')) {
-            elements.push(<h1 key={`h1-${i}`} className="text-3xl md:text-5xl font-serif font-light tracking-wide mt-12 mb-8 text-theme-text italic">{renderInline(line.replace('# ', ''), isDark)}</h1>);
+            elements.push(<h1 key={`h1-${i}`} className="text-4xl md:text-6xl font-serif font-bold tracking-wide mt-16 mb-12 text-theme-text italic drop-shadow-lg">{renderInline(line.replace('# ', ''), isDark)}</h1>);
             i++; continue;
         }
 
         // Blockquote
         if (line.startsWith('> ')) {
             elements.push(
-                <blockquote key={`bq-${i}`} className="my-10 p-7 md:p-8 rounded-[20px] relative overflow-hidden bg-theme-primary/5 border border-theme-primary/20 italic group">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-theme-primary/50 group-hover:bg-theme-primary transition-colors"></div>
-                    <p className="font-serif text-[17px] md:text-[20px] leading-[1.8] font-light relative z-10 text-theme-text">{renderInline(line.replace('> ', ''), isDark)}</p>
+                <blockquote key={`bq-${i}`} className="my-12 p-8 md:p-10 rounded-[24px] relative overflow-hidden bg-gradient-to-br from-theme-surface via-theme-bg to-theme-surface border border-theme-primary/30 shadow-[0_20px_50px_rgba(0,0,0,0.5)] group">
+                    <div className="absolute inset-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                    <div className="absolute left-0 top-0 bottom-0 w-2.5 bg-theme-primary shadow-[0_0_25px_var(--theme-primary)] group-hover:bg-theme-secondary transition-colors rounded-l-full"></div>
+                    <div className="absolute -top-32 -right-32 w-64 h-64 bg-theme-primary/20 rounded-full blur-[80px] group-hover:bg-theme-primary/30 transition-colors pointer-events-none"></div>
+                    <p className="font-serif text-[19px] md:text-[22px] leading-[1.9] font-medium relative z-10 text-theme-text drop-shadow-md">
+                        {renderInline(line.replace('> ', ''), isDark)}
+                    </p>
                 </blockquote>
             );
             i++; continue;
@@ -113,9 +120,9 @@ const MarkdownRenderer = ({ text, isDark }) => {
             const indent = line.search(/\S/);
             const level = Math.floor(indent / 2);
             elements.push(
-                <div key={`li-${i}`} className={`flex gap-4 my-3 p-2 transition-colors group ${level > 0 ? 'ml-8' : ''}`}>
-                    <div className="mt-2 w-1.5 h-1.5 rounded-full shrink-0 bg-theme-primary/50 group-hover:bg-theme-primary transition-colors" />
-                    <span className="text-[16px] leading-relaxed font-light text-theme-text/90">{renderInline(line.trim().replace(/^[-*•]\s*/, ''), isDark)}</span>
+                <div key={`li-${i}`} className={`flex gap-5 my-4 p-2 transition-colors group ${level > 0 ? 'ml-8' : ''}`}>
+                    <div className="mt-2.5 w-2 h-2 rounded-full shrink-0 bg-theme-primary shadow-[0_0_10px_var(--theme-primary)] transition-colors" />
+                    <span className="text-[17px] md:text-[19px] leading-[1.8] font-normal text-theme-text/95">{renderInline(line.trim().replace(/^[-*•]\s*/, ''), isDark)}</span>
                 </div>
             );
             i++; continue;
@@ -125,9 +132,9 @@ const MarkdownRenderer = ({ text, isDark }) => {
         if (line.trim().match(/^\d+\.\s/)) {
             const num = line.trim().match(/^(\d+)\./)[1];
             elements.push(
-                <div key={`ol-${i}`} className="flex gap-4 my-3 p-2 transition-colors">
-                    <span className="flex items-center justify-center shrink-0 w-7 h-7 rounded-full text-[10px] font-bold text-theme-primary border border-theme-primary/30 group-hover:bg-theme-primary/10 transition-colors">{num}</span>
-                    <span className="text-[16px] mt-0.5 leading-relaxed font-light text-theme-text/90">{renderInline(line.trim().replace(/^\d+\.\s*/, ''), isDark)}</span>
+                <div key={`ol-${i}`} className="flex gap-5 my-4 p-2 transition-colors group">
+                    <span className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full text-[12px] font-black text-theme-bg bg-theme-primary shadow-[0_0_12px_var(--theme-primary)] transition-transform group-hover:scale-110">{num}</span>
+                    <span className="text-[17px] md:text-[19px] mt-1 leading-[1.8] font-normal text-theme-text/95">{renderInline(line.trim().replace(/^\d+\.\s*/, ''), isDark)}</span>
                 </div>
             );
             i++; continue;
@@ -140,7 +147,7 @@ const MarkdownRenderer = ({ text, isDark }) => {
         }
 
         // Regular paragraph
-        elements.push(<p key={`p-${i}`} className="my-6 text-[17px] md:text-[19px] leading-[1.9] max-w-[1400px] font-light text-theme-text/80">{renderInline(line, isDark)}</p>);
+        elements.push(<p key={`p-${i}`} className="my-7 text-[17px] md:text-[20px] leading-[1.8] max-w-[1400px] font-normal text-theme-text/95">{renderInline(line, isDark)}</p>);
         i++;
     }
 
@@ -189,11 +196,11 @@ const renderInline = (text, isDark) => {
         }
 
         if (firstMatch.type === 'bold') {
-            parts.push(<strong key={key++} className="font-medium text-theme-text border-b border-theme-primary/30 pb-0.5">{firstMatch.match[1]}</strong>);
+            parts.push(<strong key={key++} className="font-bold text-theme-text bg-gradient-to-r from-theme-primary/10 to-transparent px-1.5 rounded-sm border-b-2 border-theme-primary/40 pb-0.5">{firstMatch.match[1]}</strong>);
         } else if (firstMatch.type === 'italic') {
-            parts.push(<em key={key++} className="italic text-theme-text/70">{firstMatch.match[1]}</em>);
+            parts.push(<em key={key++} className="italic text-theme-text/90">{firstMatch.match[1]}</em>);
         } else if (firstMatch.type === 'code') {
-            parts.push(<code key={key++} className="px-2 py-0.5 rounded border border-theme-border bg-theme-surface text-theme-primary text-[13px] font-mono tracking-wide mx-0.5">{firstMatch.match[1]}</code>);
+            parts.push(<code key={key++} className="px-2 py-1 rounded-md border border-theme-primary/20 bg-theme-primary/5 shadow-sm text-theme-primary text-[14px] font-mono tracking-wide mx-0.5 font-bold">{firstMatch.match[1]}</code>);
         }
 
         remaining = remaining.substring(firstIndex + firstMatch.match[0].length);
@@ -207,6 +214,7 @@ const DocumentStudy = ({ onNavigate }) => {
     const { isDark } = useTheme();
     const { retryableFetch } = useRetryableFetch();
     const { canUseFeature, incrementUsage, triggerUpgradeModal, isPro } = useSubscription();
+    const { globalInstructions } = useUserPreferences();
 
     // --- State: Navigation & Flow ---
     const [viewMode, setViewMode] = useState('input'); // 'input' | 'loading' | 'study'
@@ -337,7 +345,9 @@ STRUCTURAL PROTOCOL:
 - **Problem Solving & PCM Dominance**: If the topic involves Physics, Chemistry, Mathematics, or any conceptual field, you MUST use extremely high-level, brilliant real-world examples to explain the concepts perfectly without failing. Do not give basic examples; give rigorous, mastery-level analogies and step-by-step solved applications tailored strictly to the user's level.
 - **Case Synthesis**: Include specialized "Deep-Dive" case studies or analytical examples for every major module.
 - **Exhaustive Notes**: Leave no stone unturned. Provide comprehensive summaries, leaving absolutely nothing out.
-- **Key Takeaways**: Every module MUST end with a high-intensity summary table or list.`;
+- **Key Takeaways**: Every module MUST end with a high-intensity summary table or list.
+
+${globalInstructions ? `\nGLOBAL CUSTOM INSTRUCTIONS (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
 
     // --- Helpers: AI Communication ---
     const callAI = async (prompt, systemPrompt, jsonMode = false, includeImage = false) => {
@@ -644,7 +654,7 @@ You are writing a comprehensive textbook chapter.`;
             <div className="text-center space-y-4 relative">
                 <div className="absolute inset-x-0 top-0 h-40 bg-theme-primary/5 blur-[100px] pointer-events-none"></div>
 
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border border-theme-primary/20 bg-theme-primary/5 mb-4 transition-transform duration-500 hover:scale-105 cursor-none relative group">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border border-theme-primary/20 bg-theme-primary/5 mb-4 transition-transform duration-500 hover:scale-105 cursor-none relative group border-glow-rotate breathe-glow">
                     <Eye className="w-8 h-8 text-theme-primary relative z-10" />
                 </div>
 
@@ -675,7 +685,7 @@ You are writing a comprehensive textbook chapter.`;
                                 if (card.id === 'retina') retinaInputRef.current?.click();
                                 if (card.id === 'chapter') setIsChapterModalOpen(true);
                             }}
-                            className={`group relative p-8 rounded-[24px] border border-theme-border bg-theme-surface hover:border-theme-primary/30 transition-all duration-500 overflow-hidden flex flex-col h-full hover:-translate-y-1 shadow-depth ${card.disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-none'}`}
+                            className={`group relative p-8 rounded-[24px] border border-theme-border/40 bg-theme-surface/60 backdrop-blur-md hover:border-theme-primary/30 transition-all duration-500 overflow-hidden flex flex-col h-full hover:-translate-y-1 shadow-depth-xl holo-shimmer ${card.disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-none'}`}
                         >
                             <div className="flex justify-between items-start mb-6 relative z-10">
                                 <div className="w-14 h-14 rounded-xl border border-theme-primary/20 bg-theme-primary/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-105 text-theme-primary">
@@ -697,7 +707,7 @@ You are writing a comprehensive textbook chapter.`;
                 </div>
 
                 {/* YouTube Full Width Bar */}
-                <div className="group relative p-6 rounded-[20px] border border-theme-border bg-theme-surface transition-all duration-500 overflow-hidden shadow-depth opacity-60 cursor-not-allowed">
+                <div className="group relative p-6 rounded-[20px] border border-theme-border/40 bg-theme-surface/60 backdrop-blur-md transition-all duration-500 overflow-hidden shadow-depth-xl holo-shimmer opacity-60 cursor-not-allowed">
                     <div className="absolute top-3 right-4">
                         <span className="text-[9px] font-bold uppercase tracking-[0.1em] px-2 py-1 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30">
                             Under Development
@@ -736,7 +746,7 @@ You are writing a comprehensive textbook chapter.`;
             {
                 isChapterModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm animate-in fade-in duration-500">
-                        <div className="w-full max-w-lg rounded-[24px] p-8 md:p-10 border border-theme-border bg-theme-surface shadow-depth animate-in zoom-in-95 duration-500 relative overflow-hidden">
+                        <div className="w-full max-w-lg rounded-[24px] p-8 md:p-10 border border-theme-border/30 glass-ultra shadow-depth-xl animate-in zoom-in-95 duration-500 relative overflow-hidden">
                             {/* Ambient Modal Glow */}
                             <div className="absolute -top-32 -right-32 w-64 h-64 bg-theme-primary/5 rounded-full blur-[80px] pointer-events-none"></div>
 
@@ -1084,7 +1094,8 @@ You are writing a comprehensive textbook chapter.`;
                         {/* Notes Section */}
                         {activeSection === 'notes' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="rounded-[24px] border p-8 md:p-12 lg:p-16 border-theme-border bg-theme-surface shadow-depth">
+                                <div className="rounded-[32px] border p-8 md:p-14 lg:p-20 border-theme-border/50 bg-gradient-to-br from-theme-surface via-theme-bg to-theme-surface shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                                    <div className="absolute inset-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] pointer-events-none" />
                                     <MarkdownRenderer text={notes} isDark={isDark} />
                                 </div>
 

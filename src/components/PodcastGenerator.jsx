@@ -6,6 +6,7 @@ import {
 } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import * as pdfjsLib from 'pdfjs-dist';
 import { GROQ_API_URL, TTS_API_URL, useRetryableFetch, formatGroqPayload } from '../utils/api';
 import { auth } from '../firebase';
@@ -26,6 +27,7 @@ const PodcastGenerator = () => {
     const { isDark } = useTheme();
     const { retryableFetch } = useRetryableFetch();
     const { canUseFeature, incrementUsage, triggerUpgradeModal, isPro, getRemainingUses } = useSubscription();
+    const { globalInstructions } = useUserPreferences();
 
     // --- State ---
     const [activeMode, setActiveMode] = useState('upload'); // 'upload' | 'syllabus'
@@ -197,7 +199,9 @@ Format:
   {"speaker": "Questioner", "text": "Welcome to the podcast! Today we are talking about..."},
   {"speaker": "Explainer", "text": "That's right, and it's a fascinating topic because..."}
 ]
-Do not wrap in markdown or backticks. Return raw JSON.`;
+Do not wrap in markdown or backticks. Return raw JSON.
+
+${globalInstructions ? `\nGLOBAL CUSTOM INSTRUCTIONS FOR EXPLAINER (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
 
             let userPrompt = "";
             if (activeMode === 'upload') {

@@ -30,15 +30,50 @@ import ErrorBoundary from './components/ErrorBoundary';
 import OnboardingGuide from './components/OnboardingGuide';
 import ThemeEffects from './components/ThemeEffects';
 import { AssistantProvider } from './contexts/AssistantContext';
+import { UserPreferencesProvider } from './contexts/UserPreferencesContext';
 
-// Luminary Custom Cursor Tracker
 const CustomCursor = () => {
-    const [pos, setPos] = useState({ x: 0, y: 0 });
     const [isHovering, setIsHovering] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+    const dotRef = React.useRef(null);
+    const circleRef = React.useRef(null);
 
     useEffect(() => {
+        let mouseX = 0;
+        let mouseY = 0;
+        let circleX = 0;
+        let circleY = 0;
+        let requestRef;
+        let hasMoved = false;
+
+        const animate = () => {
+            const lerpFactor = 0.15;
+            circleX += (mouseX - circleX) * lerpFactor;
+            circleY += (mouseY - circleY) * lerpFactor;
+            
+            if (dotRef.current) {
+                dotRef.current.style.left = `${mouseX}px`;
+                dotRef.current.style.top = `${mouseY}px`;
+            }
+            if (circleRef.current) {
+                circleRef.current.style.left = `${circleX}px`;
+                circleRef.current.style.top = `${circleY}px`;
+            }
+            requestRef = requestAnimationFrame(animate);
+        };
+
+        requestRef = requestAnimationFrame(animate);
+
         const moveCursor = (e) => {
-            setPos({ x: e.clientX, y: e.clientY });
+            if (!hasMoved) {
+                hasMoved = true;
+                setIsVisible(true);
+                // Snap immediately on first move to prevent flying from top-left
+                circleX = e.clientX;
+                circleY = e.clientY;
+            }
+            mouseX = e.clientX;
+            mouseY = e.clientY;
         };
         const handleMouseOver = (e) => {
             if (e.target.closest('button, a, input, select, textarea, [role="button"], .interactive')) {
@@ -48,19 +83,28 @@ const CustomCursor = () => {
             }
         };
 
+        const handleMouseLeave = () => setIsVisible(false);
+        const handleMouseEnter = () => setIsVisible(true);
+
         window.addEventListener('mousemove', moveCursor);
         window.addEventListener('mouseover', handleMouseOver);
+        document.addEventListener('mouseleave', handleMouseLeave);
+        document.addEventListener('mouseenter', handleMouseEnter);
+        
         return () => {
             window.removeEventListener('mousemove', moveCursor);
             window.removeEventListener('mouseover', handleMouseOver);
+            document.removeEventListener('mouseleave', handleMouseLeave);
+            document.removeEventListener('mouseenter', handleMouseEnter);
+            cancelAnimationFrame(requestRef);
         };
     }, []);
 
     return (
-        <>
-            <div className="cursor-dot" style={{ left: pos.x, top: pos.y, opacity: isHovering ? 0 : 1 }} />
-            <div className="cursor-circle" style={{ left: pos.x, top: pos.y, transform: `translate(-50%, -50%) scale(${isHovering ? 1.5 : 1})`, borderColor: isHovering ? 'var(--gold-light)' : 'var(--gold)' }} />
-        </>
+        <div style={{ opacity: isVisible ? 1 : 0, transition: 'opacity 0.3s ease' }}>
+            <div ref={dotRef} className="cursor-dot" style={{ opacity: isHovering ? 0 : 1 }} />
+            <div ref={circleRef} className="cursor-circle" style={{ transform: `translate(-50%, -50%) scale(${isHovering ? 1.5 : 1})`, borderColor: isHovering ? 'var(--theme-secondary)' : 'var(--theme-primary)' }} />
+        </div>
     );
 };
 
@@ -265,7 +309,7 @@ const AppContent = () => {
 
                 <div className={`
                     flex-1 flex flex-col h-full relative z-10 transition-all duration-500
-                    md:my-[2vh] md:mr-[2vh] md:rounded-[32px] overflow-hidden bg-theme-surface/70 backdrop-blur-xl border border-theme-border
+                    md:my-[2vh] md:mr-[2vh] md:rounded-[32px] overflow-hidden bg-theme-surface/70 backdrop-blur-xl border border-theme-border/8 shadow-depth-xl
                 `}>
                     <ChatHistorySidebar
                         isOpen={isHistoryOpen}
@@ -290,8 +334,8 @@ const AppContent = () => {
                         </button>
                     </header>
 
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
-                        <div key={currentView} className="h-full animate-page-enter">
+                    <main className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
+                        <div key={currentView} className="flex-1 flex flex-col animate-page-enter relative min-h-0">
                             {renderContent()}
                         </div>
                     </main>
@@ -328,7 +372,9 @@ const App = () => {
                             <PodcastProvider>
                                 <ChatHistoryProvider>
                                     <AssistantProvider>
-                                        <AuthGate />
+                                        <UserPreferencesProvider>
+                                            <AuthGate />
+                                        </UserPreferencesProvider>
                                     </AssistantProvider>
                                 </ChatHistoryProvider>
                             </PodcastProvider>

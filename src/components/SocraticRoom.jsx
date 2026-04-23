@@ -91,6 +91,7 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
         try {
             const prompt = "Initialize the Socratic Voice Tutor. Greet the student and immediately ask a thought-provoking, deep conceptual question about the core topic to test their knowledge.";
             const payload = formatGroqPayload(prompt, SOCRATIC_SYSTEM_PROMPT, { max_tokens: 120 });
+            payload.model = "llama-3.1-8b-instant";
             const res = await retryableFetch(GROQ_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -181,6 +182,7 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
             `;
 
             const payload = formatGroqPayload(prompt, SOCRATIC_SYSTEM_PROMPT, { max_tokens: 120 });
+            payload.model = "llama-3.1-8b-instant";
             const res = await retryableFetch(GROQ_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

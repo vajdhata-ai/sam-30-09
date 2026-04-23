@@ -7,6 +7,7 @@ import { saveDailyTasks } from '../../utils/competitiveHubService';
 import ProgressRing from './components/ProgressRing';
 import UpgradeModal from './components/UpgradeModal';
 import RocketLoader from './components/RocketLoader';
+import { AuraBot } from '../Icons';
 
 const CompetitiveHome = ({ onStartStudy, onViewProgress, onExitHub, onSetupNewExam, onOpenSolver, onOpenMockTest, onOpenLearning, onOpenLeaderboard }) => {
     const { currentUser } = useAuth();
@@ -621,8 +622,8 @@ const CompetitiveHome = ({ onStartStudy, onViewProgress, onExitHub, onSetupNewEx
             {/* Aura Floating Apology */}
             <div className={`fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${showApology ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                 <div className={`relative flex flex-col items-center max-w-lg w-full transition-all duration-700 transform ${showApology ? 'translate-y-0 scale-100' : 'translate-y-10 scale-95'}`}>
-                    <div className="flex items-center justify-center p-6 rounded-full bg-pink-500/10 border-2 border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.4)] mb-6 animate-bounce-slow">
-                        <span className="text-6xl drop-shadow-2xl">✨</span>
+                    <div className="flex items-center justify-center mb-6" style={{ animation: 'auraFloat 3s ease-in-out infinite' }}>
+                        <AuraBot className="w-28 h-36 md:w-36 md:h-44" speaking={false} />
                     </div>
                     <div className="relative px-8 py-10 rounded-[2.5rem] bg-theme-surface/95 backdrop-blur-3xl border border-pink-500/50 shadow-[0_10px_50px_rgba(236,72,153,0.3)] text-center w-full">
                         <p className="font-serif italic font-light text-pink-400 text-xl mb-4">Aura</p>
@@ -638,6 +639,11 @@ const CompetitiveHome = ({ onStartStudy, onViewProgress, onExitHub, onSetupNewEx
                     </div>
                 </div>
             </div>
+
+            {/* Keyframes for AuraBot float */}
+            <style>{`
+                @keyframes auraFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+            `}</style>
         </div>
     );
 };

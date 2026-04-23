@@ -1,0 +1,23 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aurem-primary" x1="10%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%" stopColor="#FDE68A" />
+      <stop offset="45%" stopColor="#D4AF37" />
+      <stop offset="100%" stopColor="#854D0E" />
+    </linearGradient>
+    <linearGradient id="aurem-inner" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+      <stop offset="100%" stopColor="#FDE68A" stopOpacity="0.4" />
+    </linearGradient>
+    <filter id="aurem-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <circle cx="50" cy="50" r="30" fill="#D4AF37" opacity="0.15" filter="blur(8px)" />
+  <path d="M50 4 C50 38 38 50 4 50 C38 50 50 62 50 96 C50 62 62 50 96 50 C62 50 50 38 50 4 Z" fill="url(#aurem-primary)" filter="url(#aurem-glow)" />
+  <path d="M50 18 C50 42 42 50 18 50 C42 50 50 58 50 82 C50 58 58 50 82 50 C58 50 50 42 50 18 Z" fill="url(#aurem-inner)" />
+  <path d="M50 38 L62 50 L50 62 L38 50 Z" fill="#FFFFFF" filter="url(#aurem-glow)" opacity="0.9" />
+  <circle cx="50" cy="50" r="45" stroke="url(#aurem-primary)" stroke-width="0.5" stroke-dasharray="6 12" opacity="0.5" />
+</svg>

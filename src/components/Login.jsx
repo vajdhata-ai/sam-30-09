@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { AuremLogo } from './SplashScreen';
+import { AuremLogo } from './Icons';
 import { X } from './Icons';
 
 const Login = ({ onSwitchToSignup }) => {

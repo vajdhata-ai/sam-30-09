@@ -1,4 +1,126 @@
 import React from 'react';
+
+// ═══ AURA EMOJI — Expressive AI companion face ═══
+// mood: 'happy' | 'thinking' | 'excited' | 'empathetic'
+export const AuraEmoji = ({ className, mood = 'happy' }) => {
+  const faces = {
+    happy: { leftEye: 'M8 10.5 Q9 8.5 10 10.5', rightEye: 'M14 10.5 Q15 8.5 16 10.5', mouth: 'M9 15 Q12 18 15 15', blush: true },
+    thinking: { leftEye: 'M8 11 L10 11', rightEye: 'M14 10 Q15 8 16 10', mouth: 'M10 15.5 Q12 14.5 14 15.5', blush: false },
+    excited: { leftEye: 'M8 9 L10 9 M8 11 L10 11 M7.5 10 L10.5 10', rightEye: 'M14 9 L16 9 M14 11 L16 11 M13.5 10 L16.5 10', mouth: 'M9 14.5 Q12 19 15 14.5', blush: true },
+    empathetic: { leftEye: 'M8.5 10 Q9 11.5 10 10', rightEye: 'M14 10 Q15 11.5 15.5 10', mouth: 'M10 16.5 Q12 15 14 16.5', blush: true, tearDrop: true },
+  };
+  const f = faces[mood] || faces.happy;
+
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Face circle */}
+      <circle cx="12" cy="12" r="10.5" fill="url(#aura-face-bg)" stroke="url(#aura-face-ring)" strokeWidth="0.8" />
+
+      {/* Blush spots */}
+      {f.blush && <>
+        <circle cx="7.5" cy="13.5" r="1.8" fill="rgb(var(--theme-secondary, 216,178,108))" opacity="0.25" />
+        <circle cx="16.5" cy="13.5" r="1.8" fill="rgb(var(--theme-secondary, 216,178,108))" opacity="0.25" />
+      </>}
+
+      {/* Eyebrows for empathetic (worried look) */}
+      {mood === 'empathetic' && <>
+        <path d="M7.5 8.5 L10.5 9.3" stroke="rgb(var(--theme-bg, 14,11,7))" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.6" />
+        <path d="M16.5 8.5 L13.5 9.3" stroke="rgb(var(--theme-bg, 14,11,7))" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.6" />
+      </>}
+
+      {/* Eyes */}
+      <path d={f.leftEye} stroke="rgb(var(--theme-bg, 14,11,7))" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <path d={f.rightEye} stroke="rgb(var(--theme-bg, 14,11,7))" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+
+      {/* Tear drop for empathetic */}
+      {f.tearDrop && <circle cx="16.8" cy="12.8" r="0.7" fill="rgb(var(--theme-bg, 14,11,7))" opacity="0.3" />}
+
+      {/* Mouth */}
+      <path d={f.mouth} stroke="rgb(var(--theme-bg, 14,11,7))" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+
+      <defs>
+        <linearGradient id="aura-face-bg" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="rgb(var(--theme-secondary, 224,192,122))" />
+          <stop offset="100%" stopColor="rgb(var(--theme-primary, 201,165,90))" />
+        </linearGradient>
+        <linearGradient id="aura-face-ring" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="rgb(var(--theme-secondary, 224,192,122))" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="rgb(var(--theme-primary, 201,165,90))" stopOpacity="0.3" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+};
+
+// ═══ AURA BOT — The full robot character (from onboarding) ═══
+export const AuraBot = ({ className, speaking = false }) => (
+    <svg viewBox="0 0 200 250" fill="none" xmlns="http://www.w3.org/2000/svg" className={className || "w-44 h-56 md:w-56 md:h-72"} style={{ filter: 'drop-shadow(0 0 30px rgba(139,92,246,0.3))' }}>
+        <defs>
+            <linearGradient id="auraBotBody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#a78bfa" />
+                <stop offset="100%" stopColor="#7c3aed" />
+            </linearGradient>
+            <linearGradient id="auraBotScreen" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#1e1b4b" />
+                <stop offset="100%" stopColor="#312e81" />
+            </linearGradient>
+            <radialGradient id="auraBotGlow">
+                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+            </radialGradient>
+        </defs>
+        {/* Ambient glow */}
+        <circle cx="100" cy="130" r="110" fill="url(#auraBotGlow)" />
+        {/* Antenna */}
+        <path d="M100 18 L100 42" stroke="#a78bfa" strokeWidth="5" strokeLinecap="round" />
+        <circle cx="100" cy="12" r="9" fill="#fbbf24">
+            <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="100" cy="12" r="14" fill="none" stroke="#fbbf24" strokeWidth="1" opacity="0.3">
+            <animate attributeName="r" values="14;22;14" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.3;0;0.3" dur="2s" repeatCount="indefinite" />
+        </circle>
+        {/* Head */}
+        <rect x="45" y="40" width="110" height="85" rx="22" fill="url(#auraBotBody)" />
+        <rect x="45" y="40" width="110" height="85" rx="22" fill="none" stroke="white" strokeWidth="1" opacity="0.15" />
+        {/* Screen */}
+        <rect x="56" y="50" width="88" height="55" rx="12" fill="url(#auraBotScreen)" />
+        {/* Sad Eyes (for apology/under development) */}
+        <path d="M 76 72 Q 82 64 88 72" stroke="#4ade80" strokeWidth="4.5" strokeLinecap="round" fill="none">
+            <animate attributeName="d" values="M 76 72 Q 82 64 88 72;M 76 70 Q 82 68 88 70;M 76 72 Q 82 64 88 72" dur="4s" repeatCount="indefinite" />
+        </path>
+        <path d="M 112 72 Q 118 64 124 72" stroke="#4ade80" strokeWidth="4.5" strokeLinecap="round" fill="none">
+            <animate attributeName="d" values="M 112 72 Q 118 64 124 72;M 112 70 Q 118 68 124 70;M 112 72 Q 118 64 124 72" dur="4s" repeatCount="indefinite" />
+        </path>
+        {/* Blush */}
+        <circle cx="68" cy="88" r="6" fill="#ec4899" fillOpacity="0.5" />
+        <circle cx="132" cy="88" r="6" fill="#ec4899" fillOpacity="0.5" />
+        {/* Mouth */}
+        <path d="M 88 87 Q 100 100 112 87" stroke="#4ade80" strokeWidth="4" strokeLinecap="round" fill="none">
+            {speaking && <animate attributeName="d" values="M 88 87 Q 100 100 112 87;M 88 90 Q 100 92 112 90;M 88 87 Q 100 100 112 87" dur="0.5s" repeatCount="indefinite" />}
+        </path>
+        {/* Neck */}
+        <rect x="85" y="125" width="30" height="14" rx="4" fill="#5b21b6" />
+        {/* Body */}
+        <rect x="35" y="139" width="130" height="90" rx="28" fill="url(#auraBotBody)" />
+        <rect x="35" y="139" width="130" height="90" rx="28" fill="none" stroke="white" strokeWidth="1" opacity="0.1" />
+        {/* Core circle */}
+        <circle cx="100" cy="180" r="28" fill="#312e81" stroke="#4ade80" strokeWidth="1.5" opacity="0.8" />
+        <path d="M90 180 L110 180 M100 170 L100 190" stroke="#4ade80" strokeWidth="4" strokeLinecap="round" />
+        {/* Arms */}
+        <path d="M 35 165 Q 5 175 15 205" stroke="url(#auraBotBody)" strokeWidth="16" strokeLinecap="round" fill="none">
+            <animate attributeName="d" values="M 35 165 Q 5 175 15 205;M 35 165 Q 0 155 10 195;M 35 165 Q 5 175 15 205" dur="3s" repeatCount="indefinite" />
+        </path>
+        <path d="M 165 165 Q 195 175 185 205" stroke="url(#auraBotBody)" strokeWidth="16" strokeLinecap="round" fill="none" />
+        {/* Wave hand */}
+        <circle cx="15" cy="205" r="10" fill="#a78bfa">
+            <animate attributeName="cy" values="205;195;205" dur="3s" repeatCount="indefinite" />
+        </circle>
+        {/* Wheels */}
+        <rect x="62" y="229" width="22" height="14" rx="6" fill="#1e1b4b" />
+        <rect x="116" y="229" width="22" height="14" rx="6" fill="#1e1b4b" />
+    </svg>
+);
 export const FilePlus = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="12" x2="12" y1="18" y2="12" /><line x1="9" x2="15" y1="15" y2="15" /></svg>;
 export const Star = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>;
 
@@ -8,6 +130,53 @@ export const Send = ({ className }) => <svg className={className} fill="none" st
 export const BookOpen = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>;
 export const Globe = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
 export const Sparkles = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" /></svg>;
+
+export const AuremLogo = ({ className }) => (
+  <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="aurem-primary" x1="10%" y1="0%" x2="90%" y2="100%">
+        <stop offset="0%" stopColor="#FDE68A" />
+        <stop offset="45%" stopColor="#D4AF37" />
+        <stop offset="100%" stopColor="#854D0E" />
+      </linearGradient>
+      <linearGradient id="aurem-inner" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+        <stop offset="100%" stopColor="#FDE68A" stopOpacity="0.4" />
+      </linearGradient>
+      <filter id="aurem-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="5" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+    
+    {/* Ambient Glow behind */}
+    <circle cx="50" cy="50" r="30" fill="#D4AF37" opacity="0.15" filter="blur(8px)" />
+    
+    {/* Thick Majestic Spark Base */}
+    <path 
+      d="M50 4 C50 38 38 50 4 50 C38 50 50 62 50 96 C50 62 62 50 96 50 C62 50 50 38 50 4 Z" 
+      fill="url(#aurem-primary)" 
+      filter="url(#aurem-glow)"
+    />
+    
+    {/* Inner Bright Core for 3D/Bevel Depth */}
+    <path 
+      d="M50 18 C50 42 42 50 18 50 C42 50 50 58 50 82 C50 58 58 50 82 50 C58 50 50 42 50 18 Z" 
+      fill="url(#aurem-inner)" 
+    />
+
+    {/* Central Diamond Highlight */}
+    <path 
+      d="M50 38 L62 50 L50 62 L38 50 Z" 
+      fill="#FFFFFF"
+      filter="url(#aurem-glow)"
+      opacity="0.9"
+    />
+    
+    {/* Orbital Rings (very subtle) */}
+    <circle cx="50" cy="50" r="45" stroke="url(#aurem-primary)" strokeWidth="0.5" strokeDasharray="6 12" className="origin-center animate-[spin_24s_linear_infinite]" opacity="0.5" />
+  </svg>
+);
 export const User = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
 export const Loader2 = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>;
 export const Menu = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></svg>;
@@ -105,3 +274,4 @@ export const Network = ({ className }) => <svg className={className} fill="none"
 export const Database = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg>;
 export const Minimize2 = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" x2="21" y1="10" y2="3" /><line x1="3" x2="10" y1="21" y2="14" /></svg>;
 export const Maximize2 = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" x2="14" y1="3" y2="10" /><line x1="3" x2="10" y1="21" y2="14" /></svg>;
+export const Info = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>;

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useChatHistory } from '../contexts/ChatHistoryContext';
 import { useAssistant } from '../contexts/AssistantContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 
 // ═══════════════════════════════════
 // THEME OPTION BUTTON
@@ -28,7 +29,7 @@ const ThemeOption = ({ themeKey, colorClass, label, isDark, onClick }) => {
                 }
             `}
         >
-            <div className={`w-10 h-10 rounded-full mb-2.5 bg-gradient-to-br ${colorClass} shadow-lg group-hover:scale-110 transition-transform duration-300 relative`}>
+            <div className={`w-10 h-10 rounded-full mb-2.5 bg-gradient-to-br ${colorClass} shadow-lg group-hover:scale-110 transition-transform duration-300 relative ${isActive ? 'shadow-[0_0_20px_rgba(var(--theme-primary),0.4)]' : ''}`}>
                 {isActive && (
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className="w-3 h-3 bg-white rounded-full shadow-sm" />
@@ -51,12 +52,12 @@ const ThemeOption = ({ themeKey, colorClass, label, isDark, onClick }) => {
 const SettingsSection = ({ title, icon: Icon, children, isDark }) => (
     <div className="mb-8 animate-fade-in-up">
         <div className="flex items-center mb-4 px-1">
-            <div className={`p-2 rounded-xl mr-3 ${isDark ? 'bg-theme-primary/15' : 'bg-theme-primary/10'}`}>
+            <div className={`p-2 rounded-xl mr-3 ${isDark ? 'bg-theme-primary/15' : 'bg-theme-primary/10'} border-glow-rotate`}>
                 <Icon className="w-4 h-4 text-theme-primary" />
             </div>
             <h3 className={`text-base font-serif font-bold ${isDark ? 'text-theme-text' : 'text-theme-text'}`}>{title}</h3>
         </div>
-        <div className={`p-6 rounded-3xl border backdrop-blur-sm bg-theme-surface border-theme-border shadow-depth`}>
+        <div className={`p-6 rounded-3xl border backdrop-blur-sm bg-theme-surface/60 border-theme-border/30 shadow-depth-xl holo-shimmer relative`}>
             {children}
         </div>
     </div>
@@ -72,6 +73,7 @@ const Settings = () => {
     const { tier, subscriptionStatus, subscriptionExpiry, isLoadingSubscription, triggerUpgradeModal, isPro, isGo } = useSubscription();
     const { isHistoryEnabled, setHistoryEnabled } = useChatHistory();
     const { speak } = useAssistant();
+    const { globalInstructions, setGlobalInstructions, understandingLevel, setUnderstandingLevel } = useUserPreferences();
 
     const handleThemeChange = (newTheme) => {
         if (newTheme === theme) return;
@@ -105,7 +107,7 @@ const Settings = () => {
     const PlanIcon = currentPlanConfig.icon;
 
     return (
-        <div className={`h-full overflow-y-auto custom-scrollbar p-6 md:p-10 pb-32 bg-transparent`}>
+        <div className={`h-full overflow-y-auto custom-scrollbar-thin p-6 md:p-10 pb-32 bg-transparent`}>
             <div className="max-w-3xl mx-auto">
                 <header className="mb-10">
                     <h1 className={`text-3xl font-serif italic tracking-wide mb-1.5 text-theme-text`}>
@@ -120,6 +122,7 @@ const Settings = () => {
                         <h4 className={`font-semibold text-sm mb-4 text-theme-text`}>Aesthetic Identity</h4>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 border border-theme-border/50 p-4 rounded-3xl bg-theme-bg">
                             <ThemeOption themeKey={THEMES.PREMIUM} label="Premium (Gold)" colorClass="from-[#c9a55a] to-[#e0c07a]" isDark={isDark} onClick={() => handleThemeChange(THEMES.PREMIUM)} />
+                            <ThemeOption themeKey={THEMES.LIGHT} label="Warm Light" colorClass="from-amber-200 to-orange-300" isDark={isDark} onClick={() => handleThemeChange(THEMES.LIGHT)} />
                             <ThemeOption themeKey={THEMES.VIBRANT} label="Vibrant (Indigo)" colorClass="from-indigo-500 to-fuchsia-500" isDark={isDark} onClick={() => handleThemeChange(THEMES.VIBRANT)} />
                             <ThemeOption themeKey={THEMES.SIMPLE} label="Simple (Minimal)" colorClass="from-zinc-400 to-zinc-600" isDark={isDark} onClick={() => handleThemeChange(THEMES.SIMPLE)} />
                             <ThemeOption themeKey={THEMES.CUSTOM} label="Custom Palette" colorClass="from-rose-500 to-teal-500" isDark={isDark} onClick={() => handleThemeChange(THEMES.CUSTOM)} />
@@ -153,6 +156,50 @@ const Settings = () => {
                                 </div>
                             </div>
                         )}
+                    </div>
+                </SettingsSection>
+
+                {/* AI Preferences */}
+                <SettingsSection title="AI Preferences" icon={Sparkles} isDark={isDark}>
+                    <div className="space-y-6">
+                        {/* Understanding Level */}
+                        <div>
+                            <h4 className="font-semibold text-sm text-theme-text mb-2">Base Understanding Level</h4>
+                            <p className="text-xs text-theme-muted mb-3 leading-relaxed">
+                                How should Auremous tailor explanations by default? "Auto-Adaptive" adjusts automatically based on your XP.
+                            </p>
+                            <div className="relative">
+                                <select
+                                    value={understandingLevel}
+                                    onChange={(e) => setUnderstandingLevel(e.target.value)}
+                                    className="w-full appearance-none bg-theme-surface/50 border border-theme-border/50 text-theme-text text-sm rounded-xl px-4 py-3 pr-10 focus:outline-none focus:border-theme-primary/50 transition-colors cursor-pointer"
+                                >
+                                    <option value="auto">Auto-Adaptive (Recommended)</option>
+                                    <option value="beginner">Beginner (Step-by-step, simple terms)</option>
+                                    <option value="intermediate">Intermediate (Balanced)</option>
+                                    <option value="advanced">Advanced (Fast-paced, complex)</option>
+                                    <option value="expert">Expert (Concise, high-level only)</option>
+                                </select>
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-theme-muted">
+                                    <ChevronRight className="w-4 h-4 rotate-90" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Global Custom Instructions */}
+                        <div>
+                            <h4 className="font-semibold text-sm text-theme-text mb-2">Global Custom Instructions</h4>
+                            <p className="text-xs text-theme-muted mb-3 leading-relaxed">
+                                What would you like Auremous to know about you to provide better responses? How would you like Auremous to respond?
+                            </p>
+                            <textarea
+                                value={globalInstructions}
+                                onChange={(e) => setGlobalInstructions(e.target.value)}
+                                placeholder="e.g. Always respond in bullet points. I am a visual learner. Include real-world engineering examples."
+                                className="w-full bg-theme-surface/50 border border-theme-border/50 text-theme-text text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-theme-primary/50 transition-colors custom-scrollbar resize-none"
+                                rows="4"
+                            />
+                        </div>
                     </div>
                 </SettingsSection>
 

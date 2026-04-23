@@ -7,6 +7,7 @@ export const THEMES = {
     VIBRANT: 'vibrant',
     SIMPLE: 'simple',
     CUSTOM: 'custom',
+    LIGHT: 'light',
 };
 
 // Helper hex to "r, g, b"
@@ -67,6 +68,18 @@ const THEME_VARS = {
         '--aurora-2': '30, 10%, 30%',
         '--aurora-3': '0, 0%, 20%',
     },
+    [THEMES.LIGHT]: {
+        '--theme-bg': '222, 213, 196',
+        '--theme-surface': '236, 230, 218',
+        '--theme-text': '35, 28, 18',
+        '--theme-muted': '108, 96, 78',
+        '--theme-primary': '155, 118, 48',
+        '--theme-secondary': '178, 142, 72',
+        '--theme-border': '195, 185, 165',
+        '--aurora-1': '35, 50%, 55%',
+        '--aurora-2': '45, 50%, 50%',
+        '--aurora-3': '25, 40%, 45%',
+    },
 };
 
 // Apply theme by injecting CSS vars directly as inline styles (highest specificity, no CSS fights)
@@ -107,8 +120,17 @@ const applyTheme = (theme, customColors = null) => {
         root.classList.remove(`theme-${t}`);
         document.body.classList.remove(`theme-${t}`);
     });
-    root.classList.add('dark', `theme-${theme}`);
-    document.body.classList.add('dark', `theme-${theme}`);
+    
+    root.classList.add(`theme-${theme}`);
+    document.body.classList.add(`theme-${theme}`);
+    
+    if (theme === THEMES.LIGHT) {
+        root.classList.remove('dark');
+        document.body.classList.remove('dark');
+    } else {
+        root.classList.add('dark');
+        document.body.classList.add('dark');
+    }
 };
 
 export const ThemeProvider = ({ children }) => {
@@ -129,7 +151,7 @@ export const ThemeProvider = ({ children }) => {
         return saved;
     });
 
-    const [isDark] = useState(true);
+    const isDark = theme !== THEMES.LIGHT;
 
     useEffect(() => {
         applyTheme(theme, customColors);

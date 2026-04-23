@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import './LandingPageV2.css';
 import StarryBackground from './StarryBackground';
+import { AuremLogo } from './Icons';
 
 const features = [
     {
@@ -120,7 +121,10 @@ const LandingPageV2 = ({ onGetStarted }) => {
 
             {/* ── NAV ── */}
             <nav className="lp-nav">
-                <div className="lp-logo"><span>✦</span> Auremous</div>
+                <div className="lp-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AuremLogo style={{ width: '28px', height: '28px' }} />
+                    Auremous
+                </div>
                 <ul className="lp-nav-links">
                     <li><a href="#features">Features</a></li>
                     <li><a href="#how">How It Works</a></li>
@@ -328,7 +332,10 @@ const LandingPageV2 = ({ onGetStarted }) => {
 
             {/* ── FOOTER ── */}
             <footer className="lp-footer">
-                <div className="lp-footer-logo">✦ Auremous</div>
+                <div className="lp-footer-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <AuremLogo style={{ width: '20px', height: '20px' }} />
+                    Auremous
+                </div>
                 <p>© 2026 Auremous — The AI Study Companion. Crafted with care.</p>
                 <p>Privacy · Terms · Support</p>
             </footer>

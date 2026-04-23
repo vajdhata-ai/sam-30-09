@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, query, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore';
-import { Trophy, Users, Star, Crown, ChevronLeft } from '../Icons';
+import { Trophy, Users, Star, Crown, ChevronLeft, Info } from '../Icons';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Leaderboard = ({ onBack }) => {
@@ -107,7 +107,21 @@ const Leaderboard = ({ onBack }) => {
                                         #{currentUserRank}
                                     </div>
                                     <div>
-                                        <p className="text-theme-text font-black text-lg">Your Ranking</p>
+                                        <div className="flex items-center gap-2 group/tooltip cursor-help relative">
+                                            <p className="text-theme-text font-black text-lg">Your Ranking</p>
+                                            <Info className="w-4 h-4 text-theme-muted hover:text-theme-text transition-colors" />
+                                            
+                                            {/* Tooltip */}
+                                            <div className="absolute left-0 top-full mt-2 w-56 p-4 rounded-xl bg-theme-surface border border-theme-primary/20 shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-300 z-50 backdrop-blur-xl translate-y-1 group-hover/tooltip:translate-y-0">
+                                                <p className="text-xs font-black text-theme-primary uppercase tracking-widest mb-1.5">Rank up faster!</p>
+                                                <p className="text-xs text-theme-text font-medium mb-2">Earn more XP by:</p>
+                                                <ul className="text-[11px] text-theme-muted space-y-1.5 ml-3 list-disc font-medium">
+                                                    <li>Scoring high in Adaptive Tests</li>
+                                                    <li>Answering Neural Queries correctly</li>
+                                                    <li>Winning Cognitive Colosseum battles</li>
+                                                </ul>
+                                            </div>
+                                        </div>
                                         <p className="text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-widest">Keep pushing, Voyager!</p>
                                     </div>
                                 </div>

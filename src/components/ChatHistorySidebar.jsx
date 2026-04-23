@@ -28,9 +28,9 @@ const ChatHistorySidebar = ({ isOpen, onClose, onSelectChat }) => {
 
             {/* Sidebar */}
             <div className={`
-                fixed top-0 right-0 h-full w-[300px] sm:w-[350px] bg-theme-surface border-l border-theme-border z-[70] shadow-2xl transition-transform duration-500
+                fixed top-0 right-0 h-full w-[300px] sm:w-[350px] glass-ultra border-l border-theme-border/30 z-[70] shadow-depth-xl transition-transform duration-500
                 ${isOpen ? 'translate-x-0' : 'translate-x-full'}
-                flex flex-col
+                flex flex-col sidebar-edge-light
             `}>
                 <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-bg/50 backdrop-blur-md">
                     <div className="flex items-center gap-2">
@@ -42,7 +42,7 @@ const ChatHistorySidebar = ({ isOpen, onClose, onSelectChat }) => {
                     </button>
                 </div>
 
-                <div className="p-4 flex-1 overflow-y-auto custom-scrollbar">
+                <div className="p-4 flex-1 overflow-y-auto custom-scrollbar-thin">
                     {chats.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-theme-muted space-y-3 opacity-50">
                             <MessageSquare className="w-10 h-10" />
@@ -54,14 +54,12 @@ const ChatHistorySidebar = ({ isOpen, onClose, onSelectChat }) => {
                                 <div
                                     key={chat.id}
                                     className={`
-                                        group p-4 rounded-xl border transition-all duration-300 cursor-pointer relative overflow-hidden
-                                        ${activeChatId === chat.id ? 'bg-theme-primary/10 border-theme-primary shadow-lg shadow-theme-primary/20' : 'bg-theme-bg/50 border-theme-border hover:border-theme-primary/50 hover:bg-theme-surface'}
+                                        group p-4 rounded-xl border transition-all duration-300 cursor-pointer relative overflow-hidden holo-shimmer
+                                        ${activeChatId === chat.id ? 'bg-theme-primary/10 border-theme-primary/40 shadow-lg shadow-theme-primary/20 nav-active-glow' : 'bg-theme-bg/30 border-theme-border/40 hover:border-theme-primary/30 hover:bg-theme-surface/50 hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.05)]'}
                                     `}
                                     onClick={() => onSelectChat(chat.feature, chat.id)}
                                 >
-                                    {activeChatId === chat.id && (
-                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-theme-primary rounded-r-full"></div>
-                                    )}
+                                    {/* Active indicator handled by nav-active-glow CSS */}
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1.5">

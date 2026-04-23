@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, User, Bot, Loader2, Send, BookOpen, Clock, BrainCircuit, Image, X, Upload, Crown, RefreshCw, ThumbsUp, ThumbsDown, PenTool } from './Icons';
+import { Sparkles, AuremLogo, AuraEmoji, User, Bot, Loader2, Send, BookOpen, Clock, BrainCircuit, Image, X, Upload, Crown, RefreshCw, ThumbsUp, ThumbsDown, PenTool } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePerformance } from '../contexts/PerformanceContext';
 import { useLearnLoop } from '../contexts/LearnLoopContext';
 import { useChatHistory } from '../contexts/ChatHistoryContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { GROQ_API_URL } from '../utils/api';
 
 const DoubtSolver = ({ retryableFetch }) => {
@@ -15,6 +16,7 @@ const DoubtSolver = ({ retryableFetch }) => {
     const { startLoop } = useLearnLoop();
     const { currentUser } = useAuth();
     const { activeChatId, chats, startNewChat, addMessageToChat, getGlobalContextStr } = useChatHistory();
+    const { globalInstructions, understandingLevel } = useUserPreferences();
 
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -30,6 +32,16 @@ const DoubtSolver = ({ retryableFetch }) => {
     const [feedbackState, setFeedbackState] = useState({}); // { msgIndex: 'up' | 'down' }
     const [refineInput, setRefineInput] = useState('');
     const [refiningMsgIdx, setRefiningMsgIdx] = useState(null);
+
+    // Determine Aura's mood from message content
+    const getAuraMood = (content) => {
+        if (!content) return 'thinking';
+        const lower = content.toLowerCase();
+        if (lower.includes('sorry') || lower.includes('unfortunately') || lower.includes('error') || lower.includes('can\'t') || lower.includes('mistake')) return 'empathetic';
+        if (lower.includes('great') || lower.includes('excellent') || lower.includes('perfect') || lower.includes('awesome') || lower.includes('!')) return 'excited';
+        if (lower.includes('think') || lower.includes('consider') || lower.includes('let\'s') || lower.includes('step') || lower.includes('?')) return 'thinking';
+        return 'happy';
+    };
 
     // Sync local messages with global history
     useEffect(() => {
@@ -158,6 +170,8 @@ const DoubtSolver = ({ retryableFetch }) => {
 
         const globalContext = getGlobalContextStr();
 
+        const effectiveLevel = understandingLevel === 'auto' ? getDifficultyLevel() : understandingLevel;
+
         let systemPrompt = `You are AUREM — an elite AI study companion and cognitive augmentation system.
 
         CORE IDENTITY:
@@ -180,14 +194,17 @@ const DoubtSolver = ({ retryableFetch }) => {
         - If the user shows uncertainty: Guide with Socratic questioning, don't just give the answer.
         - Adapt depth dynamically — simplify for beginners, deepen for advanced queries.
         
-        CURRENT USER PERFORMANCE LEVEL: ${getDifficultyLevel().toUpperCase()}
-        -> IF EASY: Explain concepts very simply, use relatable analogies, break down steps completely.
+        CURRENT USER PERFORMANCE LEVEL: ${effectiveLevel.toUpperCase()}
+        -> IF EASY/BEGINNER: Explain concepts very simply, use relatable analogies, break down steps completely.
         -> IF INTERMEDIATE: Balance theory with practical steps, assume some base knowledge.
-        -> IF HARD: Be extremely concise, highly technical, and focus on profound insights and advanced applications.
+        -> IF HARD/ADVANCED: Be extremely concise, highly technical, and focus on profound insights and advanced applications.
+        -> IF EXPERT: Give only the highest-level principles, mathematical/theoretical proofs, and assume mastery of prerequisites.
         
         USER REFINEMENT INSTRUCTION: ${messages.find(m => m.role === 'user' && m.isRefinement)?.content || "None"}
         
-        ${globalContext}`;
+        ${globalContext}
+        
+        ${globalInstructions ? `\nGLOBAL CUSTOM INSTRUCTIONS (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
 
         try {
             let payload;
@@ -308,30 +325,30 @@ const DoubtSolver = ({ retryableFetch }) => {
         if (line.includes('**')) {
             const parts = line.split(/\*\*(.+?)\*\*/g);
             return (
-                <p key={idx} className="my-1.5 text-[14px] leading-relaxed">
+                <p key={idx} className="my-1.5 text-[14px] leading-snug">
                     {parts.map((p, j) => j % 2 === 1 ? <strong key={j} className="font-semibold text-theme-secondary">{p}</strong> : p)}
                 </p>
             );
         }
         if (line.trim().startsWith('- ') || line.trim().startsWith('• ')) {
             return (
-                <div key={idx} className="flex gap-2.5 my-1 ml-1 text-[14px] leading-relaxed">
+                <div key={idx} className="flex gap-2.5 my-1 ml-1 text-[14px] leading-snug">
                     <span className="text-theme-primary mt-0.5">•</span>
                     <span>{line.trim().replace(/^[-•]\s*/, '')}</span>
                 </div>
             );
         }
         if (line.trim()) {
-            return <p key={idx} className="my-1.5 text-[14px] leading-relaxed">{line}</p>;
+            return <p key={idx} className="my-1.5 text-[14px] leading-snug">{line}</p>;
         }
         return <div key={idx} className="h-1.5" />;
     };
 
     return (
-        <div className={`flex flex-col h-full relative overflow-hidden transition-colors duration-300 bg-theme-bg`}>
+        <div className={`flex-1 flex flex-col relative min-h-0 overflow-hidden transition-colors duration-300 bg-theme-bg`}>
 
             {/* ═══ Header ═══ */}
-            <div className={`px-6 py-5 flex items-center justify-between z-30 glass-3d-elevated border-b rounded-b-3xl mx-4 mt-4 bg-theme-surface border-theme-border shadow-theme-border/10`}>
+            <div className={`px-6 py-5 flex items-center justify-between z-30 glass-3d-elevated border-b rounded-b-3xl mx-4 mt-4 bg-theme-surface/80 backdrop-blur-2xl border-theme-border/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]`}>
                 <div className="flex items-center gap-4 group cursor-default">
                     <div className={`p-3 rounded-2xl bg-gradient-to-br from-theme-primary to-theme-secondary shadow-xl shadow-theme-primary/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
                         <BrainCircuit className="w-6 h-6 text-theme-bg" />
@@ -349,15 +366,20 @@ const DoubtSolver = ({ retryableFetch }) => {
             </div>
 
             {/* ═══ Chat Area ═══ */}
-            <div ref={containerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 custom-scrollbar z-10">
+            <div ref={containerRef} className={`flex-1 overflow-y-auto px-4 sm:px-6 custom-scrollbar-thin z-10 ${messages.length === 0 ? 'flex flex-col py-0' : 'py-6'}`}>
                 {messages.length === 0 && (
-                    <div className="max-w-3xl mx-auto py-8 space-y-12 flex flex-col items-center justify-center min-h-[55vh]">
+                    <div className="max-w-3xl mx-auto flex-1 w-full flex flex-col items-center justify-center space-y-12 relative spotlight">
+                        {/* Ambient orbs behind hero */}
+                        <div className="hero-orb" style={{ width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(var(--theme-primary), 0.08) 0%, transparent 70%)', top: '20%', left: '10%', animationDuration: '14s' }} />
+                        <div className="hero-orb" style={{ width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(var(--theme-secondary), 0.06) 0%, transparent 70%)', bottom: '10%', right: '10%', animationDuration: '18s', animationDelay: '-6s' }} />
+
                         {/* Welcome Header */}
-                        <div className="text-center space-y-6">
+                        <div className="text-center space-y-6 relative z-10">
                             {/* Gold AUREM Logo */}
-                            <div className={`transition-all duration-1000 transform ${typedGreeting.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-                                <h1 className="font-serif italic font-light text-5xl tracking-widest text-[#c9a55a] drop-shadow-[0_0_15px_rgba(201,165,90,0.3)] select-none">
-                                    ✦ Auremous
+                            <div className={`transition-all duration-1000 transform ${typedGreeting.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} flex flex-col items-center gap-4`}>
+                                <AuremLogo className="w-16 h-16 drop-shadow-[0_0_25px_rgba(201,165,90,0.6)]" />
+                                <h1 className="font-serif italic font-light text-5xl tracking-widest text-[#c9a55a] drop-shadow-[0_0_25px_rgba(201,165,90,0.4)] select-none">
+                                    Auremous
                                 </h1>
                             </div>
 
@@ -377,7 +399,7 @@ const DoubtSolver = ({ retryableFetch }) => {
 
 
                         {/* What to help with prompt */}
-                        <div className={`text-center transition-all duration-1000 ${showChatUI ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'}`}>
+                        <div className={`text-center transition-all duration-1000 relative z-10 ${showChatUI ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'}`}>
                             <p className="text-theme-primary text-base font-semibold tracking-wide">
                                 What can I help you with today?
                             </p>
@@ -396,8 +418,8 @@ const DoubtSolver = ({ retryableFetch }) => {
                             {/* Sender badge */}
                             <div className="flex items-center mb-1.5 px-1 gap-2">
                                 {msg.role === 'assistant' && (
-                                    <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-theme-primary to-theme-secondary flex items-center justify-center">
-                                        <Sparkles className="w-3 h-3 text-theme-bg" />
+                                    <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center">
+                                        <AuraEmoji className="w-5 h-5" mood={getAuraMood(msg.content)} />
                                     </div>
                                 )}
                                 <span className={`text-[10px] font-bold uppercase tracking-wider
@@ -409,12 +431,12 @@ const DoubtSolver = ({ retryableFetch }) => {
                             </div>
 
                             {/* Message Bubble */}
-                            <div className={`relative p-5 sm:p-6 rounded-[28px] transition-all duration-500 glass-3d glow-border
+                            <div className={`relative p-5 sm:p-6 rounded-2xl transition-all duration-500
                                  ${msg.role === 'user'
-                                    ? 'bg-theme-surface border border-theme-primary/30 text-theme-primary rounded-tr-none shadow-lg'
+                                    ? 'bg-theme-surface border border-theme-primary/30 text-theme-primary rounded-tr-none msg-bubble-user'
                                     : msg.isError
                                         ? `bg-red-500/10 border border-red-500/30 text-red-500 rounded-tl-none`
-                                        : `bg-theme-surface border border-theme-border shadow-xl shadow-black/20 rounded-tl-none`
+                                        : `border border-theme-border rounded-tl-none msg-bubble-ai holo-shimmer`
                                 }
                              `}>
                                 {msg.isSyllabusVerified && (
@@ -431,7 +453,7 @@ const DoubtSolver = ({ retryableFetch }) => {
 
                                 <div className={`${msg.role === 'user' ? 'text-theme-primary' : 'text-theme-text'}`}>
                                     {msg.role === 'user' ? (
-                                        <div className="whitespace-pre-wrap text-[15px] leading-relaxed font-medium">{msg.content}</div>
+                                        <div className="whitespace-pre-wrap text-[15px] leading-snug font-medium">{msg.content}</div>
                                     ) : (
                                         <div className="space-y-0.5">
                                             {msg.content.split('\n').map((line, idx) => renderLine(line, idx))}
@@ -491,8 +513,8 @@ const DoubtSolver = ({ retryableFetch }) => {
                 {isLoading && (
                     <div className="flex justify-start animate-fade-in pl-1">
                         <div className="flex items-center gap-2 mb-1.5 px-1">
-                            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-theme-primary to-theme-secondary flex items-center justify-center">
-                                <Sparkles className="w-3 h-3 text-theme-bg" />
+                            <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center">
+                                <AuraEmoji className="w-5 h-5" mood="thinking" />
                             </div>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-theme-primary">Auremous</span>
                         </div>
@@ -500,10 +522,10 @@ const DoubtSolver = ({ retryableFetch }) => {
                 )}
                 {isLoading && (
                     <div className="flex justify-start pl-1">
-                        <div className={`px-5 py-4 rounded-2xl rounded-tl-md flex items-center gap-1.5 bg-theme-surface border border-theme-border`}>
-                            <div className="typing-dot" />
-                            <div className="typing-dot" />
-                            <div className="typing-dot" />
+                        <div className={`px-5 py-4 rounded-2xl rounded-tl-md flex items-center gap-2.5 msg-bubble-ai border border-theme-border`}>
+                            <div className="typing-dot-premium" />
+                            <div className="typing-dot-premium" />
+                            <div className="typing-dot-premium" />
                         </div>
                     </div>
                 )}
@@ -512,7 +534,7 @@ const DoubtSolver = ({ retryableFetch }) => {
             </div>
 
             {/* ═══ Input Area ═══ */}
-            <div className={`p-4 z-20 backdrop-blur-xl border-t bg-theme-bg border-theme-border transition-all duration-1000 ${showChatUI || messages.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none'}`}>
+            <div className={`p-4 z-20 backdrop-blur-xl border-t bg-theme-bg/80 border-theme-border/50 transition-all duration-1000 ${showChatUI || messages.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none'}`}>
                 <div className="max-w-3xl mx-auto space-y-2">
                     {/* Image Preview */}
                     {imagePreview && (
@@ -556,13 +578,13 @@ const DoubtSolver = ({ retryableFetch }) => {
                         </div>
 
                         {/* Text Input */}
-                        <div className="flex-1 relative">
+                        <div className="flex-1 relative input-premium rounded-2xl">
                             <input
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder={selectedImage ? "Ask about this image..." : "Ask Auremous anything..."}
-                                className={`w-full py-3.5 pl-5 pr-12 rounded-2xl text-[14px] font-medium outline-none transition-all duration-200 bg-theme-surface text-theme-text placeholder:text-theme-muted border border-theme-border focus:border-theme-primary focus:shadow-[0_0_0_3px_var(--theme-primary)]`}
+                                className={`w-full py-3.5 pl-5 pr-12 rounded-2xl text-[14px] font-medium outline-none transition-all duration-200 bg-theme-surface/80 backdrop-blur-xl text-theme-text placeholder:text-theme-muted border border-theme-border/50 focus:border-theme-primary/40`}
                                 disabled={isLoading}
                             />
                             <button

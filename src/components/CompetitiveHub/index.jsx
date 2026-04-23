@@ -11,9 +11,10 @@ import CompetitivePodcast from './CompetitivePodcast';
 import Leaderboard from './Leaderboard';
 import RocketLoader from './components/RocketLoader';
 import PremiumGuard from '../PremiumGuard';
+import { AuraBot } from '../Icons';
 
 // ⚠️  UNDER DEVELOPMENT FLAG — set to false when the hub is ready for production
-const HUB_UNDER_DEVELOPMENT = false;
+const HUB_UNDER_DEVELOPMENT = true;
 
 /**
  * Main Competitive Hub router.
@@ -285,12 +286,10 @@ const AuraApologyScreen = ({ onExit }) => {
                 {/* Aura Avatar */}
                 <div className="relative mb-8">
                     <div className="absolute inset-0 rounded-full bg-pink-500/20 blur-3xl scale-150 animate-pulse" />
-                    <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-pink-500/20 to-violet-500/20 border-2 border-pink-500/50 flex items-center justify-center shadow-[0_0_60px_rgba(236,72,153,0.3)]"
+                    <div className="relative flex items-center justify-center"
                          style={{ animation: 'auraFloat 3s ease-in-out infinite' }}>
-                        <span className="text-5xl" style={{ filter: 'drop-shadow(0 0 12px rgba(236,72,153,0.6))' }}>✨</span>
+                        <AuraBot className="w-36 h-44 md:w-44 md:h-56" speaking={false} />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-3 h-3 rounded-full bg-pink-400/60 animate-ping" style={{ animationDuration: '2s' }} />
-                    <div className="absolute -bottom-1 -left-3 w-2 h-2 rounded-full bg-violet-400/60 animate-ping" style={{ animationDuration: '3s' }} />
                 </div>
 
                 {/* Aura Name Tag */}

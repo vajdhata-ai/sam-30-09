@@ -253,6 +253,7 @@ You will be FIRED if you include content from wrong class levels.`;
 
                     try {
                         const payload = formatGroqPayload(gradePrompt, "Expert Academic Grader");
+                        payload.model = "llama-3.1-8b-instant";
                         const res = await retryableFetch(GROQ_API_URL, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -283,14 +284,20 @@ You will be FIRED if you include content from wrong class levels.`;
 DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans: a.student_answer, correct: a.is_correct })))}
                 OUTPUT JSON: { "overall_feedback": "...", "weak_concepts": [{ "concept": "...", "revision_note": "...", "youtube_query": "..." }] }
 `;
-
-            const analysisPayload = formatGroqPayload(analysisPrompt, "Expert tutor.");
-            const analysisRes = await retryableFetch(GROQ_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(analysisPayload)
-            });
-            const analysisJson = RagService.extractJson(analysisRes.choices?.[0]?.message?.content || "{}");
+            let analysisJson = {};
+            try {
+                const analysisPayload = formatGroqPayload(analysisPrompt, "Expert tutor.");
+                analysisPayload.model = "llama-3.1-8b-instant";
+                const analysisRes = await retryableFetch(GROQ_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(analysisPayload)
+                });
+                analysisJson = RagService.extractJson(analysisRes.choices?.[0]?.message?.content || "{}");
+            } catch (analysisErr) {
+                console.warn("Analysis failed", analysisErr);
+                analysisJson = { overall_feedback: "Detailed analysis is currently unavailable due to network load, but your score has been recorded." };
+            }
 
             setAssessmentStats({
                 score: finalPercentage,
@@ -302,8 +309,8 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
             setGradingResult("Analyzed");
             setStep('result');
         } catch (err) {
-            setError(err.message);
-            setStep('result');
+            setError(err.message || "Failed to submit. Please try again.");
+            // Do NOT change step to result, stay on 'taking' to let user retry or see error
         } finally { setIsLoading(false); }
     };
 
@@ -329,8 +336,8 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
 
     return (
         <div className={`flex flex-col h-full bg-theme-bg text-theme-primary relative overflow-y-auto custom-scrollbar p-4 md:p-8 transition-colors duration-300 section-quiz`}>
-            <div className={`absolute top-0 right-0 w-[] h-[] bg-theme-/ rounded-full blur-[] -z-10 pointer-events-none`} />
-            <div className={`absolute bottom-0 left-0 w-[] h-[] bg-theme-/ rounded-full blur-[] -z-10 pointer-events-none`} />
+            <div className={`absolute top-0 right-0 w-[500px] h-[500px] bg-theme-primary/5 rounded-full blur-[100px] -z-10 pointer-events-none`} />
+            <div className={`absolute bottom-0 left-0 w-[500px] h-[500px] bg-theme-secondary/5 rounded-full blur-[100px] -z-10 pointer-events-none`} />
 
             {/* View Mode Toggle / Header logic if needed could go here, but we put it inside setup for now */}
 
@@ -531,10 +538,16 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                                 <span>{config.difficulty}</span>
                             </div>
                         </div>
-                        <button onClick={submitQuiz} className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg font-bold shadow-lg hover:shadow-green-500/20 transition-all text-white text-sm">
-                            Submit Exam
+                        <button onClick={submitQuiz} disabled={isLoading} className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg font-bold shadow-lg hover:shadow-green-500/20 transition-all text-white text-sm disabled:opacity-50 flex items-center gap-2">
+                            {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : "Submit Exam"}
                         </button>
                     </div>
+
+                    {error && (
+                        <div className="text-rose-500 text-center p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-center gap-3">
+                            <AlertCircle className="w-5 h-5" />{error}
+                        </div>
+                    )}
 
                     <div className="space-y-8">
                         {Object.entries(groupQuestionsBySection(quizData.questions)).sort().map(([sectionName, questions]) => (
@@ -558,7 +571,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                                                     <div>
                                                         <p className="text-lg font-medium text-theme-primary leading-relaxed">{q.question}</p>
                                                         {q.image_description && (
-                                                            <div className={`mt-4 p-5 rounded-2xl bg-theme-/ border-theme-/ border-2 border-dashed`}>
+                                                            <div className={`mt-4 p-5 rounded-2xl bg-theme-surface/50 border-theme-border/50 border-2 border-dashed`}>
                                                                 <div className="flex items-center gap-3 mb-3">
                                                                     <div className="p-2 rounded-xl bg-indigo-500/20">
                                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" /></svg>
@@ -568,7 +581,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                                                                         <p className="text-xs text-theme-muted">Visualize this for the question</p>
                                                                     </div>
                                                                 </div>
-                                                                <div className={`p-4 rounded-xl bg-theme-/ text-theme-secondary leading-relaxed`}>
+                                                                <div className={`p-4 rounded-xl bg-theme-surface/80 text-theme-secondary leading-relaxed`}>
                                                                     {q.image_description}
                                                                 </div>
                                                             </div>
@@ -613,7 +626,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                     {/* ... Result View (Kept mostly same, just ensuring variables match) ... */}
                     <div className="space-y-8 pb-10">
                         {/* Score Dashboard */}
-                        <div className={`glass-panel p-8 rounded-[] relative overflow-hidden perspective-2000 tilt-card bg-theme-/`}>
+                        <div className={`glass-panel p-8 rounded-[40px] relative overflow-hidden perspective-2000 tilt-card bg-theme-surface/30`}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center preserve-3d">
                                 {/* Main Score */}
                                 <div className="md:col-span-1 flex flex-col items-center justify-center translate-z-50">
@@ -627,19 +640,19 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
 
                                 {/* Stats Grid */}
                                 <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-/ border-theme-/ shadow-lg`}>
+                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-surface/50 border-theme-border/50 shadow-lg`}>
                                         <p className="text-3xl font-black text-emerald-500">{assessmentStats.correct}</p>
                                         <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Correct</p>
                                     </div>
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-/ border-theme-/ shadow-lg`}>
+                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-surface/50 border-theme-border/50 shadow-lg`}>
                                         <p className="text-3xl font-black text-rose-500">{assessmentStats.total - assessmentStats.correct}</p>
                                         <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Incorrect</p>
                                     </div>
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-/ border-theme-/ shadow-lg`}>
+                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-surface/50 border-theme-border/50 shadow-lg`}>
                                         <p className="text-3xl font-black text-purple-500">{assessmentStats.total}</p>
                                         <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Total MCQs</p>
                                     </div>
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-/ border-theme-/ shadow-lg`}>
+                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-surface/50 border-theme-border/50 shadow-lg`}>
                                         <p className="text-3xl font-black text-indigo-500">{config.difficulty}</p>
                                         <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Difficulty</p>
                                     </div>
@@ -648,7 +661,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
 
                             {/* AI Feedback */}
                             {assessmentStats.analysis?.overall_feedback && (
-                                <div className={`mt-6 p-4 rounded-xl bg-theme-/`}>
+                                <div className={`mt-6 p-4 rounded-xl bg-theme-surface/80`}>
                                     <p className="text-theme-secondary text-center">💡 {assessmentStats.analysis.overall_feedback}</p>
                                 </div>
                             )}

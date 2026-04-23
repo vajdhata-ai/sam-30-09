@@ -3,6 +3,7 @@ import { ClipboardList, MessageSquare, Loader2, Lightbulb, Link, Globe, Send, Sp
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useChatHistory } from '../contexts/ChatHistoryContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { GROQ_API_URL, formatGroqPayload } from '../utils/api';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -81,6 +82,7 @@ const CollegeCompass = ({ retryableFetch, onExit }) => {
     const [activeTab, setActiveTab] = useState('');
 
     const { activeChatId, chats, startNewChat, addMessageToChat, getGlobalContextStr } = useChatHistory();
+    const { globalInstructions } = useUserPreferences();
 
     // ─── SHARED STUDENT PROFILE (persists across all tabs) ───
     const [studentProfile, setStudentProfile] = useState({
@@ -245,8 +247,9 @@ const CollegeCompass = ({ retryableFetch, onExit }) => {
 
     // ─── AI CALL HELPER ───
     const callAI = async (userQuery, systemPrompt, temperature = 0.4) => {
+        const enhancedSystemPrompt = `${systemPrompt}${globalInstructions ? `\n\nGLOBAL CUSTOM INSTRUCTIONS (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
         const payload = {
-            ...formatGroqPayload(userQuery, systemPrompt, { temperature, max_tokens: 8192 }),
+            ...formatGroqPayload(userQuery, enhancedSystemPrompt, { temperature, max_tokens: 8192 }),
             model: "gemini-1.5-pro",
             temperature: temperature
         };

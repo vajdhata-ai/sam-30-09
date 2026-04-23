@@ -42,6 +42,7 @@ const NeuralArena = ({ onExit, setIsCollapsed }) => {
             Respond ONLY with a valid JSON object: { "questions": [{ "question": "...", "options": ["...", "...", "...", "..."], "answer": "Exact correct text", "explanation": "..." }] }`;
 
             const payload = formatGroqPayload(prompt, "You are a master competitive exam architect.");
+            payload.model = "llama-3.1-8b-instant";
             const res = await retryableFetch(GROQ_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

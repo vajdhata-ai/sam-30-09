@@ -3,7 +3,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAssistant } from '../contexts/AssistantContext';
 import { usePerformance } from '../contexts/PerformanceContext';
-import { Bot, FileText, LogOut, Moon, Sun, ChevronRight, ChevronLeft, GraduationCap, FilePlus, ClipboardList, Mic, Sparkles, Crown, Eye, Settings, RefreshCw, Video, Trophy, Swords, Flame } from './Icons';
+import { Bot, FileText, LogOut, Moon, Sun, ChevronRight, ChevronLeft, GraduationCap, FilePlus, ClipboardList, Mic, Sparkles, AuremLogo, Crown, Eye, Settings, RefreshCw, Video, Trophy, Swords, Flame, Info } from './Icons';
 
 const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen, isCollapsed, setIsCollapsed, user, onLogin, onLogout }) => {
     const { isDark } = useTheme();
@@ -40,20 +40,19 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                 ${isCollapsed ? 'w-[76px]' : 'w-[280px] md:w-[272px]'}
                 ${isSidebarOpen ? 'translate-x-0 translate-z-0 left-0' : '-translate-x-full md:translate-x-0 translate-z-0'}
             `}>
-                <div className="h-full flex flex-col rounded-[32px] overflow-hidden transition-all duration-300 border border-theme-border bg-theme-bg/80 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.5)]">
+                <div className="h-full flex flex-col rounded-[32px] transition-all duration-300 border border-theme-border/30 bg-theme-surface/60 backdrop-blur-3xl shadow-depth-xl holo-shimmer breathe-glow sidebar-edge-light relative">
 
                     {/* ═══ Header / Logo ═══ */}
                     <div className="p-5 pb-4 flex items-center justify-between">
                         {!isCollapsed && (
                             <div className="flex items-center gap-3 animate-fade-in">
                                 <div className="relative">
-                                    <div className="p-2.5 bg-gold/10 border border-gold/20 rounded-2xl">
-                                        <Sparkles className="w-5 h-5 text-gold" />
+                                    <div className="p-2.5 bg-gold/10 border border-gold/20 rounded-2xl border-glow-rotate">
+                                        <AuremLogo className="w-6 h-6" />
                                     </div>
                                 </div>
                                 <div>
                                     <span className="font-serif italic font-light text-2xl tracking-wide text-theme-text select-none">
-                                        <span className="text-theme-primary not-italic mr-1">✦</span>
                                         <span className="text-[#c9a55a]">Auremous</span>
                                     </span>
                                     <p className="text-[9px] font-medium text-theme-muted mt-1 tracking-[0.2em] uppercase select-none">EdTech Platform</p>
@@ -76,9 +75,11 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                     {/* ═══ Gamification Widget ═══ */}
                     {!isCollapsed && (
                         <div className="px-5 pb-4">
-                            <div className="bg-theme-surface/50 border border-theme-primary/10 rounded-2xl p-3 flex flex-col gap-2 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
-                                    <Crown className="w-16 h-16 text-theme-primary transform rotate-12" />
+                            <div className="bg-theme-surface/50 border border-theme-primary/10 rounded-2xl p-3 flex flex-col gap-2 relative group shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] holo-shimmer">
+                                <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+                                    <div className="absolute -top-2 -right-2 p-2 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
+                                        <Crown className="w-16 h-16 text-theme-primary transform rotate-12" />
+                                    </div>
                                 </div>
                                 
                                 <div className="flex items-center justify-between relative z-10">
@@ -87,7 +88,21 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                                             {levelInfo.level}
                                         </div>
                                         <div>
-                                            <p className="text-[10px] uppercase tracking-widest text-theme-primary font-bold">{levelInfo.rankTitle}</p>
+                                            <div className="flex items-center gap-1 group/tooltip cursor-help relative">
+                                                <p className="text-[10px] uppercase tracking-widest text-theme-primary font-bold">{levelInfo.rankTitle}</p>
+                                                <Info className="w-[10px] h-[10px] text-theme-muted hover:text-theme-primary transition-colors" />
+                                                
+                                                {/* Tooltip */}
+                                                <div className="absolute left-0 top-full mt-2 w-48 p-3 rounded-xl bg-theme-surface border border-theme-primary/20 shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-300 z-50 backdrop-blur-xl translate-y-1 group-hover/tooltip:translate-y-0">
+                                                    <p className="text-[10px] font-bold text-theme-primary uppercase tracking-widest mb-1">Rank Guide</p>
+                                                    <p className="text-[10px] text-theme-text font-medium mb-1.5">Improve your rank by:</p>
+                                                    <ul className="text-[9px] text-theme-muted space-y-1 ml-2 list-disc">
+                                                        <li>Winning Cognitive Colosseum matches</li>
+                                                        <li>Completing Adaptive Tests</li>
+                                                        <li>Maintaining a daily study streak</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
                                             <p className="text-xs font-medium text-theme-text">{levelInfo.xp} XP</p>
                                         </div>
                                     </div>
@@ -144,16 +159,13 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                                     className={`
                                          w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300 group relative cursor-none
                                          ${isActive
-                                            ? 'bg-gold/10 text-gold border border-gold/20'
-                                            : 'text-cream/50 hover:text-cream hover:bg-gold/5 border border-transparent'
+                                            ? 'bg-theme-primary/10 text-theme-primary border border-theme-primary/20 nav-active-glow'
+                                            : 'text-theme-muted hover:text-theme-text hover:bg-theme-surface/50 border border-transparent hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.05)]'
                                         }
                                          ${isCollapsed ? 'justify-center px-0' : ''}
                                      `}
                                 >
-                                    {/* Active indicator bar */}
-                                    {isActive && !isCollapsed && (
-                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gold rounded-r-full" />
-                                    )}
+                                    {/* Active indicator — now handled by nav-active-glow CSS */}
 
                                     <div className={`
                                         flex-shrink-0 transition-transform duration-300
