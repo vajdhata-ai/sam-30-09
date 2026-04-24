@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, CheckCircle2, AlertCircle, RefreshCw, Loader2, ChevronRight, Check, X, Sparkles, Brain, FileText, CreditCard } from 'lucide-react';
-import { retryableFetch, GROQ_API_URL } from '../utils/api';
+import { callAI as callGroq } from '../utils/apiRouter';
 
 const MASTERY_STATES = {
     IDLE: 'IDLE',
@@ -11,17 +11,8 @@ const MASTERY_STATES = {
 };
 
 const fetchGroq = async (prompt) => {
-    const payload = {
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.4
-    };
-    const res = await retryableFetch(GROQ_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-    return res;
+    const messages = [{ role: 'user', content: prompt }];
+    return await callGroq(messages, null, false, { temperature: 0.4 });
 };
 
 const MasteryLoop = ({ initialQuiz, onMastery, contextText, topic, isDark, MarkdownRenderer }) => {

@@ -7,13 +7,22 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
+import { usePodcast } from '../contexts/PodcastContext';
 import * as pdfjsLib from 'pdfjs-dist';
-import { GROQ_API_URL, TTS_API_URL, useRetryableFetch, formatGroqPayload } from '../utils/api';
-import { auth } from '../firebase';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+import { useRetryableFetch } from '../utils/api';
+import { callAI as callGroq } from '../utils/apiRouter';
 import RagService from '../utils/ragService';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@5.4.449/build/pdf.worker.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+
+// Voice configs for podcast speakers
+const SPEAKER_VOICES = {
+    host: { speaker: 'meera', pace: 1.0, temperature: 0.5 },
+    expert: { speaker: 'anand', pace: 1.0, temperature: 0.5 },
+    default: { speaker: 'meera', pace: 1.0, temperature: 0.5 }
+};
 
 // Duration slots in minutes
 const DURATION_SLOTS = [
@@ -28,6 +37,7 @@ const PodcastGenerator = () => {
     const { retryableFetch } = useRetryableFetch();
     const { canUseFeature, incrementUsage, triggerUpgradeModal, isPro, getRemainingUses } = useSubscription();
     const { globalInstructions } = useUserPreferences();
+    const podcast = usePodcast();
 
     // --- State ---
     const [activeMode, setActiveMode] = useState('upload'); // 'upload' | 'syllabus'
@@ -45,48 +55,34 @@ const PodcastGenerator = () => {
     const [syllabus, setSyllabus] = useState({
         subject: '',
         topic: '',
-        level: 'University'
+        level: 'University',
+        studentClass: '' // for high school
     });
 
     const [isGenerating, setIsGenerating] = useState(false);
-    const [podcastScript, setPodcastScript] = useState([]); // [{speaker, text}]
 
-    // Audio playback state (Sarvam TTS)
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [currentLineIndex, setCurrentLineIndex] = useState(-1);
-    const [isPlaybackFinished, setIsPlaybackFinished] = useState(false);
-    const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-    const [ttsProgress, setTtsProgress] = useState('');
+    // Use PodcastContext for persistent playback state
+    const podcastScript = podcast.podcastScript;
+    const isPlaying = podcast.isPlaying;
+    const currentLineIndex = podcast.currentLineIndex;
+    const isPlaybackFinished = podcast.isFinished;
+    const isLoadingAudio = podcast.isLoadingAudio;
+    const ttsProgress = podcast.ttsProgress;
+
     const [volume, setVolume] = useState(1.0);
 
     const fileInputRef = useRef(null);
-    const audioRef = useRef(null);
-    const isPlayingRef = useRef(false);
     const transcriptRef = useRef(null);
-    const audioCache = useRef({}); // Cache TTS audio to avoid re-requests
-
-    // Keep ref in sync
-    useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
-
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-            }
-        };
-    }, []);
 
     // Auto-scroll transcript to current line
     useEffect(() => {
-        if (currentLineIndex >= 0 && transcriptRef.current) {
-            const activeEl = transcriptRef.current.querySelector(`[data-line-idx="${currentLineIndex}"]`);
+        if (podcast.currentLineIndex >= 0 && transcriptRef.current) {
+            const activeEl = transcriptRef.current.querySelector(`[data-line-idx="${podcast.currentLineIndex}"]`);
             if (activeEl) {
                 activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
-    }, [currentLineIndex]);
+    }, [podcast.currentLineIndex]);
 
     // --- File Handling ---
     const convertPdfToImages = async (arrayBuffer, maxPages = 5) => {
@@ -159,10 +155,7 @@ const PodcastGenerator = () => {
             setFileName(file.name);
             setDocumentContent(content);
             setPdfImages(pdfPageImages);
-            setPodcastScript([]);
-            setCurrentLineIndex(-1);
-            setIsPlaybackFinished(false);
-            audioCache.current = {};
+            podcast.resetPodcast();
         } catch (error) {
             console.error('File processing error:', error);
             alert('Failed to process file');
@@ -173,6 +166,15 @@ const PodcastGenerator = () => {
     };
 
     // --- Podcast Generation ---
+    // Word count formula: 150 words per minute of natural speech
+    const getWordCount = (duration) => duration * 150;
+    const getMinSegments = (duration) => {
+        if (duration <= 7) return 14;
+        if (duration <= 15) return 28;
+        if (duration <= 30) return 55;
+        return 70;
+    };
+
     const handleGeneratePodcast = async () => {
         if (activeMode === 'upload' && !documentContent) return alert("Please upload a document first.");
         if (activeMode === 'syllabus' && (!syllabus.topic || !syllabus.subject)) return alert("Please enter both a subject and a topic.");
@@ -183,56 +185,64 @@ const PodcastGenerator = () => {
         }
 
         setIsGenerating(true);
-        setPodcastScript([]);
-        audioCache.current = {};
 
         try {
-            const systemPrompt = `You are an expert educational podcast scriptwriter. 
-Create an engaging, 2-person podcast script.
+            const targetWords = getWordCount(selectedDuration);
+            const minSegments = getMinSegments(selectedDuration);
+
+            const systemPrompt = `You are an expert educational podcast scriptwriter.
+Create an engaging, 2-person podcast script that is EXACTLY ${selectedDuration} minutes long when read aloud.
+
 Speakers:
-1. "Questioner": A curious, enthusiastic host asking great questions.
-2. "Explainer": An expert teacher who gives clear, deep, and intuitive explanations.
+1. "Host": A curious, enthusiastic host named Ria (female voice) who asks insightful questions, responds with genuine interest, and guides the conversation naturally.
+2. "Expert": An expert named Kabir (male voice) who gives clear, deep, thorough, and intuitive explanations. Uses analogies, real-world examples, and builds complexity gradually.
 
-Return the script EXACTLY as a JSON array of objects.
-Format:
+CRITICAL REQUIREMENTS:
+- Total word count MUST be approximately ${targetWords} words (150 words = 1 minute of speech).
+- MINIMUM ${minSegments} dialogue segments (alternating speakers).
+- Each segment should be 40-120 words — long enough to say something meaningful, short enough for natural conversation.
+- The Expert's responses should be substantive and educational, NOT one-liners.
+- The Host should ask follow-up questions, express curiosity, and sometimes summarize what was said.
+- Include a proper introduction and conclusion where they refer to each other by name (Ria and Kabir).
+- Make it feel like a REAL podcast conversation, not a Q&A list.
+
+Return the script EXACTLY as a JSON array of objects. No markdown, no backticks, just raw JSON:
 [
-  {"speaker": "Questioner", "text": "Welcome to the podcast! Today we are talking about..."},
-  {"speaker": "Explainer", "text": "That's right, and it's a fascinating topic because..."}
+  {"speaker": "Host", "text": "Welcome to the podcast! Today we are diving deep into..."},
+  {"speaker": "Expert", "text": "That's right Ria, and it's a fascinating topic because..."}
 ]
-Do not wrap in markdown or backticks. Return raw JSON.
 
-${globalInstructions ? `\nGLOBAL CUSTOM INSTRUCTIONS FOR EXPLAINER (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
+${globalInstructions ? `\nGLOBAL CUSTOM INSTRUCTIONS FOR EXPERT (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
 
             let userPrompt = "";
             if (activeMode === 'upload') {
-                userPrompt = `Target duration: ${selectedDuration} minutes (generate ${selectedDuration * 15} words).
-Focal points: ${topics}
+                userPrompt = `Target duration: ${selectedDuration} minutes (approximately ${targetWords} words total, minimum ${minSegments} segments).
+Focal points: ${topics || 'Cover the key concepts thoroughly'}
 Source Material:
-${documentContent.slice(0, 8000)}`;
+${documentContent.slice(0, 12000)}`;
             } else {
-                userPrompt = `Target duration: ${selectedDuration} minutes (generate ${selectedDuration * 15} words).
-Create a comprehensive podcast explaining this syllabus topic:
+                userPrompt = `Target duration: ${selectedDuration} minutes (approximately ${targetWords} words total, minimum ${minSegments} segments).
+Create a comprehensive podcast explaining this syllabus topic in great depth:
 Subject: ${syllabus.subject}
 Topic: ${syllabus.topic}
-Level: ${syllabus.level}`;
+Level: ${syllabus.level}${syllabus.level === 'High School' && syllabus.studentClass ? ` (Class/Grade: ${syllabus.studentClass})` : ''}
+
+Cover: key concepts, real-world applications, common misconceptions, exam-relevant details, and intuitive explanations tailored specifically to a ${syllabus.level}${syllabus.level === 'High School' && syllabus.studentClass ? ` ${syllabus.studentClass}` : ''} student's understanding level.`;
             }
 
-            const payload = formatGroqPayload(userPrompt, systemPrompt);
-            payload.model = "llama-3.1-8b-instant"; // Lightning fast generation
-
-            const response = await retryableFetch(GROQ_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const messages = [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ];
+            const response = await callGroq(messages, null, false, { max_tokens: 8192 });
 
             const text = response.choices?.[0]?.message?.content || "";
             const scriptData = RagService.extractJson(text);
 
             if (scriptData && scriptData.length > 0) {
-                setPodcastScript(scriptData);
-                setCurrentLineIndex(-1);
-                setIsPlaybackFinished(false);
+                // Load into PodcastContext for persistent playback
+                const topicLabel = activeMode === 'upload' ? (fileName || 'Uploaded Document') : `${syllabus.subject}: ${syllabus.topic}`;
+                podcast.loadPodcast(scriptData, topicLabel);
                 incrementUsage('podcast');
             } else {
                 throw new Error("Invalid response format from AI");
@@ -245,163 +255,17 @@ Level: ${syllabus.level}`;
         }
     };
 
-    // --- Sarvam TTS Audio Playback ---
-    const getAuthHeaders = async () => {
-        const headers = { 'Content-Type': 'application/json' };
-        if (auth.currentUser) {
-            try {
-                const token = await auth.currentUser.getIdToken();
-                headers['Authorization'] = `Bearer ${token}`;
-            } catch (e) { /* ignore */ }
-        }
-        return headers;
-    };
-
-    const fetchTTSAudio = async (text, speaker) => {
-        const cacheKey = `${speaker}_${text.substring(0, 50)}`;
-        if (audioCache.current[cacheKey]) {
-            return audioCache.current[cacheKey];
-        }
-
-        const headers = await getAuthHeaders();
-        const response = await fetch(TTS_API_URL, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                text: text,
-                speaker: speaker.toLowerCase()
-            })
-        });
-
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.error || `TTS Error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Convert base64 to audio blob URL
-        let audioUrl;
-        if (data.isMultiChunk && Array.isArray(data.audioBase64)) {
-            // Multiple chunks — concatenate by playing sequentially
-            // For simplicity, use the first chunk (handles 95% of cases)
-            audioUrl = `data:audio/wav;base64,${data.audioBase64[0]}`;
-        } else {
-            audioUrl = `data:audio/wav;base64,${data.audioBase64}`;
-        }
-
-        audioCache.current[cacheKey] = audioUrl;
-        return audioUrl;
-    };
-
-    const playLine = useCallback(async (index) => {
-        if (index >= podcastScript.length) {
-            setIsPlaybackFinished(true);
-            setIsPlaying(false);
-            setIsLoadingAudio(false);
-            setTtsProgress('');
-            return;
-        }
-
-        if (!isPlayingRef.current) return;
-
-        setCurrentLineIndex(index);
-        setIsLoadingAudio(true);
-        
-        const line = podcastScript[index];
-        setTtsProgress(`Generating voice for ${line.speaker}...`);
-
-        try {
-            const audioUrl = await fetchTTSAudio(line.text, line.speaker);
-            
-            if (!isPlayingRef.current) return; // User may have paused while loading
-
-            setIsLoadingAudio(false);
-            setTtsProgress('');
-
-            // Stop previous audio before starting new one
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.onended = null;
-                audioRef.current.onerror = null;
-            }
-
-            // Create and play audio
-            const audio = new Audio(audioUrl);
-            audio.volume = volume;
-            audioRef.current = audio;
-
-            audio.onended = () => {
-                if (isPlayingRef.current) {
-                    playLine(index + 1);
-                }
-            };
-
-            audio.onerror = (e) => {
-                console.error('[TTS] Audio playback error:', e);
-                setIsLoadingAudio(false);
-                // Try next line on error
-                if (isPlayingRef.current) {
-                    setTimeout(() => playLine(index + 1), 500);
-                }
-            };
-
-            await audio.play();
-        } catch (error) {
-            console.error('[TTS] Fetch error:', error);
-            setIsLoadingAudio(false);
-            setTtsProgress('');
-            // Skip to next line on failure
-            if (isPlayingRef.current) {
-                setTimeout(() => playLine(index + 1), 500);
-            }
-        }
-    }, [podcastScript, volume]);
-
-    const togglePlayback = () => {
-        if (isPlaying) {
-            // PAUSE
-            setIsPlaying(false);
-            if (audioRef.current && !audioRef.current.paused) {
-                audioRef.current.pause();
-            }
-        } else {
-            // PLAY
-            setIsPlaying(true);
-            setIsPlaybackFinished(false);
-
-            if (audioRef.current && audioRef.current.paused && audioRef.current.currentTime > 0) {
-                audioRef.current.play();
-            } else {
-                playLine(currentLineIndex === -1 ? 0 : currentLineIndex);
-            }
-        }
-    };
-
-    const stopPlayback = () => {
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-        }
-        setIsPlaying(false);
-        setCurrentLineIndex(-1);
-        setIsLoadingAudio(false);
-        setTtsProgress('');
-    };
-
-    const skipToLine = (idx) => {
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-        }
-        setCurrentLineIndex(idx);
-        if (isPlaying) {
-            playLine(idx);
-        }
-    };
+    // Playback is fully managed by PodcastContext — just delegate
+    const togglePlayback = () => podcast.togglePlay();
+    const stopPlayback = () => podcast.stopPodcast();
+    const skipToLine = (idx) => podcast.jumpToLine(idx);
 
     // Progress percentage
     const progress = podcastScript.length > 0 ? ((currentLineIndex + 1) / podcastScript.length) * 100 : 0;
+
+    // Estimated total words in generated script
+    const totalWords = podcastScript.reduce((sum, line) => sum + (line.text?.split(/\s+/).length || 0), 0);
+    const estMinutes = Math.round(totalWords / 150);
 
     return (
         <div className={`h-full bg-theme-bg text-theme-text font-sans transition-colors duration-300 overflow-y-auto custom-scrollbar`}>
@@ -591,6 +455,21 @@ Level: ${syllabus.level}`;
                                     <option>Expert/Professional</option>
                                 </select>
                             </div>
+
+                            {syllabus.level === 'High School' && (
+                                <div className="animate-fade-in">
+                                    <label className="text-[10px] font-black text-theme-muted uppercase tracking-[0.2em] mb-2 block">Class / Grade</label>
+                                    <input
+                                        type="text"
+                                        value={syllabus.studentClass || ''}
+                                        onChange={e => setSyllabus({ ...syllabus, studentClass: e.target.value })}
+                                        placeholder="e.g., 10th Grade, 12th Standard..."
+                                        className={`w-full p-4 rounded-xl text-xs focus:ring-2 focus:ring-theme-primary outline-none transition-all
+                                        bg-theme-bg text-theme-text border border-theme-border
+                                    `}
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -639,7 +518,7 @@ Level: ${syllabus.level}`;
                                     {isPlaying ? (isLoadingAudio ? 'Loading Voice...' : 'Transmitting') : (isPlaybackFinished ? 'Complete' : 'Standby')}
                                 </div>
                                 <div className="text-[10px] font-black text-theme-muted uppercase tracking-[0.3em]">
-                                    {podcastScript.length > 0 ? `${podcastScript.length} Segments • ${selectedDuration} min` : 'Empty Buffer'}
+                                    {podcastScript.length > 0 ? `${podcastScript.length} Segments • ~${totalWords} words • ~${estMinutes || selectedDuration} min` : 'Empty Buffer'}
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
@@ -668,47 +547,43 @@ Level: ${syllabus.level}`;
                                     <h4 className="text-xl font-bold mb-2 text-theme-text">Ready for Recording</h4>
                                     <p className="text-sm text-theme-muted">Choose a duration, upload a resource or enter a topic, and generate your AI-hosted deep dive podcast.</p>
                                     <div className="mt-6 flex items-center gap-4 text-[10px] text-theme-muted uppercase tracking-wider font-bold">
-                                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-theme-primary/60"></span> Questioner</span>
-                                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-theme-secondary/60"></span> Explainer</span>
+                                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-theme-primary/60"></span> Host</span>
+                                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-theme-secondary/60"></span> Expert</span>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="space-y-3 p-2">
                                     {podcastScript.map((line, idx) => {
-                                        const isQuestioner = line.speaker === 'Questioner';
                                         const isActive = currentLineIndex === idx;
-                                        
+                                        const isHost = ['host', 'questioner'].includes(line.speaker?.toLowerCase());
                                         return (
                                             <div
                                                 key={idx}
                                                 data-line-idx={idx}
-                                                onClick={() => skipToLine(idx)}
-                                                className={`flex gap-3 p-4 rounded-2xl cursor-pointer transition-all duration-400
-                                                    ${isActive
-                                                        ? `border ${isQuestioner ? 'border-theme-primary/50 bg-theme-primary/5 shadow-[0_0_15px_var(--theme-primary)]' : 'border-theme-secondary/50 bg-theme-secondary/5 shadow-[0_0_15px_var(--theme-secondary)]'}`
-                                                        : `border border-transparent hover:bg-theme-bg/50 ${idx < currentLineIndex ? 'opacity-50' : 'opacity-80 hover:opacity-100'}`
-                                                    }
+                                                className={`flex gap-4 p-4 rounded-2xl transition-all duration-500 cursor-pointer group
+                                                    ${isActive ? 'bg-theme-bg shadow-sm scale-[1.02] -translate-y-1' : 'hover:bg-theme-bg/50'}
                                                 `}
+                                                onClick={() => skipToLine(idx)}
                                             >
                                                 {/* Speaker Avatar */}
                                                 <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-theme-bg shadow-lg transition-all duration-300
-                                                    ${isQuestioner
+                                                    ${isHost
                                                         ? `bg-theme-primary ${isActive ? 'shadow-[0_0_12px_var(--theme-primary)] scale-110' : 'opacity-80'}`
                                                         : `bg-theme-secondary ${isActive ? 'shadow-[0_0_12px_var(--theme-secondary)] scale-110' : 'opacity-80'}`
                                                     }
                                                 `}>
-                                                    {isQuestioner ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                                                    {isHost ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                                                 </div>
 
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${isQuestioner ? 'text-theme-primary' : 'text-theme-secondary'}`}>
-                                                            {line.speaker}
+                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${isHost ? 'text-theme-primary' : 'text-theme-secondary'}`}>
+                                                            {isHost ? 'Ria (Host)' : 'Kabir (Expert)'}
                                                         </span>
                                                         {isActive && isPlaying && (
                                                             <span className="flex gap-0.5">
-                                                                {[0,1,2].map(i => (
-                                                                    <span key={i} className={`w-1 rounded-full ${isQuestioner ? 'bg-theme-primary' : 'bg-theme-secondary'}`}
+                                                                {[0, 1, 2].map(i => (
+                                                                    <span key={i} className={`w-1 rounded-full ${isHost ? 'bg-theme-primary' : 'bg-theme-secondary'}`}
                                                                         style={{ height: `${6 + Math.random() * 8}px`, animation: `wave 0.8s ease-in-out infinite ${i * 0.15}s` }}
                                                                     />
                                                                 ))}

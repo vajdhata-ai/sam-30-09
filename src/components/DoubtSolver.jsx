@@ -7,7 +7,7 @@ import { usePerformance } from '../contexts/PerformanceContext';
 import { useLearnLoop } from '../contexts/LearnLoopContext';
 import { useChatHistory } from '../contexts/ChatHistoryContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
-import { GROQ_API_URL } from '../utils/api';
+import { callAI as callGroq } from '../utils/apiRouter';
 
 const DoubtSolver = ({ retryableFetch }) => {
     const { isDark } = useTheme();
@@ -207,41 +207,29 @@ const DoubtSolver = ({ retryableFetch }) => {
         ${globalInstructions ? `\nGLOBAL CUSTOM INSTRUCTIONS (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
 
         try {
-            let payload;
+            let apiMessages;
 
             if (imageToSend) {
-                payload = {
-                    model: "gemini-1.5-flash",
-                    messages: [{
-                        role: "user",
-                        content: [
-                            { type: "text", text: `${systemPrompt}\n\nUSER QUESTION: ${userQuestion || "Analyze this image."}` },
-                            { type: "image_url", image_url: { url: imagePreviewToSend } }
-                        ]
-                    }],
-                    temperature: 0.5,
-                    max_tokens: 2048
-                };
+                apiMessages = [{
+                    role: "user",
+                    content: [
+                        { type: "text", text: `${systemPrompt}\n\nUSER QUESTION: ${userQuestion || "Analyze this image."}` },
+                        { type: "image_url", image_url: { url: imagePreviewToSend } }
+                    ]
+                }];
             } else {
                 const conversationHistory = messages.map(msg => ({
                     role: msg.role,
                     content: msg.content
                 }));
-                payload = {
-                    model: "llama-3.3-70b-versatile",
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        ...conversationHistory,
-                        { role: 'user', content: userQuestion }
-                    ]
-                };
+                apiMessages = [
+                    { role: 'system', content: systemPrompt },
+                    ...conversationHistory,
+                    { role: 'user', content: userQuestion }
+                ];
             }
 
-            const result = await retryableFetch(GROQ_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const result = await callGroq(apiMessages, null, !!imageToSend);
 
             if (result.error) {
                 const detailedMsg = result.details
@@ -477,31 +465,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                                             >
                                                 <ThumbsDown className="w-4 h-4" />
                                             </button>
-                                            <button 
-                                                onClick={() => setRefiningMsgIdx(refiningMsgIdx === i ? null : i)}
-                                                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold text-theme-muted hover:text-theme-primary transition-colors border border-transparent hover:border-theme-primary/30 rounded-lg"
-                                            >
-                                                <PenTool className="w-3 h-3" /> Refine Behavior
-                                            </button>
                                         </div>
-                                        
-                                        {refiningMsgIdx === i && (
-                                            <div className="flex items-center gap-2 animate-fade-in-up mt-1">
-                                                <input 
-                                                    type="text" 
-                                                    value={refineInput}
-                                                    onChange={(e) => setRefineInput(e.target.value)}
-                                                    placeholder="E.g., Be more concise, use simpler analogies..." 
-                                                    className="flex-1 text-xs px-3 py-2 rounded-lg bg-theme-bg border border-theme-border text-theme-text placeholder:text-theme-muted focus:outline-none focus:border-theme-primary/50"
-                                                />
-                                                <button 
-                                                    onClick={() => submitRefinement(i)}
-                                                    className="p-2 bg-theme-primary/10 text-theme-primary hover:bg-theme-primary hover:text-theme-bg rounded-lg border border-theme-primary/30 transition-colors"
-                                                >
-                                                    <Send className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
                             </div>

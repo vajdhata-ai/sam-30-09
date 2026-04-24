@@ -3,7 +3,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAssistant } from '../contexts/AssistantContext';
 import { usePerformance } from '../contexts/PerformanceContext';
-import { Bot, FileText, LogOut, Moon, Sun, ChevronRight, ChevronLeft, GraduationCap, FilePlus, ClipboardList, Mic, Sparkles, AuremLogo, Crown, Eye, Settings, RefreshCw, Video, Trophy, Swords, Flame, Info } from './Icons';
+import { Bot, FileText, LogOut, Moon, Sun, ChevronRight, ChevronLeft, GraduationCap, FilePlus, ClipboardList, Mic, Sparkles, AuremLogo, Crown, Eye, Settings, RefreshCw, Video, Trophy, Swords, Flame, Info, Youtube } from './Icons';
 
 const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen, isCollapsed, setIsCollapsed, user, onLogin, onLogout }) => {
     const { isDark } = useTheme();
@@ -18,9 +18,9 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
         { id: 'neural-arena', label: 'Cognitive Colosseum', icon: Swords },
         { id: 'exam-hub', label: 'Competitive Prep', icon: Trophy },
         { id: 'podcast-generator', label: 'Audio Studio', icon: Mic },
+        { id: 'video-generator', label: 'Video Studio', icon: Video },
         { id: 'college-compass', label: 'College Compass', icon: GraduationCap },
         { id: 'quiz-assessment', label: 'Adaptive Testing', icon: ClipboardList },
-        { id: 'video-generator', label: 'Visual Studio', icon: Video },
     ];
 
     return (
@@ -40,14 +40,14 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                 ${isCollapsed ? 'w-[76px]' : 'w-[280px] md:w-[272px]'}
                 ${isSidebarOpen ? 'translate-x-0 translate-z-0 left-0' : '-translate-x-full md:translate-x-0 translate-z-0'}
             `}>
-                <div className="h-full flex flex-col rounded-[32px] transition-all duration-300 border border-theme-border/30 bg-theme-surface/60 backdrop-blur-3xl shadow-depth-xl holo-shimmer breathe-glow sidebar-edge-light relative">
+                <div className="h-full flex flex-col rounded-[32px] transition-all duration-300 border border-white/10 bg-white/[0.03] backdrop-blur-3xl shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_24px_48px_rgba(0,0,0,0.2)] relative overflow-hidden">
 
                     {/* ═══ Header / Logo ═══ */}
                     <div className="p-5 pb-4 flex items-center justify-between">
                         {!isCollapsed && (
                             <div className="flex items-center gap-3 animate-fade-in">
                                 <div className="relative">
-                                    <div className="p-2.5 bg-gold/10 border border-gold/20 rounded-2xl border-glow-rotate">
+                                    <div className="p-2.5 bg-theme-primary/10 border border-theme-primary/20 rounded-2xl border-glow-rotate">
                                         <AuremLogo className="w-6 h-6" />
                                     </div>
                                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, X, Check, Activity, Bot, GraduationCap, Eye, Mic, Video, ClipboardList, FileText, Trophy, Sparkles, Rocket } from 'lucide-react';
+import { ChevronRight, ChevronLeft, X, Check, Activity, Bot, GraduationCap, Eye, Mic, Video, ClipboardList, FileText, Trophy, Sparkles, Rocket, Swords } from 'lucide-react';
 
 const AuraBot = ({ speaking = false }) => (
     <svg viewBox="0 0 200 250" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-44 h-56 md:w-56 md:h-72 drop-shadow-[0_0_40px_rgba(139,92,246,0.4)]" style={{ filter: 'drop-shadow(0 0 30px rgba(139,92,246,0.3))' }}>
@@ -86,56 +86,70 @@ const AuraBot = ({ speaking = false }) => (
 const steps = [
     {
         title: "Hey there, I'm Aura! 👋",
-        content: "Welcome to Auremous — your AI-powered, all-in-one study companion! I'm going to give you a quick tour of everything you can do here. Trust me, it's going to be epic.",
+        content: "Welcome to Auremous — your elite AI-powered study companion! I'll guide you through your new cognitive arsenal. Get ready to elevate your learning experience.",
         icon: <Sparkles className="w-7 h-7 text-amber-400" />,
         bg: "from-violet-600/20 via-indigo-600/10 to-transparent",
         accent: "bg-violet-500"
     },
     {
-        title: "Doubt Solver 🧠",
-        content: "Got a tricky question? Just type it, paste an image, or throw in a math equation — I'll give you a clear, step-by-step breakdown. No question is too weird!",
+        title: "Neural Query 🧠",
+        content: "Encountered a complex problem? Ask me anything, paste an image, or drop a math equation. I'll decode it instantly with a crystal-clear, step-by-step breakdown.",
         icon: <Bot className="w-7 h-7 text-violet-400" />,
         bg: "from-indigo-600/20 via-blue-600/10 to-transparent",
         accent: "bg-indigo-500"
     },
     {
         title: "Auremous Lens 👁️",
-        content: "Upload your PDFs, notes, or textbook pages. I'll read through everything, summarize key concepts, generate flashcards, and create study materials — in seconds flat.",
+        content: "Upload your PDFs or notes. I'll instantly read through them, extract key concepts, generate flashcards, and build comprehensive study materials in seconds.",
         icon: <Eye className="w-7 h-7 text-cyan-400" />,
         bg: "from-blue-600/20 via-cyan-600/10 to-transparent",
         accent: "bg-cyan-500"
     },
     {
-        title: "College Compass 🧭",
-        content: "Planning for college? Predict your rank, find matching universities, compare colleges head-to-head, get scholarship matches, and craft killer admission essays — all in one place.",
-        icon: <GraduationCap className="w-7 h-7 text-emerald-400" />,
-        bg: "from-cyan-600/20 via-teal-600/10 to-transparent",
-        accent: "bg-teal-500"
-    },
-    {
-        title: "Podcast & Video Studio 🎙️",
-        content: "Turn boring notes into realistic AI podcasts or educational videos. Listen to your study material on the go, or watch engaging breakdowns of complex topics.",
-        icon: <Mic className="w-7 h-7 text-rose-400" />,
-        bg: "from-rose-600/20 via-pink-600/10 to-transparent",
+        title: "Cognitive Colosseum ⚔️",
+        content: "Step into the arena! Challenge fellow students in real-time academic battles, climb the global leaderboard, and prove your mastery across multiple subjects.",
+        icon: <Swords className="w-7 h-7 text-rose-400" />,
+        bg: "from-rose-600/20 via-red-600/10 to-transparent",
         accent: "bg-rose-500"
     },
     {
-        title: "Quiz & Paper Generator 📝",
-        content: "Test yourself with AI-generated quizzes, track your performance, and create custom sample papers for any exam — CBSE, JEE, NEET, you name it.",
-        icon: <ClipboardList className="w-7 h-7 text-orange-400" />,
-        bg: "from-orange-600/20 via-amber-600/10 to-transparent",
-        accent: "bg-orange-500"
-    },
-    {
-        title: "Competitive Hub 🚀",
-        content: "Preparing for JEE, NEET, or UPSC? Get an AI-powered timetable, daily tasks, streak tracking, and focused practice on your weak areas. Let's dominate those exams.",
+        title: "Competitive Prep 🚀",
+        content: "Gearing up for JEE, NEET, or UPSC? Access an AI-powered timetable, track your streak, and receive hyper-focused tasks designed for top percentile ranks.",
         icon: <Trophy className="w-7 h-7 text-yellow-400" />,
         bg: "from-yellow-600/20 via-orange-600/10 to-transparent",
         accent: "bg-yellow-500"
     },
     {
+        title: "Audio Studio 🎙️",
+        content: "Transform dry notes into highly realistic AI podcasts. Listen to your study material on the go and absorb complex topics effortlessly.",
+        icon: <Mic className="w-7 h-7 text-fuchsia-400" />,
+        bg: "from-fuchsia-600/20 via-pink-600/10 to-transparent",
+        accent: "bg-fuchsia-500"
+    },
+    {
+        title: "Video Studio 🎬",
+        content: "Watch engaging visual breakdowns of any topic with custom-generated educational videos tailored specifically to your learning style.",
+        icon: <Video className="w-7 h-7 text-pink-400" />,
+        bg: "from-pink-600/20 via-rose-600/10 to-transparent",
+        accent: "bg-pink-500"
+    },
+    {
+        title: "College Compass 🧭",
+        content: "Navigate your future with precision. Predict your rank, find matching universities, compare colleges head-to-head, and craft compelling admission essays.",
+        icon: <GraduationCap className="w-7 h-7 text-emerald-400" />,
+        bg: "from-emerald-600/20 via-teal-600/10 to-transparent",
+        accent: "bg-emerald-500"
+    },
+    {
+        title: "Adaptive Testing 📝",
+        content: "Challenge yourself with AI-generated quizzes and custom sample papers tailored to your exact weaknesses. Track your growth and dominate your exams.",
+        icon: <ClipboardList className="w-7 h-7 text-orange-400" />,
+        bg: "from-orange-600/20 via-amber-600/10 to-transparent",
+        accent: "bg-orange-500"
+    },
+    {
         title: "You're All Set! 🎉",
-        content: "That's everything! Explore at your own pace, ask me anything, and remember — every feature is designed to make studying feel less like a grind and more like a superpower.",
+        content: "Your arsenal is ready. Explore at your own pace, ask me anything, and remember — true mastery begins here. Let's conquer your goals together!",
         icon: <Rocket className="w-7 h-7 text-emerald-400" />,
         bg: "from-emerald-600/20 via-green-600/10 to-transparent",
         accent: "bg-emerald-500"

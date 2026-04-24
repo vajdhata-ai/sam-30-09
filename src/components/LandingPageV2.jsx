@@ -141,7 +141,7 @@ const LandingPageV2 = ({ onGetStarted }) => {
 
                 <div className="lp-hero-left">
                     <p className="lp-eyebrow">Your AI-Powered Study Companion</p>
-                    <h1>Study smarter.<br />Learn <em>deeper.</em><br />Achieve more.</h1>
+                    <h1>Study smarter.<br />Learn <span className="gradient-text">deeper.</span><br />Achieve more.</h1>
                     <p className="lp-hero-sub">
                         Auremous is an all-in-one AI learning platform with 10+ intelligent tools — from instant doubt solving to vision AI, audio lessons, competitive prep, and personalized assessments.
                     </p>
@@ -164,7 +164,8 @@ const LandingPageV2 = ({ onGetStarted }) => {
 
                 <div className="lp-hero-right">
                     <div className="lp-hero-ui-preview">
-                        <div className="lp-ui-card">
+                        <div className="feature-image-wrapper">
+                            <div className="lp-ui-card">
                             <div className="lp-ui-card-header">
                                 <div className="lp-ui-status-dot" />
                                 <span>Neural Query · Active</span>
@@ -185,7 +186,8 @@ const LandingPageV2 = ({ onGetStarted }) => {
                                 <div className="lp-ui-send-btn">→</div>
                             </div>
                         </div>
-                        <div className="lp-floating-badge">🔭 Auremous Lens <strong>Active</strong></div>
+                    </div>
+                    <div className="lp-floating-badge">🔭 Auremous Lens <strong>Active</strong></div>
                         <div className="lp-floating-badge2">📋 Quiz Ready <strong>8 Qs</strong></div>
                     </div>
                 </div>
@@ -209,14 +211,16 @@ const LandingPageV2 = ({ onGetStarted }) => {
             <section id="features" className="lp-features-section">
                 <div className="lp-section-header lp-reveal">
                     <p className="lp-kicker-center">Everything You Need</p>
-                    <h2>10+ AI Tools. <em>One Platform.</em></h2>
+                    <h2>10+ AI Tools. <span className="gradient-text">One Platform.</span></h2>
                     <p className="lp-section-sub">Every tool is built to think, adapt, and teach — not just answer.</p>
                 </div>
                 <div className="lp-features-grid">
                     {features.map((f, i) => (
                         <div key={f.name} className={`lp-feature-card lp-reveal ${f.color}`} style={{ transitionDelay: `${i * 60}ms` }}>
-                            <div className="lp-feature-icon-wrap">
-                                <span className="lp-feature-icon">{f.icon}</span>
+                            <div className="feature-image-wrapper">
+                                <div className="lp-feature-icon-wrap">
+                                    <span className="lp-feature-icon">{f.icon}</span>
+                                </div>
                             </div>
                             <div className="lp-feature-tag">{f.tag}</div>
                             <h3 className="lp-feature-name">{f.name}</h3>
@@ -251,11 +255,13 @@ const LandingPageV2 = ({ onGetStarted }) => {
                 </div>
             </section>
 
+            <hr className="section-divider" />
+
             {/* ── HOW IT WORKS ── */}
             <section id="how" className="lp-how-section">
                 <div className="lp-section-header lp-reveal">
                     <p className="lp-kicker-center">How It Works</p>
-                    <h2>Three steps to <em>mastery.</em></h2>
+                    <h2>Three steps to <span className="gradient-text">mastery.</span></h2>
                 </div>
                 <div className="lp-steps-row">
                     <div className="lp-step lp-reveal">
@@ -277,6 +283,8 @@ const LandingPageV2 = ({ onGetStarted }) => {
                     </div>
                 </div>
             </section>
+
+            <hr className="section-divider" />
 
             {/* ── TESTIMONIALS ── */}
             <section id="testimonials" className="lp-testimonial">
@@ -301,10 +309,12 @@ const LandingPageV2 = ({ onGetStarted }) => {
                 </div>
             </section>
 
+            <hr className="section-divider" />
+
             {/* ── CTA ── */}
             <section className="lp-cta-section">
                 <div className="lp-cta-left">
-                    <h2>Your smartest study session<br />starts <em>right now.</em></h2>
+                    <h2>Your smartest study session<br />starts <span className="gradient-text">right now.</span></h2>
                     <p>Free to use. No credit card. Powered by cutting-edge AI, designed for serious learners.</p>
                     <div className="lp-cta-btns">
                         <button className="lp-btn-dark" onClick={onGetStarted}>Begin for Free</button>

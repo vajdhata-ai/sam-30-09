@@ -14,6 +14,12 @@ export default defineConfig({
                 target: 'http://localhost:5050',
                 changeOrigin: true,
                 secure: false
+            },
+            '/sarvam-api': {
+                target: 'https://api.sarvam.ai',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/sarvam-api/, ''),
+                secure: false
             }
         }
     }

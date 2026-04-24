@@ -561,12 +561,12 @@
     @apply px-6 py-3 font-semibold rounded-2xl transition-all duration-300;
     background: linear-gradient(135deg, rgb(var(--theme-primary)), rgb(var(--theme-secondary)));
     color: white;
-    box-shadow: 0 4px 16px rgb(var(--theme-primary) / 0.3);
+    box-shadow: 0 0 20px rgb(var(--theme-primary) / 0.4), 0 4px 12px rgba(0,0,0,0.3);
   }
 
   .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 28px rgb(var(--theme-primary) / 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgb(var(--theme-primary) / 0.6), 0 8px 24px rgba(0,0,0,0.4);
   }
 
   .btn-primary:active {
@@ -659,6 +659,82 @@
     background-color: rgb(var(--theme-bg));
     color: rgb(var(--theme-text));
     min-height: 100%;
+  }
+
+  /* ======================================================
+     TURBO.AI DESIGN SYSTEM UTILITIES
+     ====================================================== */
+
+  /* 1. Light Beam Effects */
+  .light-beam {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    will-change: transform;
+  }
+
+  .beam-top-right {
+    top: -200px;
+    right: -200px;
+    background: radial-gradient(circle, 
+      rgba(139, 92, 246, 0.3) 0%, 
+      rgba(59, 130, 246, 0.15) 50%, 
+      transparent 70%);
+  }
+
+  .beam-left-center {
+    top: 40%;
+    left: -300px;
+    background: radial-gradient(circle, 
+      rgba(99, 102, 241, 0.2) 0%, 
+      transparent 70%);
+  }
+
+  .beam-bottom-right {
+    bottom: -200px;
+    right: -100px;
+    background: radial-gradient(circle, 
+      rgba(168, 85, 247, 0.2) 0%, 
+      transparent 70%);
+  }
+
+  /* 2. Feature Imagery Amplification Glow */
+  .feature-image-wrapper {
+    position: relative;
+    z-index: 1;
+  }
+
+  .feature-image-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(40px);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* 3. Section Dividers */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+    margin: 60px 0;
+    border: none;
+  }
+
+  /* 4. Background Pattern */
+  .bg-pattern {
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+    z-index: -1;
+    pointer-events: none;
   }
 }
 
@@ -1850,3 +1926,56 @@
 .animate-slide-up {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ======================================================
+   PRINT SYSTEM
+   ====================================================== */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-container {
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    transform: none !important;
+  }
+
+  /* Force black text for all children in print container */
+  .print-container *,
+  .print-container p,
+  .print-container h1,
+  .print-container h2,
+  .print-container h3,
+  .print-container span {
+    color: black !important;
+    text-shadow: none !important;
+    background: transparent !important;
+  }
+
+  /* Keep borders visible but subtle */
+  .print-container .border,
+  .print-container [class*="border-"] {
+    border-color: #eee !important;
+  }
+
+  /* Hide UI-only elements */
+  .no-print,
+  button,
+  .sidebar,
+  .nav-bar {
+    display: none !important;
+  }
+
+  /* Ensure page breaks are handled gracefully */
+  .print-container div {
+    page-break-inside: avoid;
+  }
+}

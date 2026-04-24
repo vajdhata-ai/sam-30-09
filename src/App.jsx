@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionContext';
 import { LearnLoopProvider, useLearnLoop } from './contexts/LearnLoopContext';
 import { PerformanceProvider } from './contexts/PerformanceContext';
-import { PodcastProvider } from './contexts/PodcastContext';
+import { PodcastProvider, usePodcast } from './contexts/PodcastContext';
 import { ChatHistoryProvider, useChatHistory } from './contexts/ChatHistoryContext';
 import SplashScreen from './components/SplashScreen';
 import Sidebar from './components/Sidebar';
@@ -13,19 +13,20 @@ import DoubtSolver from './components/DoubtSolver';
 import CollegeCompass from './components/CollegeCompass';
 import DocumentStudy from './components/DocumentStudy';
 import PodcastGenerator from './components/PodcastGenerator';
-import VideoGenerator from './components/VideoGenerator';
+import YoutubeAnalyzer from './components/YoutubeAnalyzer';
 import QuizAssessment from './components/QuizAssessment';
 import UpgradeModal from './components/UpgradeModal';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Settings from './components/Settings';
-import { Bot, GraduationCap, FileText, Menu, LogIn, FilePlus, Mic, Sparkles, ClipboardList, Settings as SettingsIcon, RefreshCw, Video, Eye, Trophy, Swords } from './components/Icons';
+import { Bot, GraduationCap, FileText, Menu, LogIn, FilePlus, Mic, Sparkles, ClipboardList, Settings as SettingsIcon, RefreshCw, Video, Eye, Trophy, Swords, Youtube, Play, Pause, X, Radio } from './components/Icons';
 import { useRetryableFetch } from './utils/api';
 import SamplePaperGenerator from './components/SamplePaperGenerator';
 import LoopManager from './components/LearnLoop/LoopManager';
 import LandingPageV2 from './components/LandingPageV2';
 import ExamHub from './components/ExamHub';
 import NeuralArena from './components/NeuralArena';
+import VideoGenerator from './components/VideoGenerator';
 import ErrorBoundary from './components/ErrorBoundary';
 import OnboardingGuide from './components/OnboardingGuide';
 import ThemeEffects from './components/ThemeEffects';
@@ -117,6 +118,7 @@ const AppContent = () => {
     const { activeLoop } = useLearnLoop();
     const { setActiveChatId } = useChatHistory();
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const podcast = usePodcast();
 
     // ═══ FLOW STATE ═══
     // Phase: 'splash' → 'landing'/'login'/'app' → ...
@@ -193,11 +195,11 @@ const AppContent = () => {
             case 'document-study': return <DocumentStudy retryableFetch={retryableFetch} onNavigate={setCurrentView} />;
             case 'college-compass': return <CollegeCompass retryableFetch={retryableFetch} />;
             case 'podcast-generator': return <PodcastGenerator retryableFetch={retryableFetch} />;
-            case 'video-generator': return <VideoGenerator />;
             case 'quiz-assessment': return <QuizAssessment retryableFetch={retryableFetch} onNavigate={setCurrentView} />;
             case 'sample-paper': return <SamplePaperGenerator retryableFetch={retryableFetch} />;
             case 'exam-hub': return <ExamHub />;
             case 'neural-arena': return <NeuralArena onExit={() => setCurrentView('document-study')} setIsCollapsed={setIsCollapsed} />;
+            case 'video-generator': return <VideoGenerator />;
             default: return <DoubtSolver retryableFetch={retryableFetch} />;
         }
     };
@@ -210,11 +212,11 @@ const AppContent = () => {
             'document-study': 'Auremous Lens',
             'college-compass': 'Admissions Pilot',
             'podcast-generator': 'Audio Studio',
-            'video-generator': 'Visual Studio',
             'quiz-assessment': 'Adaptive Testing',
             'sample-paper': 'Dynamic Paper Gen',
             'exam-hub': 'Competitive Prep',
             'neural-arena': 'Cognitive Colosseum',
+            'video-generator': 'Video Studio',
         };
         return titles[currentView] || 'Auremous';
     };
@@ -227,11 +229,11 @@ const AppContent = () => {
             'document-study': <Eye className="w-5 h-5 mr-2 text-gold" />,
             'college-compass': <GraduationCap className="w-5 h-5 mr-2 text-gold" />,
             'podcast-generator': <Mic className="w-5 h-5 mr-2 text-gold" />,
-            'video-generator': <Video className="w-5 h-5 mr-2 text-gold-light" />,
             'quiz-assessment': <ClipboardList className="w-5 h-5 mr-2 text-gold" />,
             'sample-paper': <FileText className="w-5 h-5 mr-2 text-gold-light" />,
             'exam-hub': <Trophy className="w-5 h-5 mr-2 text-gold" />,
             'neural-arena': <Swords className="w-5 h-5 mr-2 text-gold" />,
+            'video-generator': <Video className="w-5 h-5 mr-2 text-gold" />,
         };
         return iconMap[currentView] || <Sparkles className="w-5 h-5 mr-2 text-gold" />;
     };
@@ -340,6 +342,43 @@ const AppContent = () => {
                         </div>
                     </main>
                 </div>
+
+                {/* ═══ Floating Podcast Mini-Player ═══ */}
+                {podcast.hasPodcast && currentView !== 'podcast-generator' && (
+                    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] w-[90%] max-w-lg animate-slide-up">
+                        <div className="bg-theme-surface/95 backdrop-blur-2xl border border-theme-border rounded-2xl shadow-2xl shadow-black/30 px-4 py-3 flex items-center gap-3">
+                            <div className={`p-2 rounded-xl ${podcast.isPlaying ? 'bg-theme-primary/20' : 'bg-theme-bg'}`}>
+                                <Radio className={`w-4 h-4 ${podcast.isPlaying ? 'text-theme-primary animate-pulse' : 'text-theme-muted'}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-theme-text truncate">{podcast.topicName || 'Podcast'}</p>
+                                <p className="text-[10px] text-theme-muted truncate">
+                                    {podcast.isLoadingAudio ? (podcast.ttsProgress || 'Loading voice...') : 
+                                     podcast.isPlaying ? `Playing ${podcast.currentLineIndex + 1}/${podcast.podcastScript.length}` :
+                                     podcast.isFinished ? 'Finished' : 'Paused'}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => podcast.togglePlay()}
+                                className={`p-2.5 rounded-xl transition-all duration-200 ${podcast.isPlaying ? 'bg-theme-primary text-theme-bg' : 'bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20'}`}
+                            >
+                                {podcast.isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                            </button>
+                            <button
+                                onClick={() => setCurrentView('podcast-generator')}
+                                className="p-2 rounded-xl text-theme-muted hover:text-theme-primary hover:bg-theme-bg transition-colors text-[10px] font-bold uppercase"
+                            >
+                                Open
+                            </button>
+                            <button
+                                onClick={() => podcast.closePodcast()}
+                                className="p-2 rounded-xl text-theme-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };

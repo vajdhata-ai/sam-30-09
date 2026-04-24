@@ -4,18 +4,21 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useChatHistory } from '../contexts/ChatHistoryContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
-import { GROQ_API_URL, formatGroqPayload } from '../utils/api';
+import { callOpenRouter } from '../utils/openRouterClient';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
 // Configure pdfjs worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 // ───────────────────────────────────────────────
 // Markdown Renderer — shared across all tabs
 // ───────────────────────────────────────────────
-const MarkdownBlock = ({ text }) => (
+const MarkdownBlock = ({ text }) => {
+    if (!text || typeof text !== 'string') return null;
+    return (
     <div className="space-y-1">
         {text.split('\n').map((line, idx) => {
             if (line.startsWith('## ')) return <h2 key={idx} className={`text-lg font-bold mt-4 mb-2 text-theme-primary`}>{line.replace('## ', '')}</h2>;
@@ -31,7 +34,8 @@ const MarkdownBlock = ({ text }) => (
             return <div key={idx} className="h-1.5" />;
         })}
     </div>
-);
+    );
+};
 
 // Input field helper
 const FormField = ({ label, children }) => (
@@ -154,7 +158,7 @@ const CollegeCompass = ({ retryableFetch, onExit }) => {
     };
     // Career AI
     const [careerForm, setCareerForm] = useState({ hobbies: '', passion: '', field: '', aspirations: '', budget: '', country: '' });
-    const [careerResult, setCareerResult] = useState('');
+    const [careerResult, setCareerResult] = useState(null);
 
     // College Finder (enhanced)
     const [collegeForm, setCollegeForm] = useState({
@@ -178,7 +182,7 @@ const CollegeCompass = ({ retryableFetch, onExit }) => {
     const [jeeMode, setJeeMode] = useState('marks'); // 'marks' or 'percentile'
     const [jeeForm, setJeeForm] = useState({ marks: '', percentile: '', category: 'OPEN', homeState: '', targetBranch: '', gender: 'Male', pwd: 'No' });
     const [jeeRankData, setJeeRankData] = useState(null);
-    const [jeeCollegeResult, setJeeCollegeResult] = useState('');
+    const [jeeCollegeResult, setJeeCollegeResult] = useState(null);
     const jeePdfRef = useRef(null);
 
     // Multi-Exam State
@@ -203,21 +207,15 @@ const CollegeCompass = ({ retryableFetch, onExit }) => {
     const ndaPdfRef = useRef(null);
 
 
-    // SOP/Essay Expert (merged: review + coach + grader)
-    const [essayPrompt, setEssayPrompt] = useState(''); // NEW for auto-generation
-    const [essayText, setEssayText] = useState('');
+    // SOP/Essay Expert
+    const [essayPrompt, setEssayPrompt] = useState('');
     const [essayType, setEssayType] = useState('Personal Statement');
     const [essaySchool, setEssaySchool] = useState('');
     const [essayWordLimit, setEssayWordLimit] = useState('');
-    const [essayStory, setEssayStory] = useState(''); // Key story / anecdote
-    const [essayTrait, setEssayTrait] = useState(''); // Core trait to highlight
-    const [essayTone, setEssayTone] = useState('Reflective'); // Essay tone
-    const [essayResult, setEssayResult] = useState('');
-    const [essayScore, setEssayScore] = useState(0);
-    const [essayIteration, setEssayIteration] = useState(0);
-    const [essayPhase, setEssayPhase] = useState('coach'); // 'coach' | 'grader' | 'generate'
-    const [essayFeedbackHistory, setEssayFeedbackHistory] = useState([]); // Accumulated feedback from all iterations
-    const essayPdfRef = useRef(null);
+    const [essayStory, setEssayStory] = useState('');
+    const [essayTrait, setEssayTrait] = useState('');
+    const [essayTone, setEssayTone] = useState('Reflective');
+    const [essayData, setEssayData] = useState(null);
 
     // ─── Follow-up inputs for existing tabs ───
     const [careerFollowup, setCareerFollowup] = useState('');
@@ -246,31 +244,32 @@ const CollegeCompass = ({ retryableFetch, onExit }) => {
     useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatHistory]);
 
     // ─── AI CALL HELPER ───
-    const callAI = async (userQuery, systemPrompt, temperature = 0.4) => {
+    const callAI = async (userQuery, systemPrompt, temperature = 0.4, isJson = false) => {
         const enhancedSystemPrompt = `${systemPrompt}${globalInstructions ? `\n\nGLOBAL CUSTOM INSTRUCTIONS (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
-        const payload = {
-            ...formatGroqPayload(userQuery, enhancedSystemPrompt, { temperature, max_tokens: 8192 }),
-            model: "gemini-1.5-pro",
-            temperature: temperature
-        };
-        const result = await retryableFetch(GROQ_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (result.error) {
-            throw new Error(result.error);
+        const messages = [
+            { role: 'system', content: enhancedSystemPrompt },
+            { role: 'user', content: userQuery }
+        ];
+        
+        try {
+            const result = await callOpenRouter(messages, { 
+                temperature, 
+                max_tokens: 16384,
+                ...(isJson ? { response_format: { type: "json_object" } } : {})
+            });
+            return result.choices?.[0]?.message?.content || "No response generated. Please try again.";
+        } catch (err) {
+            console.error("AI Error:", err);
+            throw err;
         }
-        return result.choices?.[0]?.message?.content || "No response generated. Please try again.";
     };
 
     // ─── CAREER AI ───
     const handleCareerSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!canUseFeature('college-compass')) { triggerUpgradeModal('college-compass'); return; }
         setIsLoading(true);
-        setCareerResult('');
+        setCareerResult(null);
         // Save to shared profile
         updateProfile({
             hobbies: careerForm.hobbies,
@@ -280,10 +279,33 @@ const CollegeCompass = ({ retryableFetch, onExit }) => {
         });
         try {
             const profileBlock = buildProfileBlock();
-            const text = await callAI(
-                `Analyze this student's profile and create a highly dynamic, out-of-the-box personalized career roadmap. Do not stick to generic or fixed lists of careers. Think expansively.
+            const systemPrompt = `You are the world's most elite Career Architect and Psychometric Analyst.
+Analyze the student profile and synthesize a highly dynamic, future-proof, and exhaustive career roadmap.
 
---- STUDENT PROFILE (ACTIVE FORM) ---
+IMPORTANT: Your explanations must be EXTREMELY DETAILED and long. Every "why" field should be at least 3-5 sentences of deep psychological and market analysis. Every "steps" field should be a granular checklist.
+
+OUTPUT FORMAT:
+Return strictly a valid JSON object with the following structure:
+{
+  "personality_type": "A profound, 100-word analysis of their cognitive archetype",
+  "alignment_score": 95,
+  "core_values": ["deep value 1", "deep value 2"],
+  "career_matches": [
+    { 
+      "title": "Career Title", 
+      "match_score": 95, 
+      "why": "Provide an exhaustive, multi-sentence explanation of exactly why this fits their personality, market trends, and long-term ROI.", 
+      "salary": "Detailed salary progression (Entry -> Senior)", 
+      "growth": "Detailed market demand analysis" 
+    }
+  ],
+  "action_plan": [
+    { "timeframe": "Months 1-6", "steps": ["Exhaustive Step 1 with details", "Exhaustive Step 2 with details"] }
+  ],
+  "hidden_gems": ["Unique Emerging Field 1 with description", "Unconventional Role 2 with description"]
+}`;
+
+            const userQuery = `--- STUDENT PROFILE (ACTIVE FORM) ---
 Hobbies & Interests: ${careerForm.hobbies}
 Deep Passions: ${careerForm.passion}
 Current Field of Study: ${careerForm.field}
@@ -291,54 +313,27 @@ Future Aspirations: ${careerForm.aspirations}
 Budget Constraints: ${careerForm.budget || 'Not specified'}
 Preferred Country: ${careerForm.country || 'Open to any'}
 --- END ACTIVE FORM ---
-${profileBlock}
+${profileBlock}`;
 
-Provide:
-## 🎯 Top 5-8 Dynamic Career Paths
-For each: name, why it fits THIS SPECIFIC student (merge their hobbies and passions in unique ways), salary range, and future growth.
-
-## 📚 Education Roadmap
-Degree recommendations, certifications, online courses, bootcamps.
-
-## 🏆 Skills to Build
-Technical + soft skills with specific resources.
-
-## 🌍 Global Opportunities
-Best countries/cities for each career, remote work potential, visa-friendly nations.
-
-## 💡 Action Plan (Next 12 Months)
-Month-by-month breakdown of concrete steps.
-
-## ⚡ Hidden & Emerging Gems
-Unconventional paths, AI-integrated roles, or interdisciplinary opportunities most people miss.
-
-Format with clear headers, emojis, and actionable bullet points.`,
-                `You are the world's most dynamic AI Career Architect.
-CRITICAL RULES:
-- Deeply synthesize ALL of the user's inputs. Do NOT give generic paths (e.g. "Software Engineer"). Break constraints and suggest interdisciplinary, future-proof careers.
-- Read and use ALL data in the STUDENT PROFILE.
-- Output 5 to 8 unique career ideas.
-
-CRITICAL RULE: If the student profile is mostly EMPTY (e.g., they only filled in 1 or 2 fields in this form and completely ignored the Global Profile), you MUST add this exact section right at the top of your response:
-"## ⚠️ SYSTEM WARNING
-You are receiving generic, baseline advice. To unlock world-class, ultra-personalized mapping that completely aligns with your DNA, return to the **Universal Profile Builder** tab immediately and complete your profile."
-If their profile IS full, provide deep FOMO-inducing, highly personalized logic.
-- Use clear Markdown with emojis.`
-            );
-            setCareerResult(text);
-            updateProfile({ careerGoals: text.substring(0, 500) });
+            const rawJsonStr = await callAI(userQuery, systemPrompt, 0.7, true);
+            const parsedData = JSON.parse(rawJsonStr);
+            setCareerResult(parsedData);
+            updateProfile({ careerGoals: JSON.stringify(parsedData.career_matches) });
             incrementUsage('college-compass');
-        } catch (err) { setCareerResult("Error: " + err.message); }
-        finally { setIsLoading(false); }
+        } catch (err) { 
+            setCareerResult({ error: "Failed to generate career roadmap. " + err.message }); 
+        } finally { 
+            setIsLoading(false); 
+        }
     };
 
-    // ─── COLLEGE FINDER (ENHANCED) ───
+    // ─── SCHOLARSHIP & COLLEGE FINDER ───
     const handleCollegeSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!canUseFeature('college-compass')) { triggerUpgradeModal('college-compass'); return; }
         setIsLoading(true);
-        setCollegeResult('');
-        setCitations([]);
+        setCollegeResult(null);
+        // Save to shared profile
         updateProfile({
             gpa: collegeForm.gpa,
             testScores: collegeForm.testScores,
@@ -347,58 +342,46 @@ If their profile IS full, provide deep FOMO-inducing, highly personalized logic.
         });
         try {
             const profileBlock = buildProfileBlock();
-            const text = await callAI(
-                `Analyze this student profile and provide the most comprehensive, brutally honest college recommendation in the world.
+            const systemPrompt = `You are the world's most elite University Admissions Counselor and Financial Aid Expert.
+Analyze the student's profile to recommend colleges and scholarships with extreme granular detail.
 
---- STUDENT PROFILE (ACTIVE FORM) ---
-GPA/Marks: ${collegeForm.gpa}
-Test Scores: ${collegeForm.testScores || 'Not provided'}
-Desired Major: ${collegeForm.major}
+IMPORTANT: Every explanation must be deep, data-driven, and expansive. No one-liners.
+
+OUTPUT FORMAT:
+Return strictly a valid JSON object with the following structure:
+{
+  "profile_strength": 85,
+  "dream_colleges": [{ "name": "University A", "chance": "20%", "why": "An exhaustive, multi-paragraph-style explanation of academic fit, research opportunities, and cultural alignment." }],
+  "target_colleges": [{ "name": "University B", "chance": "50%", "why": "Detailed analysis of why this is a realistic but high-value target." }],
+  "safe_colleges": [{ "name": "University C", "chance": "90%", "why": "Detailed breakdown of the safety net and specific benefits of this institution." }],
+  "scholarships": [
+    { "name": "Full Scholarship Name", "amount": "Precise Amount", "deadline": "Specific Date/Range", "eligibility": "Deep Eligibility Breakdown" }
+  ],
+  "roi_analysis": "An exhaustive financial analysis covering tuition, living costs, post-grad salary expectations, and break-even timeline.",
+  "strategy": ["Profound, high-fidelity advice 1", "Detailed application hook 2", "Strategic timeline tip 3"]
+}`;
+
+            const userQuery = `--- STUDENT PROFILE (ACTIVE FORM) ---
+GPA / Marks: ${collegeForm.gpa}
+Test Scores: ${collegeForm.testScores}
+Target Major: ${collegeForm.major}
 Study Level: ${collegeForm.studyLevel}
-Extracurriculars & Achievements: ${collegeForm.extracurriculars}
-Preferred Location: ${collegeForm.location || 'No preference'}
-Preferred Country: ${collegeForm.country}
-Budget: ${collegeForm.budget || 'Not specified'}
+Extracurriculars: ${collegeForm.extracurriculars}
+Country Preference: ${collegeForm.country}
+Location Preference: ${collegeForm.location}
+Budget: ${collegeForm.budget}
 --- END ACTIVE FORM ---
-${profileBlock}
+${profileBlock}`;
 
-CRITICAL INSTRUCTIONS FOR WEAK PROFILES:
-If the student has NO test scores (SAT/ACT/AP/JEE), low GPA, or weak extracurriculars, DO NOT recommend MIT, Stanford, Harvards, or top-tier schools. Instead, output a "🛑 HARSH REALITY CHECK" section right at the top. Tell them bluntly that top schools are impossible right now, and FORCE them to start using the "Competitive Prep / Preparation Hub" in this app to take SAT/ACT/AP or other standardized exams to build their stats. 
-
-COLLEGE LIST (Provide 20-30 Realistic Colleges):
-Group these 20-30 colleges into realistic tiers based strictly on their actual stats. Look beyond just America if they chose "Any" or a different country. For EACH college, explain in 1 sentence WHY it fits their specific extracurriculars or constraints in the profile.
-
-## 🛑 HARSH REALITY CHECK & RESUME MANDATE
-(Only include if stats are weak/missing. Instruct them to use the Preparation Hub immediately to fix their testing and extracurricular gaps for guaranteed admission).
-
-## 🔒 Safety Schools (10-15 colleges)
-Name, Location, Acceptance Rate, Fit Reason.
-
-## 🎯 Target Schools (5-10 colleges)
-Name, Location, Acceptance Rate, Fit Reason.
-
-## 🚀 Reach Schools (2-5 colleges - ONLY if realistic)
-Name, Location, Acceptance Rate, Fit Reason.
-
-## 📊 Probability Analysis & Financial Breakdown
-Brief summary of chances, tuition, and basic scholarship advice.`,
-                `You are the world's most knowledgeable and brutally honest AI College Admissions Consultant.
-CRITICAL RULES:
-- Provide up to 20-30 colleges total.
-
-CRITICAL RULE: If the student profile is mostly EMPTY (e.g., they only filled in 1 or 2 fields in this form and completely ignored the Global Profile), you MUST add this exact section right at the top of your response:
-"## ⚠️ SYSTEM WARNING
-You are receiving generic, baseline advice. To unlock world-class, ultra-personalized mapping that completely aligns with your DNA, return to the **Universal Profile Builder** tab immediately and complete your profile."
-If their profile IS full, provide deep FOMO-inducing, highly personalized logic.
-- If stats are weak, you MUST reject top-tier Ivies/Stanford immediately. Break their illusions gracefully but firmly, and TELL them to use the "Preparation Hub" to fix their SAT/ACT/AP stats.
-- Match colleges to their exact extracurriculars and documents.
-- Provide international diversity if the country is open. Don't default to only US.
-- Use clear Markdown formatting with emojis.`
-            );
-            setCollegeResult(text);
+            const rawJsonStr = await callAI(userQuery, systemPrompt, 0.4, true);
+            const parsedData = JSON.parse(rawJsonStr);
+            setCollegeResult(parsedData);
             incrementUsage('college-compass');
-        } catch (err) { setCollegeResult("Error: " + err.message); }
-        finally { setIsLoading(false); }
+        } catch (err) { 
+            setCollegeResult({ error: "Failed to generate college list. " + err.message }); 
+        } finally { 
+            setIsLoading(false); 
+        }
     };
 
     // ─── SCHOLARSHIP FINDER (NEW) ───
@@ -420,25 +403,28 @@ Target Country: ${scholarshipForm.targetCountry || 'Any'}
 Key Achievements: ${scholarshipForm.achievements}
 --- END ---
 
-Provide a comprehensive guide:
+Provide an EXHAUSTIVE, high-fidelity guide (aim for maximum depth, ~2000 words):
 
-## 🏆 Top 10 Matching Scholarships
-For each: Name, Amount, Deadline (approximate), Eligibility, How to Apply, Success Tips.
+## 🏆 Top 15 Matching Scholarships
+For each: Full Name, Organization, Amount ($), Deadline (precise range), Detailed Eligibility, Step-by-Step Application Guide, "Inside Track" Success Tips.
 
-## 🌍 Country-Specific Scholarships
-Government and institutional scholarships in the target country.
+## 🌍 Government & International Programs
+In-depth coverage of Chevening, Fulbright, DAAD, Erasmus+, etc., as they apply to this profile.
 
-## 💡 Merit vs Need-Based Analysis
-Which type suits this profile better and strategic recommendations.
+## 🏛️ University-Specific Aid
+How to target 'Need-Blind' or 'Full-Ride' schools based on this profile's strengths.
 
-## 📝 Application Tips
-Common mistakes, essay strategies, recommendation letter advice.
+## 📝 The "Winning" Essay Strategy
+Specific themes this student should highlight in their SOP/Personal Statement to maximize conversion.
 
-## 🎯 Hidden Scholarships
-Lesser-known scholarships with high acceptance rates.
+## 🎯 High-Acceptance 'Hidden' Funds
+Lesser-known private foundation scholarships with high success rates.
 
-Include real scholarship names and approximate amounts. Be specific and actionable.`,
-                `You are the world's top Scholarship Advisor AI. You have comprehensive knowledge of scholarships globally — government programs (Fulbright, Chevening, DAAD, CSC, Erasmus+, etc.), university-specific aid, private foundations, and niche scholarships. Every recommendation must be specific and real. Use Markdown formatting with emojis.`
+## 📅 Precision Application Timeline
+A monthly breakdown of what to do over the next 12 months.
+
+Include real names, specific amounts, and granular details. Be the most helpful resource the student has ever seen.`,
+                `You are the world's most successful Scholarship Consultant. You have helped students win millions in aid. You know every hidden requirement and "hook" that scholarship committees look for. Every recommendation must be specific and high-fidelity. Use Markdown and emojis.`
             );
             setScholarshipResult(text);
             incrementUsage('college-compass');
@@ -455,31 +441,31 @@ Include real scholarship names and approximate amounts. Be specific and actionab
         try {
             const colleges = [compareForm.college1, compareForm.college2, compareForm.college3].filter(Boolean);
             const text = await callAI(
-                `Compare these colleges head-to-head: ${colleges.join(' vs ')}.
+                `Compare these colleges head-to-head with EXHAUSTIVE granular detail: ${colleges.join(' vs ')}.
 Focus criteria: ${compareForm.criteria}
 
-Provide an exhaustive comparison:
+Provide a massive, data-heavy comparison (aim for extreme depth, ~2000-3000 words):
 
-## 📊 Quick Comparison Table
-Rankings (QS, US News, THE), Acceptance Rate, Tuition (Int'l), Student Population, Student-Faculty Ratio.
+## 📊 Comprehensive Comparison Matrix
+Rankings (QS, US News, THE - Global & Subject-specific), Acceptance Rates (Regular vs Early), Total Cost of Attendance (Tuition, Housing, Fees), Average ROI (5 & 10 years).
 
-## 🎓 Academic Excellence
-Program strength in various fields, research output, faculty quality, industry connections.
+## 🎓 Academic Deep-Dive
+Professor-to-student ratio, research budget, most famous departments, industry partnerships, and class sizes.
 
-## 🏠 Campus & Student Life
-Location, housing, clubs, diversity, safety, social scene, sports.
+## 🏠 Student Life & Ecosystem
+Campus vibe, housing quality, city vs campus life, extracurricular power, and peer quality.
 
-## 💰 Financial Comparison
-Full cost breakdown: tuition, living, scholarships available, ROI analysis.
+## 💰 The Financial Reality
+Real-world budgeting, work-study opportunities, specific scholarship cross-eligibility.
 
-## 🌍 Career Outcomes
-Employment rate, median starting salary, top recruiters, alumni network strength.
+## 💼 Career Dominance
+Top 10 hiring companies for each, average starting salary by major, and alumni network density in key hubs (Silicon Valley, NYC, London, etc.).
 
-## ⚖️ Verdict
-Who should pick which college and why (personality types, career goals, preferences).
+## ⚖️ Final Strategic Verdict
+The "Ideal Student" profile for each school. Who wins based on financial constraints vs career ambition?
 
-Be objective, data-driven, and specific. Present as a structured comparison.`,
-                `You are the world's best College Comparison Analyst. You combine data from official sources, student reviews (Niche, Unigo), employment statistics, and financial data. Present balanced, objective comparisons. Use clear Markdown with comparison tables where possible.`
+Be brutally objective, data-driven, and specific. Leave no stone unturned.`,
+                `You are the world's most feared and respected College Admissions Analyst. You have access to every data point — from Common Data Sets to employment audits. Your comparisons are the industry gold standard. Use Markdown and high-fidelity comparison structures.`
             );
             setCompareResult(text);
             incrementUsage('college-compass');
@@ -520,13 +506,11 @@ Be objective, data-driven, and specific. Present as a structured comparison.`,
         return { label: 'Explore All Options', color: 'text-red-400', emoji: '🛡️' };
     };
 
-    // ─── RANK PREDICTOR (WORLD-CLASS) ───
     const handleJeeSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!canUseFeature('college-compass')) { triggerUpgradeModal('college-compass'); return; }
         setIsLoading(true);
-        setJeeRankData(null);
-        setJeeCollegeResult('');
+        setJeeCollegeResult(null);
         try {
             let percent;
             let estimatedMarks = '';
@@ -545,51 +529,34 @@ Be objective, data-driven, and specific. Present as a structured comparison.`,
             const tier = getRankTier(crlRank);
             setJeeRankData({ crl: crlRank, percentile: percent, category: jeeForm.category, marks: estimatedMarks, tier, homeState: jeeForm.homeState, targetBranch: jeeForm.targetBranch, gender: jeeForm.gender, pwd: jeeForm.pwd });
 
-            const text = await callAI(
-                `A JEE Main 2026 aspirant's profile:
-- Estimated Percentile: ${percent}%
-- Calculated All India CRL Rank: ~${crlRank}
-- Category: ${jeeForm.category}
-- Gender: ${jeeForm.gender}
-- PwD Status: ${jeeForm.pwd}
-- Home State: ${jeeForm.homeState || 'Not specified'}
-- Target Branch: ${jeeForm.targetBranch || 'Any / Open to all'}
-${estimatedMarks ? `- Estimated Marks: ${estimatedMarks}/300` : ''}
+            const systemPrompt = `You are India's #1 JEE Main Counseling Expert.
+Based on JoSAA data, predict college admission probabilities.
 
-Based on JoSAA 2024 closing rank data, provide the most accurate, comprehensive prediction:
+OUTPUT FORMAT:
+Return strictly a valid JSON object with the following structure:
+{
+  "rank_analysis": {
+    "predicted_rank": 15000,
+    "percentile": 99.0,
+    "competitive_standing": "Top 1% - Excellent chances for top NITs"
+  },
+  "safe_colleges": [{ "name": "NIT X", "branch": "ECE", "closing_rank": "20000" }],
+  "target_colleges": [{ "name": "NIT Y", "branch": "CSE", "closing_rank": "16000" }],
+  "dream_colleges": [{ "name": "IIT Z (if applicable)", "branch": "Mech", "closing_rank": "10000" }],
+  "strategy": ["Counseling strategy 1", "Counseling strategy 2"]
+}`;
+            const userQuery = `Aspirant Profile:
+Percentile: ${percent}%
+Calculated Rank: ~${crlRank}
+Category: ${jeeForm.category}
+Home State: ${jeeForm.homeState}
+Target Branch: ${jeeForm.targetBranch}`;
 
-## 🏆 Rank Analysis
-Where this rank stands among ~14.15 lakh candidates. IIT eligibility? NIT tier? Competitive standing.
-
-## 🏛️ Best NITs You Can Get (Top 5)
-For each NIT: Full Name, Branch, Opening Rank, Closing Rank (2024 ${jeeForm.category} category), Home State vs Other State quota note. Present as a clear list.
-
-## 🎓 Best IIITs & GFTIs (Top 5)
-Same format — full college name, branch, closing ranks from 2024.
-
-## 💎 Hidden Gems (3 Underrated Picks)
-Lesser-known excellent colleges with great placement records that accept this rank.
-
-## 🛡️ Safe Backup Options (3-4)
-Private universities (BITS, VIT, SRM, Manipal, etc.) and state-level options.
-
-## 📋 Complete JoSAA / CSAB Process Guide
-- Step-by-step registration and choice filling timeline (with dates)
-- How many rounds, when CSAB starts
-- Choice filling strategy: How to order preferences for maximum benefit
-- Documents needed
-- Seat acceptance and reporting process
-- Upgrade & float options explained
-
-## ⚡ Pro Tips
-3-5 insider tips for maximizing admission outcomes at this rank level.
-
-Use REAL data. Be brutally honest. No sugarcoating. Use Markdown with emojis.`,
-                `You are India's #1 JEE Main Counseling Expert with 20+ years of experience. You have memorized every JoSAA opening and closing rank from 2020-2024 for all NITs, IIITs, and GFTIs across all categories and quotas. You give hyper-specific, data-backed predictions. You know every branch, every quota, every special round. Your advice has helped 50,000+ students get into their dream colleges. Be thorough, specific, and use actual rank numbers from 2024 data.`
-            );
-            setJeeCollegeResult(text);
+            const rawJsonStr = await callAI(userQuery, systemPrompt, 0.4, true);
+            const parsedData = JSON.parse(rawJsonStr);
+            setJeeCollegeResult(parsedData);
             incrementUsage('college-compass');
-        } catch (err) { setJeeCollegeResult('Error: ' + err.message); }
+        } catch (err) { setJeeCollegeResult({ error: "Failed to predict rank. " + err.message }); }
         finally { setIsLoading(false); }
     };
 
@@ -1059,7 +1026,7 @@ CRITICAL: If the profile is mostly empty (e.g. they didn't use the Career or Col
         try {
             const text = await callAI(
                 `${historyText}\nStudent: ${userMsg}`,
-                `You are the world's top AI College Admissions Counselor. Be specific, data-driven, and actionable. Use Markdown headers and emojis. Keep responses under 400 words unless depth is needed.\n\n${globalContext}`
+                `You are the world's top AI College Admissions Counselor. Be extremely detailed, specific, and actionable. Explain concepts in great depth (no length limits, prioritize thoroughness). Use Markdown headers and emojis.\n\n${globalContext}`
             );
             const responseMsg = { role: 'model', text };
             setChatHistory(prev => [...prev, responseMsg]);
@@ -1305,38 +1272,95 @@ CRITICAL: If the profile is mostly empty (e.g. they didn't use the Career or Col
                                         )}
                                     </button>
                                 </form>
-                                {careerResult && (
-                                    <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up tilt-card perspective-1000`}>
-                                        <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border translate-z-10`}>
-                                            <Sparkles className={`w-5 h-5 text-theme-primary`} />
-                                            <h3 className="text-lg font-bold text-theme-text">Your Career Roadmap</h3>
+                                {careerResult && !careerResult.error && (
+                                    <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up`}>
+                                        <div className={`flex items-center gap-3 mb-6 pb-4 border-b border-theme-border`}>
+                                            <Sparkles className={`w-6 h-6 text-theme-primary`} />
+                                            <h3 className="text-xl font-bold text-theme-text">Your Personalized Career Roadmap</h3>
                                         </div>
-                                        <div className={`prose max-w-none prose-sm leading-relaxed text-theme-text translate-z-10`}>
-                                            <MarkdownBlock text={careerResult} />
-                                        </div>
-
-                                        {/* Follow-up Input */}
-                                        <div className={`mt-6 pt-4 border-t border-theme-border`}>
-                                            <p className="text-xs font-black text-theme-muted uppercase tracking-widest mb-2">💬 What do you think?</p>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    value={careerFollowup}
-                                                    onChange={e => setCareerFollowup(e.target.value)}
-                                                    placeholder="Ask a follow-up or share your thoughts..."
-                                                    className="flex-1 p-3 rounded-xl text-sm bg-theme-bg border-theme-border text-theme-text outline-none focus:border-theme-primary border transition-all"
-                                                    onKeyDown={e => e.key === 'Enter' && handleFollowup(careerResult, careerFollowup, setCareerResult, setCareerFollowup)}
-                                                />
-                                                <button
-                                                    onClick={() => handleFollowup(careerResult, careerFollowup, setCareerResult, setCareerFollowup)}
-                                                    disabled={isLoading || !careerFollowup.trim()}
-                                                    className="p-3 bg-theme-primary text-theme-bg rounded-xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
-                                                >
-                                                    <Send className="w-4 h-4" />
-                                                </button>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-center flex flex-col justify-center">
+                                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Archetype</span>
+                                                <h4 className="text-lg font-black text-indigo-300">{careerResult.personality_type}</h4>
+                                            </div>
+                                            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center flex flex-col justify-center">
+                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Profile Alignment</span>
+                                                <h4 className="text-2xl font-black text-emerald-400">{careerResult.alignment_score}%</h4>
+                                                <div className="w-full bg-theme-bg h-1.5 rounded-full mt-2 overflow-hidden">
+                                                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${careerResult.alignment_score}%` }}></div>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center flex flex-col justify-center">
+                                                <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-2">Core Values</span>
+                                                <div className="flex flex-wrap justify-center gap-1">
+                                                    {careerResult.core_values?.map((v, i) => (
+                                                        <span key={i} className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[10px] font-bold">{v}</span>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Conditional Navigation */}
+                                        <h4 className="text-sm font-black text-theme-muted uppercase tracking-widest mb-4 flex items-center gap-2"><Target className="w-4 h-4"/> Top Career Matches</h4>
+                                        <div className="space-y-4 mb-8">
+                                            {careerResult.career_matches?.map((match, idx) => (
+                                                <div key={idx} className="p-5 rounded-2xl bg-theme-bg border border-theme-border relative overflow-hidden group hover:border-theme-primary/50 transition-all">
+                                                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-theme-primary to-theme-secondary opacity-50 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <h5 className="text-lg font-bold text-theme-text">{match.title}</h5>
+                                                        <span className="px-3 py-1 bg-theme-surface rounded-lg text-xs font-black text-theme-primary border border-theme-primary/30">
+                                                            {match.match_score}% Match
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-theme-muted mb-4">{match.why}</p>
+                                                    <div className="flex gap-4">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"><Activity className="w-3 h-3 text-green-400"/></div>
+                                                            <span className="text-[11px] font-bold text-theme-text">{match.salary}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-6 h-6 rounded-full bg-blue-500/10 flex items-center justify-center"><Activity className="w-3 h-3 text-blue-400"/></div>
+                                                            <span className="text-[11px] font-bold text-theme-text">{match.growth} Growth</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                            <div>
+                                                <h4 className="text-sm font-black text-theme-muted uppercase tracking-widest mb-4 flex items-center gap-2"><Calendar className="w-4 h-4"/> 12-Month Action Plan</h4>
+                                                <div className="space-y-3">
+                                                    {careerResult.action_plan?.map((plan, idx) => (
+                                                        <div key={idx} className="flex gap-3">
+                                                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-theme-bg border border-theme-border flex items-center justify-center text-[10px] font-black text-theme-primary">
+                                                                {plan.timeframe.split(' ')[1] || (idx + 1)}
+                                                            </div>
+                                                            <div className="pt-1">
+                                                                <span className="text-xs font-bold text-theme-text block mb-1">{plan.timeframe}</span>
+                                                                <ul className="space-y-1">
+                                                                    {plan.steps?.map((s, i) => (
+                                                                        <li key={i} className="text-[11px] text-theme-muted flex gap-1.5"><ChevronRight className="w-3 h-3 text-theme-primary flex-shrink-0 mt-0.5"/> {s}</li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-black text-theme-muted uppercase tracking-widest mb-4 flex items-center gap-2"><Lightbulb className="w-4 h-4"/> Hidden Gems</h4>
+                                                <div className="space-y-2">
+                                                    {careerResult.hidden_gems?.map((gem, idx) => (
+                                                        <div key={idx} className="p-3 rounded-xl bg-theme-bg border border-theme-border text-sm text-theme-text flex items-center gap-2">
+                                                            <Sparkles className="w-3 h-3 text-amber-500"/>
+                                                            {gem}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
                                             <button onClick={() => setActiveTab('college')} className="py-3 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
                                                 College Needed → Hunt <ChevronRight className="w-3 h-3" />
@@ -1344,10 +1368,15 @@ CRITICAL: If the profile is mostly empty (e.g. they didn't use the Career or Col
                                             <button onClick={() => setActiveTab('chat')} className="py-3 bg-theme-surface border border-theme-border text-theme-text rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
                                                 No College → Counselor <MessageSquare className="w-3 h-3" />
                                             </button>
-                                            <button onClick={() => { setCareerResult(''); setCareerForm({ hobbies: '', passion: '', field: '', aspirations: '', budget: '', country: '' }); }} className="py-3 bg-theme-bg border border-theme-border text-theme-muted rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:text-theme-text transition-all">
+                                            <button onClick={() => { setCareerResult(null); setCareerForm({ hobbies: '', passion: '', field: '', aspirations: '', budget: '', country: '' }); }} className="py-3 bg-theme-bg border border-theme-border text-theme-muted rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:text-theme-text transition-all">
                                                 I'm Done — Exit ✕
                                             </button>
                                         </div>
+                                    </div>
+                                )}
+                                {careerResult?.error && (
+                                    <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold text-center">
+                                        {careerResult.error}
                                     </div>
                                 )}
                             </div>
@@ -1963,27 +1992,18 @@ CRITICAL: If the profile is mostly empty (e.g. they didn't use the Career or Col
                                         </p>
                                     </div>
                                 </div>
-                                <form onSubmit={handleEssaySubmit} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
+                                <form onSubmit={handleGenerateEssay} className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border relative overflow-hidden`}>
                                     <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-500 to-rose-500" />
                                     <div className="flex items-center gap-3 mb-6">
                                         <Award className={`w-6 h-6 text-amber-500`} />
                                         <div>
-                                            <div className="flex items-center gap-3">
-                                                <h3 className="text-lg font-bold text-theme-text">Essay Expert</h3>
-                                            </div>
-                                            <p className={`text-xs text-theme-muted`}>Elite coach + Harsh grader — iterate until perfection</p>
+                                            <h3 className="text-lg font-bold text-theme-text">College Essay Writer</h3>
+                                            <p className={`text-xs text-theme-muted`}>Elite Ivy League Essay Coach & Ghostwriter</p>
                                         </div>
-                                        {essayIteration > 0 && (
-                                            <div className="ml-auto flex items-center gap-2">
-                                                <span className={`text-xs font-black px-3 py-1 rounded-full ${essayScore >= 8 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                    Score: {essayScore}/10 • Iteration #{essayIteration}
-                                                </span>
-                                            </div>
-                                        )}
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                        <FormField label="Target School(s)">
-                                            <InputField value={essaySchool} onChange={e => setEssaySchool(e.target.value)} placeholder="e.g. Stanford, MIT, Oxford" />
+                                        <FormField label="Target School">
+                                            <InputField value={essaySchool} onChange={e => setEssaySchool(e.target.value)} placeholder="e.g. Stanford, MIT, Oxford" required />
                                         </FormField>
                                         <FormField label="Essay Type">
                                             <SelectField value={essayType} onChange={e => setEssayType(e.target.value)} options={[
@@ -1992,163 +2012,102 @@ CRITICAL: If the profile is mostly empty (e.g. they didn't use the Career or Col
                                                 { value: 'Why Us', label: 'Why Us / Supplemental' },
                                                 { value: 'SOP', label: 'Statement of Purpose' },
                                                 { value: 'Scholarship', label: 'Scholarship Essay' },
-                                                { value: 'Activity', label: 'Activity Description' },
                                             ]} />
                                         </FormField>
                                         <FormField label="Word Limit">
-                                            <InputField value={essayWordLimit} onChange={e => setEssayWordLimit(e.target.value)} placeholder="e.g. 650, 250" />
+                                            <InputField value={essayWordLimit} onChange={e => setEssayWordLimit(e.target.value)} placeholder="e.g. 650, 250" required />
                                         </FormField>
                                     </div>
 
-                                    {/* ─── ENHANCED: Auto-Generate Section ─── */}
                                     <div className="p-5 mb-6 rounded-2xl bg-gradient-to-r from-amber-500/5 to-rose-500/5 border border-amber-500/20">
                                         <h4 className="text-sm font-bold text-amber-500 mb-2 flex items-center gap-2">
-                                            <Sparkles className="w-4 h-4" /> AI Essay Generator
+                                            <Sparkles className="w-4 h-4" /> Story & Authentic Voice
                                         </h4>
-                                        <p className="text-xs text-theme-muted mb-4 leading-relaxed">
-                                            The more details you give, the better your draft. Tell us your story — even a rough description helps the AI craft something authentic and compelling. We'll also pull context from your Career &amp; College tabs if available.
-                                        </p>
-
-                                        {/* Profile Summary Indicator */}
-                                        {(studentProfile.extracurriculars || studentProfile.hobbies || studentProfile.uploadedDocs) && (
-                                            <div className="mb-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-                                                <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">✅ Profile Data Loaded</p>
-                                                <p className="text-xs text-theme-muted">
-                                                    The AI already knows: {[
-                                                        studentProfile.hobbies && 'your hobbies',
-                                                        studentProfile.passions && 'your passions',
-                                                        studentProfile.extracurriculars && 'your extracurriculars',
-                                                        studentProfile.gpa && 'your GPA',
-                                                        studentProfile.major && 'your target major',
-                                                        studentProfile.uploadedDocs && `uploaded doc: "${studentProfile.uploadedFileName}"`,
-                                                    ].filter(Boolean).join(', ') || 'nothing yet — fill in Career or College tabs first'}.
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Document Upload Zone */}
-                                        <div className="mb-4">
-                                            <div
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="w-full p-4 rounded-xl border-2 border-dashed border-theme-border hover:border-amber-500/50 bg-theme-bg/50 cursor-pointer transition-all text-center group"
-                                            >
-                                                <FileText className="w-6 h-6 mx-auto mb-2 text-theme-muted group-hover:text-amber-500 transition-colors" />
-                                                <p className="text-xs font-bold text-theme-muted group-hover:text-theme-text transition-colors">
-                                                    {studentProfile.uploadedFileName
-                                                        ? `📎 "${studentProfile.uploadedFileName}" loaded — click to replace`
-                                                        : 'Upload Resume, Achievement List, or Prior Essays (PDF / TXT)'
-                                                    }
-                                                </p>
-                                                <p className="text-[10px] text-theme-muted mt-1">Your achievements will be automatically included in every AI call</p>
-                                            </div>
-                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt" onChange={handleFileUpload} className="hidden" />
-                                        </div>
-
-                                        {/* Key Story */}
-                                        <FormField label="⭐ Your Key Story / Anecdote (Most Important)">
-                                            <TextareaField value={essayStory} onChange={e => setEssayStory(e.target.value)} rows="4" placeholder="Describe a specific moment, challenge, or realization you want the essay to revolve around. Example: 'When I was 14, my science fair project failed spectacularly in front of 200 people. Instead of quitting, I redesigned it overnight and won 2nd place the next day. That failure taught me...' — The more specific and personal, the better!" />
+                                        
+                                        <FormField label="⭐ Key Story / Anecdote">
+                                            <TextareaField value={essayStory} onChange={e => setEssayStory(e.target.value)} rows="3" placeholder="Describe a specific moment, challenge, or realization. Be authentic!" required />
                                         </FormField>
 
-                                        {/* Core Trait & Tone */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                             <FormField label="💎 Core Trait to Highlight">
-                                                <InputField value={essayTrait} onChange={e => setEssayTrait(e.target.value)} placeholder="e.g. Resilience, Intellectual Curiosity, Empathy, Leadership..." />
+                                                <InputField value={essayTrait} onChange={e => setEssayTrait(e.target.value)} placeholder="e.g. Resilience, Curiosity..." required />
                                             </FormField>
-                                            <FormField label="🎨 Essay Tone">
+                                            <FormField label="🎨 Tone">
                                                 <SelectField value={essayTone} onChange={e => setEssayTone(e.target.value)} options={[
                                                     { value: 'Reflective', label: '🪞 Reflective & Poetic' },
                                                     { value: 'Analytical', label: '🔬 Analytical & Direct' },
                                                     { value: 'Humorous', label: '😄 Humorous & Witty' },
                                                     { value: 'Bold', label: '⚡ Bold & Unconventional' },
-                                                    { value: 'Narrative', label: '📖 Storytelling & Cinematic' },
+                                                    { value: 'Narrative', label: '📖 Storytelling' },
                                                 ]} />
                                             </FormField>
                                         </div>
-
-                                        {/* Additional Instructions */}
-                                        <div className="mt-4" id="essay-prompt-input">
-                                            <FormField label="📝 Additional Instructions (Optional)">
-                                                <TextareaField value={essayPrompt} onChange={e => setEssayPrompt(e.target.value)} rows="2" placeholder="Any extra details: themes to weave in, things to avoid, specific achievements to mention..." />
+                                        
+                                        <div className="mt-4">
+                                            <FormField label="📝 Extra Instructions (Optional)">
+                                                <TextareaField value={essayPrompt} onChange={e => setEssayPrompt(e.target.value)} rows="2" placeholder="Specific themes, what to avoid..." />
                                             </FormField>
                                         </div>
+                                    </div>
 
-                                        <button type="button" onClick={handleGenerateEssay} disabled={isLoading} className="w-full py-3 mt-4 bg-theme-bg border border-amber-500/50 text-amber-500 rounded-xl font-black text-xs uppercase tracking-[0.1em] hover:bg-amber-500 hover:text-white transition-all flex justify-center items-center disabled:opacity-50">
-                                            {isLoading && essayPhase === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : (<>Auto-Generate Draft <Award className="w-4 h-4 ml-2" /></>)}
-                                        </button>
-                                    </div>
-                                    <FormField label="Your Essay Draft">
-                                        <TextareaField value={essayText} onChange={e => setEssayText(e.target.value)} required rows="12" placeholder="Paste your full essay draft here..." />
-                                    </FormField>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                                        <button type="submit" disabled={isLoading || !essayText.trim()} className="py-4 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-amber-500/30 hover:scale-[1.02] transition-all flex justify-center items-center disabled:opacity-50 group">
-                                            {isLoading && essayPhase === 'coach' ? <Loader2 className="w-5 h-5 animate-spin" /> : (<>Coach Review <Award className="w-4 h-4 ml-2" /></>)}
-                                        </button>
-                                        <button type="button" onClick={handleGraderSubmit} disabled={isLoading || !essayText.trim()} className="py-4 bg-red-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-red-500/30 hover:scale-[1.02] transition-all flex justify-center items-center disabled:opacity-50 group">
-                                            {isLoading && essayPhase === 'grader' ? <Loader2 className="w-5 h-5 animate-spin" /> : (<>{essayIteration === 0 ? 'Harsh Grade' : `Re-Grade #${essayIteration + 1}`} <AlertTriangle className="w-4 h-4 ml-2" /></>)}
-                                        </button>
-                                    </div>
+                                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-amber-500/30 hover:scale-[1.02] transition-all flex justify-center items-center disabled:opacity-50">
+                                        {isLoading ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Ghostwriting Draft...</> : (<>Generate Ivy Draft <Award className="w-4 h-4 ml-2" /></>)}
+                                    </button>
                                 </form>
-                                {essayResult && (
-                                    <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up`}>
-                                        <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-theme-border`}>
-                                            {essayPhase === 'coach' ? <Award className="w-5 h-5 text-amber-500" /> : <AlertTriangle className="w-5 h-5 text-red-500" />}
-                                            <h3 className="text-lg font-bold text-theme-text">
-                                                {essayPhase === 'coach' ? 'Elite Coach Feedback' : `Grader Verdict — Iteration #${essayIteration}`}
-                                            </h3>
-                                        </div>
-                                        <div ref={essayPdfRef} className={`prose max-w-none prose-sm leading-relaxed text-theme-text`}>
-                                            <MarkdownBlock text={essayResult} />
 
-                                            {/* NEW: Use Feedback to Improve Button */}
-                                            {essayScore < 10 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleAutoFixEssay}
-                                                    disabled={isLoading}
-                                                    className="mt-6 w-full py-3 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-500/20 transition-all disabled:opacity-50"
-                                                >
-                                                    {isLoading ? (
-                                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                                    ) : essayScore >= 8 ? (
-                                                        "Keep Grinding for a Perfect 10 ✨"
-                                                    ) : (
-                                                        "Auto-Fix Draft Using Feedback ✨"
-                                                    )}
-                                                </button>
-                                            )}
-
-                                            {essayScore >= 8 && (
-                                                <div className="mt-6 p-4 rounded-2xl bg-green-500/10 border border-green-500/30 text-center">
-                                                    <Check className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                                                    <h4 className="text-lg font-black text-green-400">🎉 {essayScore === 10 ? 'PERFECT 10/10' : `${essayScore}/10 QUALIFIED`} — APPROVED!</h4>
-                                                    <p className="text-xs text-green-300 mt-1">Your essay is highly competitive. Download it now, or keep iterating for a 10/10.</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {essayScore >= 8 ? (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                                                <button onClick={handlePdfDownload} className="py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                                    Download PDF <Download className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={() => setActiveTab('chat')} className="py-3 bg-theme-surface border border-theme-border text-theme-text rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-                                                    → Counselor for Final Qs <MessageSquare className="w-3 h-3" />
-                                                </button>
+                                {essayData && !essayData.error && (
+                                    <div className={`glass-panel p-6 rounded-3xl shadow-2xl border bg-theme-surface border-theme-border animate-slide-up mt-6`}>
+                                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-theme-border">
+                                            <div className="flex items-center gap-3">
+                                                <Award className="w-6 h-6 text-amber-500" />
+                                                <h3 className="text-xl font-bold text-theme-text">Your Essay Draft</h3>
                                             </div>
-                                        ) : essayPhase === 'grader' ? (
-                                            <p className="text-center text-xs text-red-400 mt-4 font-bold">
-                                                ⚠️ Score below 8 — revise using the feedback button above and hit "Harsh Grade" again.
-                                            </p>
-                                        ) : (
-                                            <p className="text-center text-xs text-theme-muted mt-4 font-bold">
-                                                💡 Happy with your draft? Hit "Harsh Grade" for the ultimate test.
-                                            </p>
-                                        )}
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-[10px] font-black text-theme-muted uppercase tracking-widest">Voice Score</span>
+                                                    <span className={`text-xl font-black ${essayData.voice_score >= 8 ? 'text-green-500' : 'text-amber-500'}`}>{essayData.voice_score}/10</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                            <div className="md:col-span-2 space-y-4">
+                                                <div className="p-5 rounded-2xl bg-theme-bg border border-theme-border prose max-w-none prose-sm text-theme-text">
+                                                    <MarkdownBlock text={essayData.essay} />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30">
+                                                    <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Lightbulb className="w-4 h-4"/> Theme Alignment</h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {essayData.theme_alignment?.map((theme, i) => (
+                                                            <span key={i} className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-lg text-xs font-bold">{theme}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+                                                    <h4 className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Target className="w-4 h-4"/> Coach Analysis</h4>
+                                                    <p className="text-xs text-theme-text leading-relaxed">{essayData.analysis}</p>
+                                                </div>
+                                                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+                                                    <h4 className="text-xs font-black text-amber-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4"/> Improvement Tips</h4>
+                                                    <ul className="space-y-2">
+                                                        {essayData.improvement_tips?.map((tip, i) => (
+                                                            <li key={i} className="text-xs text-theme-text flex gap-2"><span className="text-amber-500">•</span> {tip}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {essayData?.error && (
+                                    <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold text-center mt-6">
+                                        {essayData.error}
                                     </div>
                                 )}
                             </div>
-                        )}
-
-                        {/* ═══ CHAT TAB ═══ */}
+                        )}                      {/* ═══ CHAT TAB ═══ */}
                         
                         {/* ═══ UNIVERSAL PROFILE BUILDER TAB (NEW) ═══ */}
                         {activeTab === 'profile' && (

@@ -280,13 +280,19 @@
 }
 
 .lp-ui-card {
-    background: rgba(var(--theme-surface), 1);
-    border: 1px solid rgba(var(--theme-primary), 0.18);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
     padding: 1.6rem;
-    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5), 0 0 60px rgba(var(--theme-primary), 0.05);
     position: relative;
     overflow: hidden;
+    box-shadow: 
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 4px 6px rgba(0,0,0,0.3),
+      0 12px 24px rgba(0,0,0,0.4),
+      0 24px 48px rgba(0,0,0,0.2),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
 }
 
 .lp-ui-card::before {
@@ -515,14 +521,21 @@
 }
 
 .lp-feature-card {
-    background: rgba(var(--theme-surface), 1);
-    border: 1px solid rgba(var(--theme-border), 0.12);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
     padding: 2rem;
     cursor: none;
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
     position: relative;
     overflow: hidden;
+    box-shadow: 
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 4px 6px rgba(0,0,0,0.3),
+      0 12px 24px rgba(0,0,0,0.4),
+      0 24px 48px rgba(0,0,0,0.2),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
 }
 
 .lp-feature-card::before {
@@ -679,12 +692,19 @@
 
 .lp-step {
     flex: 1;
-    background: rgba(var(--theme-surface), 1);
-    border: 1px solid rgba(var(--theme-border), 0.12);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
     padding: 2.5rem 2rem;
     transition: border-color 0.3s, transform 0.3s;
     cursor: none;
+    box-shadow: 
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 4px 6px rgba(0,0,0,0.3),
+      0 12px 24px rgba(0,0,0,0.4),
+      0 24px 48px rgba(0,0,0,0.2),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
 }
 
 .lp-step:hover {
@@ -752,12 +772,19 @@
 
 .lp-t-card {
     padding: 2.5rem;
-    border: 1px solid rgba(var(--theme-border), 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
-    background: rgba(var(--theme-surface), 1);
+    background: rgba(255, 255, 255, 0.03);
     cursor: none;
     transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
     position: relative;
+    box-shadow: 
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 4px 6px rgba(0,0,0,0.3),
+      0 12px 24px rgba(0,0,0,0.4),
+      0 24px 48px rgba(0,0,0,0.2),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
 }
 
 .lp-t-card:hover {

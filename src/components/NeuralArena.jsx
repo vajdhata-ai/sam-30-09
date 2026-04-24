@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Trophy, Clock, Activity, Video, Target, Calendar, Swords, Sparkles, BrainCircuit, Loader2, Gauge, Cpu } from '../components/Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import BrainLink from './BrainLink';
-import { useRetryableFetch, GROQ_API_URL, formatGroqPayload } from '../utils/api';
+import { callAI as callGroq } from '../utils/apiRouter';
 
 const NeuralArena = ({ onExit, setIsCollapsed }) => {
     const { isDark } = useTheme();
-    const { retryableFetch } = useRetryableFetch();
+
     const [currentView, setCurrentView] = useState('lobby'); // lobby | battle
     const [topic, setTopic] = useState('');
     const [difficulty, setDifficulty] = useState('Normal');
@@ -41,13 +41,11 @@ const NeuralArena = ({ onExit, setIsCollapsed }) => {
             Focus on Assertion-Reasoning and Case-Based questions.
             Respond ONLY with a valid JSON object: { "questions": [{ "question": "...", "options": ["...", "...", "...", "..."], "answer": "Exact correct text", "explanation": "..." }] }`;
 
-            const payload = formatGroqPayload(prompt, "You are a master competitive exam architect.");
-            payload.model = "llama-3.1-8b-instant";
-            const res = await retryableFetch(GROQ_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const messages = [
+                { role: 'system', content: 'You are a master competitive exam architect.' },
+                { role: 'user', content: prompt }
+            ];
+            const res = await callGroq(messages, null);
 
             const content = res.choices?.[0]?.message?.content || "";
             const jsonMatch = content.match(/\{[\s\S]*\}/);

@@ -11,7 +11,7 @@ export const YOUTUBE_TRANSCRIPT_URL = `${API_BASE_URL}/ai/youtube-transcript`;
 
 // Direct API clients (no backend needed)
 import { callGemini } from './geminiClient';
-import { callGroq } from './groqClient';
+import { callAI as callGroq } from './apiRouter';
 
 // Shared message formatter (OpenAI-style, works for both Gemini & Groq)
 export const formatGroqPayload = (userContent, systemContent, options = {}) => {

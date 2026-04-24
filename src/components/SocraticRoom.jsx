@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Send, ShieldAlert, Cpu, Brain, Zap, MessageSquare, Loader2, Gauge } from './Icons';
 import { Mic, MicOff, Volume2 } from 'lucide-react';
-import { useRetryableFetch, GROQ_API_URL, TTS_API_URL, formatGroqPayload } from '../utils/api';
+import { TTS_API_URL } from '../utils/api';
+import { callAI as callGroq } from '../utils/apiRouter';
 import { auth } from '../firebase';
 
 const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
-    const { retryableFetch } = useRetryableFetch();
+
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isThinking, setIsThinking] = useState(false);
@@ -90,13 +91,11 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
         setIsThinking(true);
         try {
             const prompt = "Initialize the Socratic Voice Tutor. Greet the student and immediately ask a thought-provoking, deep conceptual question about the core topic to test their knowledge.";
-            const payload = formatGroqPayload(prompt, SOCRATIC_SYSTEM_PROMPT, { max_tokens: 120 });
-            payload.model = "llama-3.1-8b-instant";
-            const res = await retryableFetch(GROQ_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const messages = [
+                { role: 'system', content: SOCRATIC_SYSTEM_PROMPT },
+                { role: 'user', content: prompt }
+            ];
+            const res = await callGroq(messages, null, false, { max_tokens: 120 });
 
             const content = res.choices?.[0]?.message?.content || "";
             let messageText = content;
@@ -181,13 +180,11 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
                 Update the logic score delta based on if they defended their point well.
             `;
 
-            const payload = formatGroqPayload(prompt, SOCRATIC_SYSTEM_PROMPT, { max_tokens: 120 });
-            payload.model = "llama-3.1-8b-instant";
-            const res = await retryableFetch(GROQ_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const messages = [
+                { role: 'system', content: SOCRATIC_SYSTEM_PROMPT },
+                { role: 'user', content: prompt }
+            ];
+            const res = await callGroq(messages, null, false, { max_tokens: 120 });
 
             const content = res.choices?.[0]?.message?.content || "";
             let messageText = content;

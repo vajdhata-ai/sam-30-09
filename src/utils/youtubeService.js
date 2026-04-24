@@ -18,18 +18,29 @@ export const extractVideoId = (url) => {
  */
 export const fetchTranscript = async (videoId) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/youtube/transcript`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ videoId })
+        const url = `https://youtube.com/watch?v=${videoId}`;
+        const SUPADATA_API_KEY = "sd_88d05e37fc02eeeeb74f00977b663a8c";
+        
+        const response = await fetch(`https://api.supadata.ai/v1/youtube/transcript?url=${encodeURIComponent(url)}&text=true`, {
+            method: 'GET',
+            headers: {
+                'x-api-key': SUPADATA_API_KEY
+            }
         });
 
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error || 'Failed to fetch transcript');
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.message || 'Failed to fetch transcript. Ensure the video has captions available.');
         }
 
-        return await response.json();
+        const data = await response.json();
+        const transcriptText = data.content || data.text || data.transcript || JSON.stringify(data);
+
+        if (!transcriptText || transcriptText.trim() === '') {
+            throw new Error('No captions found for this video.');
+        }
+
+        return { transcript: transcriptText };
     } catch (error) {
         console.error("YouTube Service Error:", error);
         throw error;

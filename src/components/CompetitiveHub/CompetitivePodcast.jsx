@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { GROQ_API_URL, formatGroqPayload } from '../../utils/api';
+import { callAI as callGroq } from '../../utils/apiRouter';
+import { formatGroqPayload } from '../../utils/api';
 import { auth } from '../../firebase';
 import { usePodcast } from '../../contexts/PodcastContext';
-import { useRetryableFetch } from '../../utils/api';
 import RagService from '../../utils/ragService';
 
 /**
@@ -19,7 +19,7 @@ const DURATION_OPTIONS = [
 
 const CompetitivePodcast = ({ topicName, examSlug, onBack }) => {
     const { currentUser } = useAuth();
-    const { retryableFetch } = useRetryableFetch();
+
     
     // Global Podcast State
     const {
@@ -85,14 +85,11 @@ Subject/Exam: ${examSlug || 'General'}
 Topic: ${topicName}
 Make it highly engaging and suitable for a competitive exam student.`;
 
-            const payload = formatGroqPayload(userPrompt, systemPrompt);
-            payload.model = "llama-3.1-8b-instant"; // Lightning fast generation
-
-            const response = await retryableFetch(GROQ_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const messages = [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ];
+            const response = await callGroq(messages, null);
 
             const text = response.choices?.[0]?.message?.content || "";
             const scriptData = RagService.extractJson(text);

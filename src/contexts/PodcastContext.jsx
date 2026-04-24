@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { TTS_API_URL } from '../utils/api';
-import { auth } from '../firebase';
+import { callSarvamTTS } from '../utils/sarvamClient';
 
 const PodcastContext = createContext();
 
@@ -13,6 +12,7 @@ export const PodcastProvider = ({ children }) => {
     const [isLoadingAudio, setIsLoadingAudio] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
     const [topicName, setTopicName] = useState('');
+    const [ttsProgress, setTtsProgress] = useState('');
 
     const audioRef = useRef(null);
     const isPlayingRef = useRef(false);
@@ -36,17 +36,6 @@ export const PodcastProvider = ({ children }) => {
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, []);
 
-    const getAuthHeaders = async () => {
-        const headers = { 'Content-Type': 'application/json' };
-        if (auth.currentUser) {
-            try {
-                const token = await auth.currentUser.getIdToken();
-                headers['Authorization'] = `Bearer ${token}`;
-            } catch (e) { /* ignore */ }
-        }
-        return headers;
-    };
-
     const loadPodcast = (script, topic) => {
         setPodcastScript(script);
         setTopicName(topic);
@@ -54,7 +43,9 @@ export const PodcastProvider = ({ children }) => {
         setIsFinished(false);
         setIsPlaying(false);
         setIsLoadingAudio(false);
+        setTtsProgress('');
         playIdRef.current++;
+        audioCache.current = {};
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
@@ -65,20 +56,8 @@ export const PodcastProvider = ({ children }) => {
         const key = `${speaker}_${text.substring(0, 50)}`;
         if (audioCache.current[key]) return audioCache.current[key];
 
-        const headers = await getAuthHeaders();
-        const res = await fetch(TTS_API_URL, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ text, speaker: speaker.toLowerCase() })
-        });
-
-        if (!res.ok) throw new Error(`TTS Error: ${res.status}`);
-        const data = await res.json();
-        
-        const audioUrl = Array.isArray(data.audioBase64)
-            ? `data:audio/wav;base64,${data.audioBase64[0]}`
-            : `data:audio/wav;base64,${data.audioBase64}`;
-        
+        // Call Sarvam DIRECTLY from browser — no backend needed
+        const audioUrl = await callSarvamTTS(text, { speaker: speaker.toLowerCase() });
         audioCache.current[key] = audioUrl;
         return audioUrl;
     };
@@ -100,6 +79,7 @@ export const PodcastProvider = ({ children }) => {
             setIsFinished(true);
             setIsPlaying(false);
             setIsLoadingAudio(false);
+            setTtsProgress('');
             return;
         }
 
@@ -108,13 +88,16 @@ export const PodcastProvider = ({ children }) => {
         setIsLoadingAudio(true);
         setIsPlaying(true);
 
+        const line = script[index];
+        setTtsProgress(`Generating voice for ${line.speaker} (${index + 1}/${script.length})...`);
+
         try {
-            const line = script[index];
             const audioUrl = await fetchTTS(line.text, line.speaker);
 
             if (!isPlayingRef.current || playIdRef.current !== currentPlayId) return;
 
             setIsLoadingAudio(false);
+            setTtsProgress('');
             const audio = new Audio(audioUrl);
             
             if (audioRef.current) {
@@ -143,6 +126,7 @@ export const PodcastProvider = ({ children }) => {
         } catch (err) {
             console.error('[PodcastContext] TTS Error:', err);
             setIsLoadingAudio(false);
+            setTtsProgress('');
             if (isPlayingRef.current && playIdRef.current === currentPlayId) {
                 setTimeout(() => playLine(index + 1, script), 300);
             }
@@ -172,11 +156,19 @@ export const PodcastProvider = ({ children }) => {
         setIsLoadingAudio(false);
         setIsFinished(false);
         setCurrentLineIndex(-1);
+        setTtsProgress('');
         playIdRef.current++;
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
         }
+    };
+
+    const closePodcast = () => {
+        stopPodcast();
+        setPodcastScript([]);
+        setTopicName('');
+        audioCache.current = {};
     };
 
     const jumpToLine = (index) => {
@@ -198,10 +190,13 @@ export const PodcastProvider = ({ children }) => {
         currentLineIndex,
         isLoadingAudio,
         isFinished,
+        ttsProgress,
         loadPodcast,
         togglePlay,
         stopPodcast,
-        jumpToLine
+        closePodcast,
+        jumpToLine,
+        hasPodcast: podcastScript.length > 0
     };
 
     return (

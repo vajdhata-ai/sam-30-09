@@ -70,22 +70,68 @@ export const RagService = {
      * Robustly extracts JSON from an LLM response that might contain preamble/chat.
      */
     extractJson: (text) => {
-        try {
-            // Find the first '{' and the last '}'
-            const start = text.indexOf('{');
-            const end = text.lastIndexOf('}');
-            if (start === -1 || end === -1) throw new Error("No JSON object found");
-
-            const jsonStr = text.substring(start, end + 1);
-            return JSON.parse(jsonStr);
-        } catch (e) {
-            // Fallback for arrays if needed
-            const start = text.indexOf('[');
-            const end = text.lastIndexOf(']');
-            if (start !== -1 && end !== -1) {
-                return JSON.parse(text.substring(start, end + 1));
+        if (!text) return null;
+        
+        const cleanAndParse = (str) => {
+            // Remove markdown code fences if present
+            let cleaned = str.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+            
+            const firstBrace = cleaned.indexOf('{');
+            const firstBracket = cleaned.indexOf('[');
+            
+            let startChar, endChar, start;
+            
+            if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+                startChar = '[';
+                endChar = ']';
+                start = firstBracket;
+            } else if (firstBrace !== -1) {
+                startChar = '{';
+                endChar = '}';
+                start = firstBrace;
+            } else {
+                return null;
             }
-            throw new Error("Failed to parse AI response as JSON: " + e.message);
+
+            let depth = 0;
+            let end = -1;
+            for (let i = start; i < cleaned.length; i++) {
+                if (cleaned[i] === startChar) depth++;
+                else if (cleaned[i] === endChar) {
+                    depth--;
+                    if (depth === 0) {
+                        end = i;
+                        break;
+                    }
+                }
+            }
+
+            if (end !== -1) {
+                const jsonCandidate = cleaned.substring(start, end + 1);
+                try {
+                    return JSON.parse(jsonCandidate);
+                } catch (e) {
+                    // Try one more time removing trailing commas or other minor issues
+                    try {
+                        const fixed = jsonCandidate.replace(/,\s*([}\]])/g, '$1');
+                        return JSON.parse(fixed);
+                    } catch (e2) {
+                        return null;
+                    }
+                }
+            }
+            return null;
+        };
+
+        const result = cleanAndParse(text);
+        if (result) return result;
+
+        // Final fallback: just try the whole string after basic cleaning
+        try {
+            return JSON.parse(text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim());
+        } catch (e) {
+            console.error("JSON Extraction failed after all attempts:", text);
+            throw e;
         }
     },
 

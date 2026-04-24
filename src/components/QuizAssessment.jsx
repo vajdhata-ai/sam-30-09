@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Loader2, BookOpen, ChevronRight, Brain, Trophy, AlertCircle, RefreshCw, Sparkles, Youtube, Crown, Upload } from './Icons';
+import { FileText, Loader2, BookOpen, ChevronRight, Brain, Trophy, AlertCircle, RefreshCw, Sparkles, Youtube, Crown, Upload, Image } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { usePerformance } from '../contexts/PerformanceContext';
-import { GROQ_API_URL, formatGroqPayload } from '../utils/api';
+import { formatGroqPayload } from '../utils/api';
+import { callAI } from '../utils/apiRouter';
 import CloudService from '../utils/cloudService';
 import RagService from '../utils/ragService';
 import { MOCK_SYLLABUS } from '../data/mockData';
@@ -11,6 +12,39 @@ import SamplePaperGenerator from './SamplePaperGenerator';
 import LoopManager from './LearnLoop/LoopManager';
 
 
+
+// LaTeX → Unicode sanitizer for math rendering
+const sanitizeLatex = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    let s = text;
+    s = s.replace(/\\\(\s?/g, '').replace(/\s?\\\)/g, '');
+    s = s.replace(/\\\[\s?/g, '').replace(/\s?\\\]/g, '');
+    s = s.replace(/\\alpha/g, 'α').replace(/\\beta/g, 'β').replace(/\\gamma/g, 'γ').replace(/\\delta/g, 'δ');
+    s = s.replace(/\\epsilon/g, 'ε').replace(/\\theta/g, 'θ').replace(/\\lambda/g, 'λ').replace(/\\mu/g, 'μ');
+    s = s.replace(/\\pi/g, 'π').replace(/\\sigma/g, 'σ').replace(/\\phi/g, 'φ').replace(/\\omega/g, 'ω');
+    s = s.replace(/\\Sigma/g, 'Σ').replace(/\\Delta/g, 'Δ').replace(/\\Omega/g, 'Ω').replace(/\\Theta/g, 'Θ');
+    s = s.replace(/\\times/g, '×').replace(/\\div/g, '÷').replace(/\\pm/g, '±').replace(/\\cdot/g, '·');
+    s = s.replace(/\\leq/g, '≤').replace(/\\geq/g, '≥').replace(/\\neq/g, '≠').replace(/\\approx/g, '≈');
+    s = s.replace(/\\infty/g, '∞').replace(/\\partial/g, '∂').replace(/\\nabla/g, '∇').replace(/\\sqrt/g, '√');
+    s = s.replace(/\\sum/g, '∑').replace(/\\int/g, '∫').replace(/\\rightarrow/g, '→').replace(/\\Rightarrow/g, '⇒');
+    // Fix AI escaped asterisks and space-separated asterisks in math expressions
+    s = s.replace(/\\\*/g, '×').replace(/ \* /g, ' × ');
+    s = s.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)');
+    s = s.replace(/\^\{([^}]+)\}/g, (_, p) => {
+        const sup = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','n':'ⁿ'};
+        return p.split('').map(c => sup[c] || c).join('');
+    });
+    s = s.replace(/_\{([^}]+)\}/g, (_, p) => {
+        const sub = {'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','t':'ₜ','n':'ₙ','i':'ᵢ','x':'ₓ'};
+        return p.split('').map(c => sub[c] || c).join('');
+    });
+    s = s.replace(/\^(\d)/g, (_, d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[parseInt(d)]);
+    s = s.replace(/_(\d)/g, (_, d) => '₀₁₂₃₄₅₆₇₈₉'[parseInt(d)]);
+    s = s.replace(/\\text\{([^}]+)\}/g, '$1').replace(/\\mathrm\{([^}]+)\}/g, '$1');
+    s = s.replace(/\\left/g, '').replace(/\\right/g, '');
+    s = s.replace(/\\,/g, ' ').replace(/\\;/g, ' ').replace(/\\!/g, '');
+    return s;
+};
 
 const QuizAssessment = ({ retryableFetch, onNavigate }) => {
     const { isDark } = useTheme();
@@ -164,7 +198,7 @@ BIOLOGY / SCIENCE PATTERN(${config.curriculum} CLASS ${config.classGrade}):
 `;
             }
 
-            const prompt = `You are a brilliant ${config.curriculum} educator creating an assessment for Class ${config.classGrade} ${config.subject}, Topic: ${config.topic}.
+            let prompt = `You are a brilliant ${config.curriculum} educator creating an assessment for Class ${config.classGrade} ${config.subject}, Topic: ${config.topic}.
                 
                 ${qualityInstructions}
                 ${structuralInstructions}
@@ -186,6 +220,39 @@ BIOLOGY / SCIENCE PATTERN(${config.curriculum} CLASS ${config.classGrade}):
     }
 ]`;
 
+            if (config.type === 'Diagram') {
+                prompt = `You are an expert question setter for Indian competitive exams.
+Generate ${config.count} image-based MCQs for:
+Exam: ${config.curriculum} Class ${config.classGrade}
+Topic: ${config.topic}
+Difficulty: ${config.difficulty}
+Chapter: ${config.subject}
+
+Return ONLY valid JSON array of objects:
+[
+  {
+    "id": 1,
+    "question": "question text referencing the diagram",
+    "svg": "<svg viewBox='0 0 400 300' xmlns='http://www.w3.org/2000/svg'>...complete SVG diagram code...</svg>",
+    "options": ["A", "B", "C", "D"],
+    "correct_answer": "A",
+    "explanation": "detailed explanation with concept",
+    "diagram_description": "what the diagram shows",
+    "concept_tested": "specific concept name",
+    "type": "objective",
+    "marks": 1
+  }
+]
+
+SVG Rules:
+- Use only basic SVG shapes: rect, circle, line, path, text, arrow
+- Keep it clean, black and white, exam style
+- Label all important parts clearly
+- ViewBox must be 400x300
+- No external images or fonts
+`;
+            }
+
             // Call Groq with strict class-level system message
             const systemMessage = `You are a Senior ${config.curriculum} Board Exam Paper Setter with 20 + years of experience. 
             
@@ -196,15 +263,21 @@ CRITICAL RULES:
 4. Every question must be solvable using Class ${config.classGrade} textbook knowledge ONLY
 
 You will be FIRED if you include content from wrong class levels.`;
-            const payload = formatGroqPayload(prompt, systemMessage);
-            payload.model = "llama-3.1-8b-instant"; // Fast model for instantaneous generation
-            const result = await retryableFetch(GROQ_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const messages = [
+                { role: 'system', content: systemMessage },
+                { role: 'user', content: prompt }
+            ];
+            
+            let text = "";
+            if (config.type === 'Diagram') {
+                // Diagram generation is text→SVG, not vision. Router handles tier-based quality.
+                const result = await callAI(messages, null);
+                text = result.choices?.[0]?.message?.content || "";
+            } else {
+                const result = await callAI(messages, null);
+                text = result.choices?.[0]?.message?.content || "";
+            }
 
-            const text = result.choices?.[0]?.message?.content || "";
             let parsedQuiz = RagService.extractJson(text);
             
             // Normalize: extractJson may return a raw array
@@ -252,13 +325,11 @@ You will be FIRED if you include content from wrong class levels.`;
                     Return ONLY a JSON object: { "score": 0 - ${q.marks || 5}, "feedback": "1 sentence" } `;
 
                     try {
-                        const payload = formatGroqPayload(gradePrompt, "Expert Academic Grader");
-                        payload.model = "llama-3.1-8b-instant";
-                        const res = await retryableFetch(GROQ_API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
+                        const gradeMessages = [
+                            { role: 'system', content: 'Expert Academic Grader' },
+                            { role: 'user', content: gradePrompt }
+                        ];
+                        const res = await callAI(gradeMessages, null);
                         const gradeData = RagService.extractJson(res.choices?.[0]?.message?.content || "{}");
                         earnedMarks += (gradeData.score || 0);
                         finalResults.push({ ...q, student_answer: studentAns, is_correct: (gradeData.score / (q.marks || 5)) >= 0.7, explanation: gradeData.feedback });
@@ -286,13 +357,11 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
 `;
             let analysisJson = {};
             try {
-                const analysisPayload = formatGroqPayload(analysisPrompt, "Expert tutor.");
-                analysisPayload.model = "llama-3.1-8b-instant";
-                const analysisRes = await retryableFetch(GROQ_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(analysisPayload)
-                });
+                const analysisMessages = [
+                    { role: 'system', content: 'Expert tutor.' },
+                    { role: 'user', content: analysisPrompt }
+                ];
+                const analysisRes = await callAI(analysisMessages, null);
                 analysisJson = RagService.extractJson(analysisRes.choices?.[0]?.message?.content || "{}");
             } catch (analysisErr) {
                 console.warn("Analysis failed", analysisErr);
@@ -504,7 +573,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                             <div className="glass-panel p-6 rounded-3xl bg-theme-surface/80 border border-theme-border shadow-lg">
                                 <h3 className="text-[11px] font-black text-theme-muted uppercase tracking-[0.2em] mb-4 text-center">📝 Question Pattern</h3>
                                 <div className="space-y-2.5">
-                                    {[{ v: 'Objective', l: '✅ MCQs Only' }, { v: 'Subjective', l: '📝 Theory Only' }, { v: 'Mixed', l: '📋 Mixed Pattern' }].map(t => (
+                                    {[{ v: 'Objective', l: '✅ MCQs Only' }, { v: 'Subjective', l: '📝 Theory Only' }, { v: 'Mixed', l: '📋 Mixed Pattern' }, { v: 'Diagram', l: '🎨 Diagram Based' }].map(t => (
                                         <button key={t.v} type="button" onClick={() => setConfig({ ...config, type: t.v })}
                                             className={`w-full py-4 px-4 rounded-xl font-bold text-[13px] tracking-wide transition-all border flex items-center justify-center gap-2 ${config.type === t.v
                                                 ? 'bg-gradient-to-r from-theme-secondary to-theme-primary text-theme-bg border-transparent shadow-[0_0_15px_rgba(157,113,205,0.3)] scale-[1.02]'
@@ -569,7 +638,10 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                                             <div className="flex-1 space-y-4">
                                                 <div className="flex justify-between items-start">
                                                     <div>
-                                                        <p className="text-lg font-medium text-theme-primary leading-relaxed">{q.question}</p>
+                                                        <p className="text-lg font-medium text-theme-primary leading-relaxed">{sanitizeLatex(q.question)}</p>
+                                                        {q.svg && (
+                                                            <div className="mt-4 mb-4 flex justify-center bg-white rounded-xl p-4 overflow-hidden border border-slate-200 shadow-sm" dangerouslySetInnerHTML={{ __html: q.svg }} />
+                                                        )}
                                                         {q.image_description && (
                                                             <div className={`mt-4 p-5 rounded-2xl bg-theme-surface/50 border-theme-border/50 border-2 border-dashed`}>
                                                                 <div className="flex items-center gap-3 mb-3">
@@ -598,7 +670,7 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                                                                 <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center flex-shrink-0 ${answers[q.id] === opt ? 'border-theme-primary bg-theme-primary' : 'border-theme-muted'} `}>
                                                                     {answers[q.id] === opt && <div className="w-2 h-2 rounded-full bg-theme-bg" />}
                                                                 </div>
-                                                                <span className={`${answers[q.id] === opt ? 'text-theme-secondary font-semibold' : 'text-theme-secondary'} `}>{opt}</span>
+                                                                <span className={`${answers[q.id] === opt ? 'text-theme-secondary font-semibold' : 'text-theme-secondary'} `}>{sanitizeLatex(opt)}</span>
                                                             </label>
                                                         ))}
                                                     </div>
@@ -691,17 +763,17 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                             <div className="space-y-6">
                                 {assessmentStats.detailedAnswers.map((a, i) => (
                                     <div key={i} className="border-b border-theme-border pb-6 last:border-0">
-                                        <p className="font-medium text-theme-primary mb-3">Q{i + 1}. {a.question}</p>
+                                        <p className="font-medium text-theme-primary mb-3">Q{i + 1}. {sanitizeLatex(a.question)}</p>
                                         <div className="text-sm space-y-2">
                                             <div className={`p-3 rounded-lg ${a.is_correct ? 'bg-green-500/10 text-green-600' : 'bg-rose-500/10 text-rose-600'}`}>
                                                 <span className="font-bold text-xs uppercase opacity-70 block mb-1">Your Answer</span>
-                                                {a.student_answer}
+                                                {sanitizeLatex(a.student_answer)}
                                             </div>
                                             <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-600">
                                                 <span className="font-bold text-xs uppercase opacity-70 block mb-1">Correct Answer</span>
-                                                {a.correct_answer}
+                                                {sanitizeLatex(a.correct_answer)}
                                             </div>
-                                            {a.explanation && <p className="text-xs text-theme-muted mt-2 italic">💡 {a.explanation}</p>}
+                                            {a.explanation && <p className="text-xs text-theme-muted mt-2 italic">💡 {sanitizeLatex(a.explanation)}</p>}
                                         </div>
                                     </div>
                                 ))}

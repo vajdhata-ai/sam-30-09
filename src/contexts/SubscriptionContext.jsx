@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { updateUserSubscription as firestoreUpdateSubscription } from '../utils/firestoreSubscription';
+import { setSubscriptionState } from '../utils/subscriptionState';
 
 const SubscriptionContext = createContext();
 
@@ -162,6 +163,14 @@ export const SubscriptionProvider = ({ children }) => {
             }
         };
     }, [currentUser]);
+
+    // ═══════════════════════════════════
+    // SYNC TIER TO API ROUTER BRIDGE
+    // ═══════════════════════════════════
+    useEffect(() => {
+        const isPro = tier === 'pro' || tier === 'dev' || isDevMode();
+        setSubscriptionState(tier, isPro);
+    }, [tier]);
 
     // ═══════════════════════════════════
     // DAILY USAGE MANAGEMENT

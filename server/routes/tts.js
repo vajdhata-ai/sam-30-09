@@ -135,4 +135,37 @@ router.post('/tts', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/ai/tts-proxy
+ * Proxies arbitrary requests to Sarvam to bypass CORS, allowing frontend to manage keys.
+ */
+router.post('/tts-proxy', async (req, res) => {
+    try {
+        const apiKey = req.headers['api-subscription-key'];
+        if (!apiKey) return res.status(401).json({ error: "Missing API Key" });
+
+        const response = await fetch(SARVAM_TTS_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'api-subscription-key': apiKey
+            },
+            body: JSON.stringify(req.body)
+        });
+
+        const status = response.status;
+        const contentType = response.headers.get('content-type') || 'application/json';
+        const responseText = await response.text();
+
+        if (!response.ok) {
+            console.error(`[TTS Proxy] Sarvam returned ${status}:`, responseText);
+        }
+
+        res.status(status).set('Content-Type', contentType).send(responseText);
+    } catch (err) {
+        console.error('[TTS Proxy Network Error]', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;
