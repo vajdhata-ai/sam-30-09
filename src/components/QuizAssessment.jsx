@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Loader2, BookOpen, ChevronRight, Brain, Trophy, AlertCircle, RefreshCw, Sparkles, Youtube, Crown, Upload, Image } from './Icons';
+import { FileText, Loader2, BookOpen, ChevronRight, Brain, Trophy, AlertCircle, RefreshCw, Sparkles, Youtube, Crown, Upload, Image, Lock } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { usePerformance } from '../contexts/PerformanceContext';
@@ -10,8 +10,7 @@ import RagService from '../utils/ragService';
 import { MOCK_SYLLABUS } from '../data/mockData';
 import SamplePaperGenerator from './SamplePaperGenerator';
 import LoopManager from './LearnLoop/LoopManager';
-
-
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 
 // LaTeX → Unicode sanitizer for math rendering
 const sanitizeLatex = (text) => {
@@ -50,6 +49,7 @@ const QuizAssessment = ({ retryableFetch, onNavigate }) => {
     const { isDark } = useTheme();
     const { triggerUpgradeModal, canUseFeature, incrementUsage, isPro, getRemainingUses } = useSubscription();
     const { addRecord } = usePerformance();
+    const { globalInstructions } = useUserPreferences();
     const [viewMode, setViewMode] = useState('quiz'); // 'quiz', 'paper-gen', 'learn-loop'
     const [step, setStep] = useState('setup'); // setup, taking, grading, result
     const [config, setConfig] = useState({
@@ -262,7 +262,8 @@ CRITICAL RULES:
 3. You follow ${config.curriculum} board exam patterns EXACTLY
 4. Every question must be solvable using Class ${config.classGrade} textbook knowledge ONLY
 
-You will be FIRED if you include content from wrong class levels.`;
+You will be FIRED if you include content from wrong class levels.
+${globalInstructions ? `\nGLOBAL CUSTOM INSTRUCTIONS (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
             const messages = [
                 { role: 'system', content: systemMessage },
                 { role: 'user', content: prompt }
@@ -466,130 +467,35 @@ DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans
                     {/* Main Form */}
                     <form onSubmit={generateQuiz} className="flex-1 flex flex-col gap-6 px-4 md:px-8 pb-10 max-w-5xl mx-auto w-full overflow-y-auto">
 
-                        {/* Row 1: Board & Class Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="glass-panel p-6 rounded-3xl bg-theme-surface/80 border border-theme-border shadow-xl relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-1.5 h-full bg-theme-primary"></div>
-                                <h3 className="text-xs font-black text-theme-muted uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                    <BookOpen className="w-4 h-4 text-theme-primary" /> Educational Board
-                                </h3>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {['CBSE', 'ICSE'].map(b => (
-                                        <button key={b} type="button" onClick={() => setConfig({ ...config, curriculum: b })}
-                                            className={`py-3.5 px-4 rounded-xl font-bold text-sm tracking-wide transition-all border ${config.curriculum === b
-                                                ? 'bg-theme-primary text-theme-bg border-theme-primary shadow-[0_0_15px_rgba(201,165,90,0.4)] scale-[1.02]'
-                                                : 'bg-theme-bg border-theme-border/50 hover:border-theme-primary/50 text-theme-secondary hover:bg-theme-bg/80'
-                                                }`}>
-                                            {b}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="glass-panel p-6 rounded-3xl bg-theme-surface/80 border border-theme-border shadow-xl relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-1.5 h-full bg-theme-secondary"></div>
-                                <h3 className="text-xs font-black text-theme-muted uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                    <Trophy className="w-4 h-4 text-theme-secondary" /> Academic Class
-                                </h3>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {['9', '10', '11', '12'].map(c => (
-                                        <button key={c} type="button" onClick={() => setConfig({ ...config, classGrade: c })}
-                                            className={`py-3.5 px-2 rounded-xl font-bold text-sm tracking-wide transition-all border ${config.classGrade === c
-                                                ? 'bg-theme-secondary text-theme-bg border-theme-secondary shadow-[0_0_15px_rgba(157,113,205,0.4)] scale-[1.05]'
-                                                : 'bg-theme-bg border-theme-border/50 hover:border-theme-secondary/50 text-theme-secondary hover:bg-theme-bg/80'
-                                                }`}>
-                                            {c}<sup className="text-[10px] ml-0.5">th</sup>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Row 2: Subject & Topic */}
-                        <div className="glass-panel p-6 rounded-3xl bg-theme-surface/80 border border-theme-border shadow-xl">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <h3 className="text-xs font-black text-theme-muted uppercase tracking-[0.2em] mb-3 ml-1">📚 Target Subject</h3>
-                                    <input name="subject" value={config.subject} onChange={handleConfigChange} required
-                                        placeholder="E.g., Physics, Chemistry, Maths..."
-                                        className="w-full p-4 rounded-2xl text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-theme-primary/50 bg-theme-bg border border-theme-border/50 placeholder-theme-muted/50 text-theme-primary transition-all glow-input" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xs font-black text-theme-muted uppercase tracking-[0.2em] mb-3 ml-1">📖 Chapter / Topic</h3>
-                                    <input name="topic" value={config.topic} onChange={handleConfigChange} required
-                                        placeholder="E.g., Electrostatics, Thermodynamics..."
-                                        className="w-full p-4 rounded-2xl text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-theme-secondary/50 bg-theme-bg border border-theme-border/50 placeholder-theme-muted/50 text-theme-secondary transition-all glow-input" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Row 3: Quiz Settings */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Questions */}
-                            <div className="glass-panel p-6 rounded-3xl bg-theme-surface/80 border border-theme-border shadow-lg">
-                                <h3 className="text-[11px] font-black text-theme-muted uppercase tracking-[0.2em] mb-4 text-center">🔢 Number of Questions</h3>
-                                <div className="grid grid-cols-3 gap-2 align-middle">
-                                    {[5, 10, 15, 20].map(n => (
-                                        <button key={n} type="button"
-                                            onClick={() => { let c = { ...config, count: n }; setConfig(c); }}
-                                            className={`py-3 rounded-xl font-bold text-sm transition-all border ${config.count === n
-                                                ? 'bg-theme-primary text-theme-bg border-theme-primary shadow-md scale-105'
-                                                : 'bg-theme-bg border-theme-border/50 hover:border-theme-primary/30 text-theme-secondary'
-                                                }`}>
-                                            {n}
-                                        </button>
-                                    ))}
-                                    <button type="button"
-                                        onClick={() => { let c = { ...config, count: 35, type: 'Mixed' }; setConfig(c); }}
-                                        className={`col-span-3 py-3 rounded-xl font-bold text-[13px] tracking-wide transition-all mt-1 border ${config.count === 35
-                                            ? 'bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg border-transparent shadow-[0_0_15px_rgba(201,165,90,0.3)] scale-[1.02]'
-                                            : 'bg-theme-bg border-theme-border/50 hover:border-theme-primary/30 text-theme-secondary'
-                                            }`}>
-                                        📄 35 — Full Board Exam
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Difficulty */}
-                            <div className="glass-panel p-6 rounded-3xl bg-theme-surface/80 border border-theme-border shadow-lg">
-                                <h3 className="text-[11px] font-black text-theme-muted uppercase tracking-[0.2em] mb-4 text-center">🎯 Difficulty Level</h3>
-                                <div className="space-y-2.5">
-                                    {[{ v: 'Easy', l: 'Easy', d: 'Basics & Theory', c: 'border-emerald-500/30 hover:border-emerald-500/60', a: 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]' },
-                                    { v: 'Medium', l: 'Medium', d: '50/50 Mix', c: 'border-amber-500/30 hover:border-amber-500/60', a: 'bg-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)]' },
-                                    { v: 'Hard', l: 'Hard', d: 'HOTS & Logic', c: 'border-rose-500/30 hover:border-rose-500/60', a: 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.3)]' }].map(d => (
-                                        <button key={d.v} type="button" onClick={() => setConfig({ ...config, difficulty: d.v })}
-                                            className={`w-full p-3.5 rounded-xl text-left flex justify-between items-center transition-all border ${config.difficulty === d.v
-                                                ? d.a
-                                                : `bg-theme-bg ${d.c} text-theme-secondary`
-                                                }`}>
-                                            <span className="font-bold text-sm tracking-wide">{d.l}</span>
-                                            <span className={`text-[11px] font-medium ${config.difficulty === d.v ? 'text-white/80' : 'text-theme-muted'}`}>{d.d}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Type */}
-                            <div className="glass-panel p-6 rounded-3xl bg-theme-surface/80 border border-theme-border shadow-lg">
-                                <h3 className="text-[11px] font-black text-theme-muted uppercase tracking-[0.2em] mb-4 text-center">📝 Question Pattern</h3>
-                                <div className="space-y-2.5">
-                                    {[{ v: 'Objective', l: '✅ MCQs Only' }, { v: 'Subjective', l: '📝 Theory Only' }, { v: 'Mixed', l: '📋 Mixed Pattern' }, { v: 'Diagram', l: '🎨 Diagram Based' }].map(t => (
-                                        <button key={t.v} type="button" onClick={() => setConfig({ ...config, type: t.v })}
-                                            className={`w-full py-4 px-4 rounded-xl font-bold text-[13px] tracking-wide transition-all border flex items-center justify-center gap-2 ${config.type === t.v
-                                                ? 'bg-gradient-to-r from-theme-secondary to-theme-primary text-theme-bg border-transparent shadow-[0_0_15px_rgba(157,113,205,0.3)] scale-[1.02]'
-                                                : 'bg-theme-bg border-theme-border/50 hover:border-theme-secondary/30 text-theme-secondary'
-                                                }`}>
-                                            {t.l}
-                                        </button>
-                                    ))}
-                                </div>
+                        {/* Locked Syllabus Section */}
+                        <div className="glass-panel p-8 rounded-3xl bg-theme-surface/80 border border-theme-border shadow-xl relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1.5 h-full bg-theme-primary"></div>
+                            <h3 className="text-sm font-black text-theme-primary uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5" /> NCC Curriculum (Locked)
+                            </h3>
+                            <p className="text-sm text-theme-muted mb-6">
+                                Official syllabus integration is pending. Chapters will be unlocked once the curated NCC syllabus is deployed.
+                            </p>
+                            
+                            <div className="space-y-4">
+                                {['Drill & Commands', 'Weapon Training', 'National Integration', 'Disaster Management', 'Social Service'].map((chapter, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-theme-bg border border-theme-border opacity-70 cursor-not-allowed">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-theme-surface flex items-center justify-center text-theme-muted font-bold text-sm shadow-inner">
+                                                {idx + 1}
+                                            </div>
+                                            <span className="text-base font-semibold text-theme-text">{chapter}</span>
+                                        </div>
+                                        <span className="text-theme-muted"><Lock className="w-5 h-5" /></span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
                         {/* Submit */}
-                        <button type="submit" disabled={isLoading || !config.subject || !config.topic}
-                            className="w-full py-5 bg-gradient-to-r from-theme-primary via-theme-secondary to-theme-primary text-theme-bg rounded-2xl font-black text-xl shadow-2xl hover:shadow-theme-primary/40 transition-all transform hover:scale-[1.01] disabled:opacity-50 flex justify-center items-center gap-3">
-                            {isLoading ? <><Loader2 className="w-6 h-6 animate-spin" /> Crafting Your Assessment...</> : <><Brain className="w-6 h-6" /> Generate Assessment 🚀</>}
+                        <button type="submit" disabled={true}
+                            className="w-full py-5 bg-theme-surface border border-theme-border text-theme-muted rounded-2xl font-black text-xl shadow-sm cursor-not-allowed opacity-50 flex justify-center items-center gap-3">
+                            <Lock className="w-6 h-6" /> Awaiting Curriculum
                         </button>
                         {error && <div className="text-rose-500 text-center p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-center gap-3"><AlertCircle className="w-5 h-5" />{error}</div>}
                     </form>

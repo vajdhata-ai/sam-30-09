@@ -77,12 +77,7 @@ const Settings = () => {
 
     const handleThemeChange = (newTheme) => {
         if (newTheme === theme) return;
-        
-        speak(null, 'goodbye');
-
-        setTimeout(() => {
-            setTheme(newTheme);
-        }, 1500);
+        setTheme(newTheme);
     };
 
     const handleDeleteAccount = async () => {
@@ -121,10 +116,11 @@ const Settings = () => {
                     <div>
                         <h4 className={`font-semibold text-sm mb-4 text-theme-text`}>Aesthetic Identity</h4>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 border border-theme-border/50 p-4 rounded-3xl bg-theme-bg">
-                            <ThemeOption themeKey={THEMES.PREMIUM} label="Premium (Gold)" colorClass="from-[#c9a55a] to-[#e0c07a]" isDark={isDark} onClick={() => handleThemeChange(THEMES.PREMIUM)} />
-                            <ThemeOption themeKey={THEMES.LIGHT} label="Warm Light" colorClass="from-amber-200 to-orange-300" isDark={isDark} onClick={() => handleThemeChange(THEMES.LIGHT)} />
-                            <ThemeOption themeKey={THEMES.VIBRANT} label="Vibrant (Indigo)" colorClass="from-indigo-500 to-fuchsia-500" isDark={isDark} onClick={() => handleThemeChange(THEMES.VIBRANT)} />
-                            <ThemeOption themeKey={THEMES.SIMPLE} label="Simple (Minimal)" colorClass="from-zinc-400 to-zinc-600" isDark={isDark} onClick={() => handleThemeChange(THEMES.SIMPLE)} />
+                            <ThemeOption themeKey={THEMES.PREMIUM} label="Premium Gold" colorClass="from-[#c9a55a] to-[#e0c07a]" isDark={isDark} onClick={() => handleThemeChange(THEMES.PREMIUM)} />
+                            <ThemeOption themeKey={THEMES.OLIVE} label="Olive Green" colorClass="from-[#556b2f] to-[#8fbc8f]" isDark={isDark} onClick={() => handleThemeChange(THEMES.OLIVE)} />
+                            <ThemeOption themeKey={THEMES.DESERT} label="Desert Camo" colorClass="from-[#d2b48c] to-[#a0522d]" isDark={isDark} onClick={() => handleThemeChange(THEMES.DESERT)} />
+                            <ThemeOption themeKey={THEMES.NAVY} label="Navy Command" colorClass="from-[#000080] to-[#4169e1]" isDark={isDark} onClick={() => handleThemeChange(THEMES.NAVY)} />
+                            <ThemeOption themeKey={THEMES.NIGHT_OPS} label="Night Ops" colorClass="from-[#000000] to-[#00fa9a]" isDark={isDark} onClick={() => handleThemeChange(THEMES.NIGHT_OPS)} />
                             <ThemeOption themeKey={THEMES.CUSTOM} label="Custom Palette" colorClass="from-rose-500 to-teal-500" isDark={isDark} onClick={() => handleThemeChange(THEMES.CUSTOM)} />
                         </div>
                         
@@ -234,70 +230,7 @@ const Settings = () => {
                     </div>
                 </SettingsSection>
 
-                {/* Subscription */}
-                <SettingsSection title="Subscription" icon={Crown} isDark={isDark}>
-                    {isLoadingSubscription ? (
-                        <div className="flex items-center justify-center py-6">
-                            <div className="w-5 h-5 border-2 border-theme-primary border-t-transparent rounded-full animate-spin mr-3" />
-                            <span className="text-theme-muted text-sm">Loading subscription...</span>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {/* Plan Badge Card */}
-                            <div className={`flex items-center justify-between p-4 rounded-2xl border ${currentPlanConfig.bg} ${currentPlanConfig.border}`}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2.5 rounded-xl ${currentPlanConfig.bg}`}>
-                                        <PlanIcon className={`w-5 h-5 ${currentPlanConfig.color}`} />
-                                    </div>
-                                    <div>
-                                        <h4 className={`font-black text-sm ${currentPlanConfig.color}`}>
-                                            {currentPlanConfig.label}
-                                        </h4>
-                                        <p className="text-xs text-theme-muted mt-0.5">
-                                            {isPro ? 'Unlimited access to all features' :
-                                             isGo ? 'Extended daily limits' :
-                                             'Free tier with daily limits'}
-                                        </p>
-                                    </div>
-                                </div>
-                                {/* Status dot */}
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${subscriptionStatus === 'active' ? 'bg-green-400 shadow-lg shadow-green-400/50' : 'bg-red-400 shadow-lg shadow-red-400/50'}`} />
-                                    <span className={`text-xs font-semibold uppercase tracking-wider ${subscriptionStatus === 'active' ? 'text-green-400' : 'text-red-400'}`}>
-                                        {subscriptionStatus}
-                                    </span>
-                                </div>
-                            </div>
 
-                            {/* Expiry info */}
-                            {subscriptionExpiry && (
-                                <div className={`flex items-center justify-between py-2.5 px-1 border-b border-theme-border`}>
-                                    <span className="text-theme-muted text-sm">Expires</span>
-                                    <span className="font-mono text-xs text-theme-text">
-                                        {subscriptionExpiry.toDate ? subscriptionExpiry.toDate().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date(subscriptionExpiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Sync indicator */}
-                            <div className="flex items-center gap-2 px-1">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                                <span className="text-xs text-theme-muted">Synced with cloud • Data persists across devices</span>
-                            </div>
-
-                            {/* Upgrade CTA (only for non-Pro users) */}
-                            {!isPro && (
-                                <button
-                                    onClick={() => triggerUpgradeModal('upgrade')}
-                                    className="w-full py-3 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white rounded-xl font-black text-sm shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 mt-2"
-                                >
-                                    <Sparkles className="w-4 h-4" />
-                                    Upgrade to Pro
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </SettingsSection>
 
                 {/* Privacy */}
                 <SettingsSection title="Privacy & Data" icon={Eye} isDark={isDark}>

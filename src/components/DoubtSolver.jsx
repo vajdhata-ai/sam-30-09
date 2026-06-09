@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, AuremLogo, AuraEmoji, User, Bot, Loader2, Send, BookOpen, Clock, BrainCircuit, Image, X, Upload, Crown, RefreshCw, ThumbsUp, ThumbsDown, PenTool } from './Icons';
+import { Sparkles, AuremLogo, AuraEmoji, User, Bot, Loader2, Send, BookOpen, Clock, BrainCircuit, Image, X, Upload, Crown, RefreshCw, ThumbsUp, ThumbsDown, PenTool, Activity } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -172,16 +172,22 @@ const DoubtSolver = ({ retryableFetch }) => {
 
         const effectiveLevel = understandingLevel === 'auto' ? getDifficultyLevel() : understandingLevel;
 
-        let systemPrompt = `You are AUREM — an elite AI study companion and cognitive augmentation system.
+        let systemPrompt = `You are SAMVADA — an elite NCC AI instructor and cognitive augmentation system for cadets.
 
         CORE IDENTITY:
         - Tone: Elite. Intelligent. Calm. Structured.
-        - Transform questions into mastered understanding.
+        - You are training a cadet who needs strict discipline, deep understanding, and military precision.
+        - Every response must feel written personally for this specific student. Never give vague or copy-paste answers.
         - Pure cognitive clarity. No fluff. No filler.
+
+        CONCEPTUAL-GATED MECHANISM (STRICT PROTOCOL):
+        For any academic/homework query, you MUST enforce a Two-Phase Protocol to prevent lazy dependency on AI.
+        - Phase 1 (Diagnostic Mode): DO NOT answer the user's question directly. First, ask a single, highly targeted diagnostic question to test their baseline understanding of the core concept required to solve their problem. Format the very first line of your response EXACTLY as "## Diagnostic Mode". Wait for their answer.
+        - Phase 2 (Socratic Mode): Once the user attempts the diagnostic, evaluate their answer. If they show basic understanding, provide the full, step-by-step Socratic breakdown. If they fail, teach them the foundational concept before answering. Format the very first line of your response EXACTLY as "## Socratic Mode".
 
         OUTPUT FORMAT:
         1. **Structure**: For academic/complex questions, use Markdown with clear headers (## Summary, ## Explanation, etc).
-        2. **Conversational**: IF the user is just saying 'hi', 'hello', or greeting you, DO NOT use the strict academic Structure. Just reply in a brief, friendly, human-like but elite conversational manner.
+        2. **Conversational**: IF the user is just saying 'hi', 'hello', or greeting you, DO NOT use the strict academic Structure or Diagnostic. Just reply in a brief, friendly, human-like but elite conversational manner.
         3. **Direct Answer**: Be concise and logical. No meta-commentary.
         4. **Logical Consistency**: Ensure your explanation flows logically. Never contradict yourself.
         5. **Vision**: If an image is provided, analyze it thoroughly and precisely.
@@ -191,7 +197,6 @@ const DoubtSolver = ({ retryableFetch }) => {
         - Use elegant formatting with readable hierarchy for complex subjects.
         - No emojis unless the user uses them.
         - No motivational talk. No insecurity validation.
-        - If the user shows uncertainty: Guide with Socratic questioning, don't just give the answer.
         - Adapt depth dynamically — simplify for beginners, deepen for advanced queries.
         
         CURRENT USER PERFORMANCE LEVEL: ${effectiveLevel.toUpperCase()}
@@ -304,6 +309,20 @@ const DoubtSolver = ({ retryableFetch }) => {
 
 
     const renderLine = (line, idx) => {
+        if (line.startsWith('## Diagnostic Mode')) {
+            return (
+                <div key={idx} className="mb-3 mt-1 inline-flex items-center px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                    <Activity className="w-3.5 h-3.5 mr-2" /> Diagnostic Active
+                </div>
+            );
+        }
+        if (line.startsWith('## Socratic Mode')) {
+            return (
+                <div key={idx} className="mb-3 mt-1 inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[11px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                    <BrainCircuit className="w-3.5 h-3.5 mr-2" /> Concept Unlocked
+                </div>
+            );
+        }
         if (line.startsWith('## ')) {
             return <h2 key={idx} className="text-base font-display font-bold mt-4 mb-2 text-theme-primary">{line.replace('## ', '')}</h2>;
         }
@@ -347,7 +366,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                         </h2>
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse shadow-[0_0_8px_var(--theme-primary)]" />
-                            <span className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Auremous AI Core v3.0</span>
+                            <span className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Samvada NCC Core v3.0</span>
                         </div>
                     </div>
                 </div>
@@ -367,7 +386,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                             <div className={`transition-all duration-1000 transform ${typedGreeting.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} flex flex-col items-center gap-4`}>
                                 <AuremLogo className="w-16 h-16 drop-shadow-[0_0_25px_rgba(201,165,90,0.6)]" />
                                 <h1 className="font-serif italic font-light text-5xl tracking-widest text-[#c9a55a] drop-shadow-[0_0_25px_rgba(201,165,90,0.4)] select-none">
-                                    Auremous
+                                    Samvada
                                 </h1>
                             </div>
 
@@ -413,7 +432,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                                 <span className={`text-[10px] font-bold uppercase tracking-wider
                                     ${msg.role === 'user' ? 'text-theme-muted' : 'text-theme-primary'}
                                 `}>
-                                    {msg.role === 'user' ? 'You' : 'Auremous'}
+                                    {msg.role === 'user' ? 'You' : 'Samvada'}
                                 </span>
                                 <span className="text-[10px] text-theme-muted opacity-50">{msg.timestamp}</span>
                             </div>
@@ -480,7 +499,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                             <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center">
                                 <AuraEmoji className="w-5 h-5" mood="thinking" />
                             </div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-theme-primary">Auremous</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-theme-primary">Samvada</span>
                         </div>
                     </div>
                 )}
@@ -547,7 +566,7 @@ const DoubtSolver = ({ retryableFetch }) => {
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder={selectedImage ? "Ask about this image..." : "Ask Auremous anything..."}
+                                placeholder={selectedImage ? "Ask about this image..." : "Ask Samvada anything..."}
                                 className={`w-full py-3.5 pl-5 pr-12 rounded-2xl text-[14px] font-medium outline-none transition-all duration-200 bg-theme-surface/80 backdrop-blur-xl text-theme-text placeholder:text-theme-muted border border-theme-border/50 focus:border-theme-primary/40`}
                                 disabled={isLoading}
                             />

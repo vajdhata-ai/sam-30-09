@@ -3,7 +3,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAssistant } from '../contexts/AssistantContext';
 import { usePerformance } from '../contexts/PerformanceContext';
-import { Bot, FileText, LogOut, Moon, Sun, ChevronRight, ChevronLeft, GraduationCap, FilePlus, ClipboardList, Mic, Sparkles, AuremLogo, Crown, Eye, Settings, RefreshCw, Video, Trophy, Swords, Flame, Info, Youtube } from './Icons';
+import { Bot, FileText, LogOut, Moon, Sun, ChevronRight, ChevronLeft, GraduationCap, FilePlus, ClipboardList, Mic, Sparkles, AuremLogo, Crown, Eye, Settings, RefreshCw, Video, Trophy, Swords, Flame, Info, Youtube, Search, BookOpen, ShieldAlert, Home } from './Icons';
 
 const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen, isCollapsed, setIsCollapsed, user, onLogin, onLogout }) => {
     const { isDark } = useTheme();
@@ -12,15 +12,33 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
     const { getLevelInfo } = usePerformance();
     const levelInfo = getLevelInfo();
 
-    const navItems = [
-        { id: 'doubt-solver', label: 'Neural Query', icon: Bot },
-        { id: 'document-study', label: 'Auremous Lens', icon: Eye },
-        { id: 'neural-arena', label: 'Cognitive Colosseum', icon: Swords },
-        { id: 'exam-hub', label: 'Competitive Prep', icon: Trophy },
-        { id: 'podcast-generator', label: 'Audio Studio', icon: Mic },
-        { id: 'video-generator', label: 'Video Studio', icon: Video },
-        { id: 'college-compass', label: 'College Compass', icon: GraduationCap },
-        { id: 'quiz-assessment', label: 'Adaptive Testing', icon: ClipboardList },
+    const navGroups = [
+        {
+            title: "Core Training",
+            items: [
+                { id: 'cadet-dashboard', label: 'Dashboard', icon: Home },
+                { id: 'cadet-handbook', label: 'Cadet Handbook', icon: BookOpen },
+                { id: 'exam-prep', label: 'B & C Cert Prep', icon: Trophy },
+                { id: 'quiz-assessment', label: 'Adaptive Testing', icon: ClipboardList },
+            ]
+        },
+        {
+            title: "AI Intelligence",
+            items: [
+                { id: 'doubt-solver', label: 'Neural Query', icon: Bot },
+                { id: 'document-study', label: 'Samvada Lens', icon: Eye },
+                { id: 'podcast-generator', label: 'Audio Studio', icon: Mic },
+                { id: 'video-generator', label: 'Video Studio', icon: Video },
+            ]
+        },
+        {
+            title: "Cadet Welfare",
+            items: [
+                { id: 'neural-arena', label: 'Cognitive Colosseum', icon: Swords },
+                { id: 'quartermaster', label: 'Quartermaster', icon: FilePlus },
+                { id: 'grievance-portal', label: 'Samvada Shield', icon: ShieldAlert },
+            ]
+        }
     ];
 
     return (
@@ -37,7 +55,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
             <aside className={`
                 fixed md:relative z-50 h-full md:h-[96vh] md:my-[2vh] ml-0 md:ml-[2vh]
                 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform
-                ${isCollapsed ? 'w-[76px]' : 'w-[280px] md:w-[272px]'}
+                ${isCollapsed ? 'w-[68px]' : 'w-[240px]'}
                 ${isSidebarOpen ? 'translate-x-0 translate-z-0 left-0' : '-translate-x-full md:translate-x-0 translate-z-0'}
             `}>
                 <div className="h-full flex flex-col rounded-[32px] transition-all duration-300 border border-white/10 bg-white/[0.03] backdrop-blur-3xl shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_24px_48px_rgba(0,0,0,0.2)] relative overflow-hidden">
@@ -53,9 +71,9 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                                 </div>
                                 <div>
                                     <span className="font-serif italic font-light text-2xl tracking-wide text-theme-text select-none">
-                                        <span className="text-[#c9a55a]">Auremous</span>
+                                        <span className="text-[#c9a55a]">Samvada</span>
                                     </span>
-                                    <p className="text-[9px] font-medium text-theme-muted mt-1 tracking-[0.2em] uppercase select-none">EdTech Platform</p>
+                                    <p className="text-[9px] font-medium text-theme-muted mt-1 tracking-[0.2em] uppercase select-none">NCC Portal</p>
                                 </div>
                             </div>
                         )}
@@ -126,65 +144,86 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                     )}
 
                     {/* ═══ Navigation ═══ */}
-                    <nav className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
-                        {!isCollapsed && (
-                            <p className="px-3 py-2 text-[10px] font-bold tracking-[0.15em] uppercase text-theme-muted opacity-60">
-                                Features
-                            </p>
-                        )}
+                    <nav className="flex-1 px-3 space-y-4 overflow-y-auto custom-scrollbar">
 
-                        {navItems.map((item, index) => {
-                            const Icon = item.icon;
-                            const isActive = currentView === item.id;
-
-                            return (
-                                <button
-                                    key={item.id}
-                                    title={item.label}
-                                    onClick={() => {
-                                        setCurrentView(item.id);
-                                        // Trigger Assistant Voice Line based on view
-                                        if (item.id === 'doubt-solver') speak(null, 'nav_doubt');
-                                        else if (item.id === 'neural-arena') speak(null, 'nav_arena');
-                                        else if (item.id === 'exam-hub') speak(null, 'nav_exam');
-                                        else speak(null, 'default_click');
-
-                                        // Auto-retract sidebar on navigation for both desktop and mobile
-                                        setIsSidebarOpen(false); // Mobile
-                                        if (window.innerWidth >= 768) {
-                                            setIsCollapsed(true); // Desktop
-                                        }
-                                    }}
-                                    style={{ animationDelay: `${index * 50}ms` }}
-                                    className={`
-                                         w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300 group relative cursor-none
-                                         ${isActive
-                                            ? 'bg-theme-primary/10 text-theme-primary border border-theme-primary/20 nav-active-glow'
-                                            : 'text-theme-muted hover:text-theme-text hover:bg-theme-surface/50 border border-transparent hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.05)]'
-                                        }
-                                         ${isCollapsed ? 'justify-center px-0' : ''}
-                                     `}
-                                >
-                                    {/* Active indicator — now handled by nav-active-glow CSS */}
-
-                                    <div className={`
-                                        flex-shrink-0 transition-transform duration-300
-                                        ${isActive ? 'scale-110' : 'group-hover:scale-105'}
-                                    `}>
-                                        <Icon className="w-[18px] h-[18px]" />
+                        {/* Universal Search Button */}
+                        <button
+                            onClick={() => window.dispatchEvent(new CustomEvent('open-universal-search'))}
+                            className={`
+                                w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300 group relative cursor-none mt-2
+                                text-theme-primary bg-theme-primary/5 hover:bg-theme-primary/10 border border-theme-primary/20
+                                ${isCollapsed ? 'justify-center px-0' : ''}
+                            `}
+                        >
+                            <div className="flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
+                                <Search className="w-[18px] h-[18px]" />
+                            </div>
+                            {!isCollapsed && (
+                                <div className="flex-1 flex justify-between items-center">
+                                    <span className="font-bold text-[13px] truncate">Universal Search</span>
+                                    <div className="hidden md:flex items-center gap-1 text-[9px] font-bold text-theme-primary/60 bg-theme-primary/10 px-1.5 py-0.5 rounded uppercase">
+                                        CTRL K
                                     </div>
+                                </div>
+                            )}
+                        </button>
 
-                                    {!isCollapsed && (
-                                        <>
-                                            <span className="font-medium text-[13px] truncate">{item.label}</span>
-                                            {!isActive && (
-                                                <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 -translate-x-1 group-hover:opacity-40 group-hover:translate-x-0 transition-all duration-200" />
+                        {navGroups.map((group, groupIdx) => (
+                            <div key={groupIdx} className="space-y-1">
+                                {!isCollapsed && (
+                                    <p className="px-3 py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-theme-primary opacity-80 mt-2">
+                                        {group.title}
+                                    </p>
+                                )}
+                                {group.items.map((item, index) => {
+                                    const Icon = item.icon;
+                                    const isActive = currentView === item.id;
+
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            title={item.label}
+                                            onClick={() => {
+                                                setCurrentView(item.id);
+                                                if (item.id === 'doubt-solver') speak(null, 'nav_doubt');
+                                                else if (item.id === 'neural-arena') speak(null, 'nav_arena');
+                                                else speak(null, 'default_click');
+
+                                                setIsSidebarOpen(false);
+                                                if (window.innerWidth >= 768) {
+                                                    setIsCollapsed(true);
+                                                }
+                                            }}
+                                            style={{ animationDelay: `${index * 50}ms` }}
+                                            className={`
+                                                w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300 group relative cursor-none
+                                                ${isActive
+                                                    ? 'bg-theme-primary/10 text-theme-primary border border-theme-primary/20 nav-active-glow'
+                                                    : 'text-theme-muted hover:text-theme-text hover:bg-theme-surface/50 border border-transparent hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.05)]'
+                                                }
+                                                ${isCollapsed ? 'justify-center px-0' : ''}
+                                            `}
+                                        >
+                                            <div className={`
+                                                flex-shrink-0 transition-transform duration-300
+                                                ${isActive ? 'scale-110' : 'group-hover:scale-105'}
+                                            `}>
+                                                <Icon className="w-[18px] h-[18px]" />
+                                            </div>
+
+                                            {!isCollapsed && (
+                                                <>
+                                                    <span className="font-medium text-[13px] truncate">{item.label}</span>
+                                                    {!isActive && (
+                                                        <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 -translate-x-1 group-hover:opacity-40 group-hover:translate-x-0 transition-all duration-200" />
+                                                    )}
+                                                </>
                                             )}
-                                        </>
-                                    )}
-                                </button>
-                            );
-                        })}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        ))}
                     </nav>
 
                     {/* ═══ Footer Actions ═══ */}
@@ -207,27 +246,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
 
                         {/* Theme Toggle Removed */}
 
-                        {/* Upgrade / Pro Badge */}
-                        {!isPro && !isDevMode ? (
-                            <button
-                                title="Upgrade to Pro"
-                                onClick={() => triggerUpgradeModal('upgrade')}
-                                className={`w-full p-2.5 rounded-xl flex items-center gap-2.5 transition-colors duration-300
-                                    bg-theme-primary text-theme-bg hover:bg-theme-secondary cursor-none
-                                    ${isCollapsed ? 'justify-center' : ''}
-                                `}
-                            >
-                                <Crown className="w-4 h-4" />
-                                {!isCollapsed && <span className="text-[11px] uppercase tracking-[0.18em] font-medium">Upgrade</span>}
-                            </button>
-                        ) : (
-                            !isCollapsed && (
-                                <div className="flex items-center justify-center gap-2 py-1.5 rounded-xl border border-theme-primary/20 bg-theme-primary/[0.04]">
-                                    <Crown className="w-3.5 h-3.5 text-theme-primary" />
-                                    <span className="text-[9px] font-bold text-theme-primary tracking-[0.2em] uppercase">Pro Active</span>
-                                </div>
-                            )
-                        )}
+
 
                         {/* User Profile */}
                         <div className={`flex items-center gap-3 p-2.5 rounded-xl border border-theme-border mt-1

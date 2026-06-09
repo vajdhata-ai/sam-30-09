@@ -10,28 +10,34 @@ import SplashScreen from './components/SplashScreen';
 import Sidebar from './components/Sidebar';
 import ChatHistorySidebar from './components/ChatHistorySidebar';
 import DoubtSolver from './components/DoubtSolver';
-import CollegeCompass from './components/CollegeCompass';
 import DocumentStudy from './components/DocumentStudy';
 import PodcastGenerator from './components/PodcastGenerator';
 import YoutubeAnalyzer from './components/YoutubeAnalyzer';
 import QuizAssessment from './components/QuizAssessment';
-import UpgradeModal from './components/UpgradeModal';
+
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Settings from './components/Settings';
-import { Bot, GraduationCap, FileText, Menu, LogIn, FilePlus, Mic, Sparkles, ClipboardList, Settings as SettingsIcon, RefreshCw, Video, Eye, Trophy, Swords, Youtube, Play, Pause, X, Radio } from './components/Icons';
+import { Bot, GraduationCap, FileText, Menu, LogIn, FilePlus, Mic, Sparkles, ClipboardList, Settings as SettingsIcon, RefreshCw, Video, Eye, Trophy, Swords, Youtube, Play, Pause, X, Radio, Search, Home } from './components/Icons';
 import { useRetryableFetch } from './utils/api';
 import SamplePaperGenerator from './components/SamplePaperGenerator';
 import LoopManager from './components/LearnLoop/LoopManager';
 import LandingPageV2 from './components/LandingPageV2';
-import ExamHub from './components/ExamHub';
 import NeuralArena from './components/NeuralArena';
 import VideoGenerator from './components/VideoGenerator';
 import ErrorBoundary from './components/ErrorBoundary';
 import OnboardingGuide from './components/OnboardingGuide';
+import UniversalSearch from './components/UniversalSearch';
 import ThemeEffects from './components/ThemeEffects';
 import { AssistantProvider } from './contexts/AssistantContext';
 import { UserPreferencesProvider } from './contexts/UserPreferencesContext';
+import RoleSelection from './components/RoleSelection';
+import CadetHandbook from './components/CadetHandbook';
+import ExamPrepHub from './components/ExamPrepHub';
+import GrievancePortal from './components/GrievancePortal';
+import COLayout from './components/COLayout';
+import CadetDashboard from './components/CadetDashboard';
+import Quartermaster from './components/Quartermaster';
 
 const CustomCursor = () => {
     const [isHovering, setIsHovering] = useState(false);
@@ -111,9 +117,9 @@ const CustomCursor = () => {
 
 const AppContent = () => {
     const { isDark } = useTheme();
-    const { currentUser, logout } = useAuth();
+    const { currentUser, logout, userRole, isRoleSet } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
     const { retryableFetch } = useRetryableFetch();
     const { activeLoop } = useLearnLoop();
     const { setActiveChatId } = useChatHistory();
@@ -123,14 +129,20 @@ const AppContent = () => {
     // ═══ FLOW STATE ═══
     // Phase: 'splash' → 'landing'/'login'/'app' → ...
     const [phase, setPhase] = useState('splash');
-    const [currentView, setCurrentView] = useState('doubt-solver');
+    const [currentView, setCurrentView] = useState('cadet-dashboard');
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [hasVisited, setHasVisited] = useState(() => localStorage.getItem('hasVisited') === 'true');
 
     // Initial splash completes
     const handleSplashComplete = () => {
         if (currentUser) {
-            setPhase('app');
+            if (isRoleSet === true) {
+                setPhase('app');
+            } else if (isRoleSet === false) {
+                setPhase('role-select');
+            }
+            // If isRoleSet === null (still loading), stay on splash — the useEffect below will handle it
+            if (isRoleSet === null) return;
             if (localStorage.getItem('showOnboarding') === 'true') {
                 setShowOnboarding(true);
             }
@@ -154,20 +166,30 @@ const AppContent = () => {
 
     // After successful auth, currentUser changes
     useEffect(() => {
-        if (currentUser && (phase === 'login' || phase === 'signup')) {
-            setPhase('app');
-            setCurrentView('doubt-solver');
-            if (localStorage.getItem('showOnboarding') === 'true') {
-                setShowOnboarding(true);
+        if (currentUser && isRoleSet !== null) {
+            // If we're logged in but don't have a role, we MUST go to role-select
+            if (isRoleSet === false && phase !== 'splash') {
+                if (phase !== 'role-select') {
+                    setPhase('role-select');
+                }
+            } else if (isRoleSet === true && (phase === 'login' || phase === 'signup' || phase === 'role-select' || phase === 'splash')) {
+                setPhase('app');
+                // Don't override currentView if we just selected a role
+                if (phase !== 'role-select') {
+                    setCurrentView('cadet-dashboard');
+                }
+                if (localStorage.getItem('showOnboarding') === 'true') {
+                    setShowOnboarding(true);
+                }
             }
         }
-    }, [currentUser, phase]);
+    }, [currentUser, phase, isRoleSet]);
 
     // Handle sign out or account deletion
     useEffect(() => {
         if (!currentUser && phase === 'app') {
             setPhase('login');
-            setCurrentView('doubt-solver');
+            setCurrentView('cadet-dashboard');
         }
     }, [currentUser, phase]);
 
@@ -193,14 +215,17 @@ const AppContent = () => {
             case 'learn-loop': return <LoopManager />;
             case 'doubt-solver': return <DoubtSolver retryableFetch={retryableFetch} />;
             case 'document-study': return <DocumentStudy retryableFetch={retryableFetch} onNavigate={setCurrentView} />;
-            case 'college-compass': return <CollegeCompass retryableFetch={retryableFetch} />;
             case 'podcast-generator': return <PodcastGenerator retryableFetch={retryableFetch} />;
             case 'quiz-assessment': return <QuizAssessment retryableFetch={retryableFetch} onNavigate={setCurrentView} />;
             case 'sample-paper': return <SamplePaperGenerator retryableFetch={retryableFetch} />;
-            case 'exam-hub': return <ExamHub />;
             case 'neural-arena': return <NeuralArena onExit={() => setCurrentView('document-study')} setIsCollapsed={setIsCollapsed} />;
             case 'video-generator': return <VideoGenerator />;
-            default: return <DoubtSolver retryableFetch={retryableFetch} />;
+            case 'cadet-handbook': return <CadetHandbook />;
+            case 'cadet-dashboard': return <CadetDashboard onNavigate={setCurrentView} />;
+            case 'exam-prep': return <ExamPrepHub onNavigate={setCurrentView} />;
+            case 'grievance-portal': return <GrievancePortal />;
+            case 'quartermaster': return <Quartermaster />;
+            default: return <CadetDashboard onNavigate={setCurrentView} />;
         }
     };
 
@@ -209,16 +234,19 @@ const AppContent = () => {
             'settings': 'Settings',
             'learn-loop': 'Mastery Lifecycle',
             'doubt-solver': 'Neural Query',
-            'document-study': 'Auremous Lens',
-            'college-compass': 'Admissions Pilot',
+            'document-study': 'Samvada Lens',
             'podcast-generator': 'Audio Studio',
             'quiz-assessment': 'Adaptive Testing',
             'sample-paper': 'Dynamic Paper Gen',
-            'exam-hub': 'Competitive Prep',
             'neural-arena': 'Cognitive Colosseum',
             'video-generator': 'Video Studio',
+            'cadet-handbook': 'Cadet Handbook',
+            'cadet-dashboard': 'Dashboard',
+            'exam-prep': 'Command Center',
+            'grievance-portal': 'Samvada Shield',
+            'quartermaster': 'Quartermaster Store'
         };
-        return titles[currentView] || 'Auremous';
+        return titles[currentView] || 'Samvada';
     };
 
     const getHeaderIcon = () => {
@@ -227,13 +255,16 @@ const AppContent = () => {
             'learn-loop': <RefreshCw className="w-5 h-5 mr-2 text-gold" />,
             'doubt-solver': <Bot className="w-5 h-5 mr-2 text-gold" />,
             'document-study': <Eye className="w-5 h-5 mr-2 text-gold" />,
-            'college-compass': <GraduationCap className="w-5 h-5 mr-2 text-gold" />,
             'podcast-generator': <Mic className="w-5 h-5 mr-2 text-gold" />,
             'quiz-assessment': <ClipboardList className="w-5 h-5 mr-2 text-gold" />,
             'sample-paper': <FileText className="w-5 h-5 mr-2 text-gold-light" />,
-            'exam-hub': <Trophy className="w-5 h-5 mr-2 text-gold" />,
             'neural-arena': <Swords className="w-5 h-5 mr-2 text-gold" />,
             'video-generator': <Video className="w-5 h-5 mr-2 text-gold" />,
+            'cadet-handbook': <FileText className="w-5 h-5 mr-2 text-gold" />,
+            'cadet-dashboard': <Home className="w-5 h-5 mr-2 text-gold" />,
+            'exam-prep': <Trophy className="w-5 h-5 mr-2 text-gold" />,
+            'grievance-portal': <Sparkles className="w-5 h-5 mr-2 text-gold" />,
+            'quartermaster': <FilePlus className="w-5 h-5 mr-2 text-gold" />,
         };
         return iconMap[currentView] || <Sparkles className="w-5 h-5 mr-2 text-gold" />;
     };
@@ -265,37 +296,23 @@ const AppContent = () => {
             return <Signup onSwitchToLogin={() => setPhase('login')} />;
         }
 
-        // ═══ MAIN APP ═══
-        if (currentView === 'exam-hub') {
-            return (
-                <div className="flex w-full h-[100dvh] font-sans overflow-hidden bg-theme-bg text-theme-text transition-colors duration-500 relative" style={{ animation: 'fadeIn 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards' }}>
-                    <ThemeEffects />
-                    <UpgradeModal />
-                    <div className="fixed inset-0 z-[100] bg-theme-bg">
-                        <ExamHub onExit={() => setCurrentView('doubt-solver')} />
-                    </div>
-                </div>
-            );
+        // Role Selection
+        if (phase === 'role-select') {
+            return <RoleSelection onComplete={() => setPhase('app')} />;
         }
 
-        if (currentView === 'college-compass') {
-            return (
-                <div className="flex w-full h-[100dvh] font-sans overflow-hidden bg-theme-bg text-theme-text transition-colors duration-500 relative" style={{ animation: 'fadeIn 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards' }}>
-                    <ThemeEffects />
-                    <UpgradeModal />
-                    <div className="fixed inset-0 z-[100] bg-theme-bg">
-                        <CollegeCompass onExit={() => setCurrentView('doubt-solver')} retryableFetch={retryableFetch} />
-                    </div>
-                </div>
-            );
+        // ═══ MAIN APP ═══
+        if (userRole === 'co') {
+            return <COLayout />;
         }
 
         return (
             <div className="flex w-full h-[100dvh] font-sans overflow-hidden bg-theme-bg text-theme-text transition-colors duration-500 relative">
                 <ThemeEffects />
-                <UpgradeModal />
+
 
                 {showOnboarding && <OnboardingGuide onComplete={handleOnboardingComplete} />}
+                <UniversalSearch onNavigate={setCurrentView} />
 
                 <Sidebar
                     currentView={currentView}
@@ -331,6 +348,9 @@ const AppContent = () => {
                             <div className="flex-shrink-0">{getHeaderIcon()}</div>
                             <span className="truncate">{getHeaderTitle()}</span>
                         </h1>
+                        <button onClick={() => window.dispatchEvent(new CustomEvent('open-universal-search'))} className="ml-2 text-theme-primary opacity-80 hover:opacity-100 transition-colors flex-shrink-0">
+                            <Search className="w-5 h-5" />
+                        </button>
                         <button onClick={() => setIsHistoryOpen(true)} className="ml-2 text-theme-primary opacity-80 hover:opacity-100 transition-colors flex-shrink-0">
                             <ClipboardList className="w-5 h-5" />
                         </button>

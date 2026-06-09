@@ -10,7 +10,7 @@ import { GROQ_API_URL, formatGroqPayload, useRetryableFetch } from '../utils/api
 import { callAI as callGroq } from '../utils/apiRouter';
 import KnowledgeGraph from './KnowledgeGraph';
 import MasteryLoop from './MasteryLoop';
-import SocraticRoom from './SocraticRoom';
+// SocraticRoom removed per user request
 import YoutubeAnalyzer from './YoutubeAnalyzer';
 import { extractVideoId, fetchTranscript } from '../utils/youtubeService';
 
@@ -328,7 +328,7 @@ const DocumentStudy = ({ onNavigate }) => {
         const diffStyle = getDifficultyStyles(card.difficulty);
 
         return (
-            <div className="relative h-80 w-full cursor-pointer group [perspective:2000px]">
+            <div className="relative h-80 w-full cursor-pointer group [perspective:2000px] hover-lift">
                 <div
                     onClick={() => setIsFlipped(!isFlipped)}
                     className={`relative w-full h-full transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] transform-gpu ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}
@@ -528,15 +528,33 @@ DIVIDER: End with a "---CONTENT_SPLIT---" and then provide a structured, high-in
         if (res.content.includes("---CONTENT_SPLIT---")) {
             const [n, s] = res.content.split("---CONTENT_SPLIT---");
             setNotes(n?.trim() || res.content);
-            setSummary(s?.trim() || "Summary could not be fully separated, please check notes.");
+            setSummary(s?.trim() || '');
+            // If split produced empty summary, generate one
+            if (!s?.trim()) {
+                generateSeparateSummary(n?.trim() || res.content);
+            }
         } else {
             setNotes(res.content);
-            setSummary("Detailed summary integrated into the notes above.");
+            // Always generate a real summary instead of placeholder text
+            generateSeparateSummary(res.content);
         }
 
         // Auto-collapse sidebar to maximize screen space for the new notes
         setIsSidebarCollapsed(true);
         setViewMode('study');
+    };
+
+    // Dedicated summary generation when the main AI call doesn't split properly
+    const generateSeparateSummary = async (notesContent) => {
+        setSummary(''); // Clear any stale value
+        const summaryPrompt = `Based on the following study notes, create a CONCISE but COMPLETE Executive Summary in approximately 400-600 words. Cover all major concepts, key definitions, and critical takeaways. Use bullet points and short paragraphs — NO tables, NO lengthy explanations. Be direct and to the point. Do NOT say "refer to notes above".\n\nNOTES:\n${notesContent.slice(0, 12000)}`;
+        const sysPrompt = `You are generating a concise Executive Summary. Keep it tight — approximately 400-600 words. Cover everything important but do not over-elaborate. Use clear bullet points, short headings, and direct language. No filler.`;
+        const res = await callAI(summaryPrompt, sysPrompt);
+        if (res.content) {
+            setSummary(res.content);
+        } else {
+            setSummary('Summary generation encountered an issue. Please try regenerating from the Summary tab.');
+        }
     };
 
     const handleLevelUp = () => {
@@ -653,38 +671,58 @@ DIVIDER: End with a "---CONTENT_SPLIT---" and then provide a structured, high-in
         const toolPrompts = {
             cards: `Generate an exhaustive set of 50 to 60 high-yield, high-quality flashcards covering every possible detail of the material. Make the flashcard "answer" concise (maximum 2-3 sentences max) so it fits beautifully on the card UI without overflowing. Instead of dense paragraphs, use short lists or simple bullet points if necessary. Output strictly as a JSON object: { "flashcards": [{ "question": "...", "answer": "...", "difficulty": "easy|medium|hard" }] }`,
             quiz: (() => {
-                const count = masteryLevel === 'Advanced' ? 20 : masteryLevel === 'Intermediate' ? 15 : 10;
-                const typeMix = masteryLevel === 'Beginner' ? "100% MCQ" : masteryLevel === 'Intermediate' ? "70% MCQ, 30% Short Subjective" : "60% MCQ, 40% Case-based Subjective";
+                const count = masteryLevel === 'Advanced' ? 30 : masteryLevel === 'Intermediate' ? 20 : 15;
+                const typeMix = masteryLevel === 'Beginner' ? "100% MCQ" : masteryLevel === 'Intermediate' ? "60% MCQ, 20% Assertion-Reasoning, 20% Short Subjective" : "40% MCQ, 25% Assertion-Reasoning, 20% Case-based Subjective, 15% Numerical/Proof";
+                const difficultyProfile = masteryLevel === 'Beginner' 
+                    ? "Easy: 30%, Medium: 50%, Hard: 20%" 
+                    : masteryLevel === 'Intermediate' 
+                        ? "Easy: 10%, Medium: 40%, Hard: 50%" 
+                        : "Medium: 20%, Hard: 50%, Very Hard: 30%";
 
-                return `Generate exactly ${count} questions representing the ELITE CBSE COMPETENCY STANDARDS.
+                return `Generate exactly ${count} HIGH-QUALITY questions.
 CURRENT MASTERY LEVEL: ${masteryLevel}. 
-MIX: ${typeMix}.
+QUESTION TYPE MIX: ${typeMix}.
+DIFFICULTY DISTRIBUTION: ${difficultyProfile}.
 
-COMPETENCY REQUIREMENTS:
-- Use Assertion-Reasoning questions.
-- Use Case-Based Scenarios (provide a 2-3 sentence scenario followed by a question).
-- Focus on real-world application ("What happens if X is changed?", "How does Y apply to Z?").
-- Ensure question difficulty ESCALATES significantly on rising levels. MCQs must be TOUGH for Intermediate/Advanced—use multi-step logic.
-- If it is a Problem-Solving/PCM topic, include increasingly complex calculations or conceptual proofs as subjective questions.
-- Subjective questions should require deep analytical reasoning.
+QUALITY STANDARDS:
+- Every MCQ must have 4 plausible options. NO obviously wrong options. All distractors must be conceptually close to the answer.
+- Assertion-Reasoning format: "Assertion (A): ... Reason (R): ..." with options like "Both A and R are true and R is the correct explanation of A", etc.
+- Case-Based: Provide a real-world scenario (3-4 sentences) then ask 1-2 questions based on it.
+- For PCM/Science topics: Include numerical problems with multi-step solutions. Show exact values.
+- Subjective questions must test ANALYTICAL DEPTH — not just recall.
+- Each question must test a DIFFERENT concept — no repetition.
+- Difficulty must GENUINELY escalate: Beginner = foundational understanding, Intermediate = application & analysis, Advanced = synthesis, evaluation & multi-concept integration.
+- Include "tricky" questions that test common misconceptions.
 
 Respond ONLY with a valid JSON object.
 Format: { "questions": [{ 
-    "type": "mcq|subjective",
+    "type": "mcq|subjective|assertion-reasoning",
     "question": "...", 
-    "options": ["...", "...", "...", "..."], // Only for MCQ
-    "answer": "Exact correct option text OR a Model Answer for subjective docs", 
-    "difficulty": "Hard", 
-    "explanation": "EXTREMELY detailed, textbook-level logic.",
-    "concept": "The precise core concept",
-    "approach": "Step-by-step thinking protocol",
-    "weak_point": "Specific review topic" 
+    "options": ["...", "...", "...", "..."], // Only for MCQ and assertion-reasoning
+    "answer": "Exact correct option text OR a Model Answer for subjective", 
+    "difficulty": "Easy|Medium|Hard|Very Hard", 
+    "explanation": "EXTREMELY detailed, textbook-level logic with step-by-step reasoning.",
+    "concept": "The precise core concept being tested",
+    "approach": "Step-by-step thinking protocol to solve this",
+    "weak_point": "What to review if you got this wrong" 
 }] }`;
             })(),
             mindmap: `Generate a hierarchical mind map. Output strictly as a JSON object: { "name": "Topic", "children": [{ "name": "Subtopic", "children": [] }] }`
         };
 
         const res = await callAI(toolPrompts[type], `Extract questions directly and exclusively from this study material:\n\nSTUDY MATERIAL:\n${notes.slice(0, 15000) || documentContent.slice(0, 15000)}`, true);
+
+        // Auto-generate mindmap when flashcards are generated
+        if (type === 'cards' && !mindMapData) {
+            callAI(toolPrompts.mindmap, `Extract from this study material:\n\nSTUDY MATERIAL:\n${notes.slice(0, 15000) || documentContent.slice(0, 15000)}`, true).then(mmRes => {
+                if (!mmRes.error) {
+                    try {
+                        const jsonStr = mmRes.content.match(/\{[\s\S]*\}/)?.[0] || mmRes.content;
+                        setMindMapData(JSON.parse(jsonStr));
+                    } catch(e) { console.warn('Mindmap parse failed', e); }
+                }
+            });
+        }
 
         if (res.error) {
             if (type === 'quiz') setQuizError(res.error);
@@ -986,77 +1024,59 @@ You are writing a comprehensive textbook chapter.`;
     const renderLoadingView = () => <AnimatedLoadingView />;
 
     // ═══════════════════════════════════════════════
-    // FULL-SCREEN CHAT VIEW
+    // SIDE PANEL CHAT VIEW (slides in from right)
     // ═══════════════════════════════════════════════
-    const renderChatFullScreen = () => (
-        <div className="fixed inset-0 z-50 flex flex-col transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] transform-gpu bg-theme-bg backdrop-blur-xl">
-            {/* Ambient Lighting */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full blur-[120px] opacity-10 bg-theme-primary animate-pulse"></div>
-            </div>
-
+    const renderChatSidePanel = () => (
+        <div className={`fixed top-0 right-0 bottom-0 z-50 w-full md:w-[420px] flex flex-col transform-gpu bg-[#0c0906] border-l border-white/[0.06] shadow-[-20px_0_60px_rgba(0,0,0,0.6)] slide-in-right`}>
             {/* Chat Header */}
-            <div className="px-6 py-5 flex items-center justify-between z-30 border-b border-theme-border bg-theme-surface mx-4 mt-4 shrink-0 rounded-b-[20px]">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl border border-theme-primary/20 bg-theme-primary/5 text-theme-primary relative group">
-                        <MessageSquare className="w-5 h-5 relative z-10 transition-transform duration-500" />
+            <div className="px-5 py-4 flex items-center justify-between border-b border-white/[0.04] shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg border border-theme-primary/20 bg-theme-primary/5 text-theme-primary">
+                        <MessageSquare className="w-4 h-4" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-serif italic text-theme-text tracking-wide">
-                            Study Assistant
-                        </h2>
-                        <p className="text-[9px] font-bold text-theme-primary uppercase tracking-[0.2em] mt-1 opacity-80">
-                            Contextual AI • {fileName || 'Document'}
-                        </p>
+                        <h2 className="text-sm font-serif italic text-theme-text tracking-wide">Study Assistant</h2>
+                        <p className="text-[8px] font-bold text-theme-primary uppercase tracking-[0.2em] mt-0.5 opacity-80">Contextual AI</p>
                     </div>
                 </div>
                 <button
                     onClick={() => setIsChatOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-light text-xs transition-colors border border-theme-border text-theme-muted hover:text-theme-text hover:border-theme-primary/50 cursor-none"
+                    className="p-2 rounded-lg border border-white/[0.06] text-theme-muted hover:text-theme-text hover:border-theme-primary/30 transition-colors cursor-none"
                 >
-                    Hide <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
+                    <X className="w-4 h-4" />
                 </button>
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6 custom-scrollbar relative z-10">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 custom-scrollbar relative z-10">
                 {chatMessages.length === 0 && (
-                    <div className="max-w-2xl mx-auto text-center py-20 space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-                        <div className="w-20 h-20 mx-auto rounded-full border border-theme-primary/20 bg-theme-primary/5 flex items-center justify-center relative">
-                            <Bot className="w-8 h-8 text-theme-primary relative z-10" />
+                    <div className="text-center py-12 space-y-4 animate-in fade-in duration-700">
+                        <div className="w-14 h-14 mx-auto rounded-full border border-theme-primary/20 bg-theme-primary/5 flex items-center justify-center">
+                            <Bot className="w-6 h-6 text-theme-primary" />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-serif italic mb-2 tracking-wide text-theme-text">
-                                Hey, I'm Auremous
-                            </h3>
-                            <p className="text-[14px] text-theme-muted max-w-md mx-auto font-light leading-relaxed">
-                                I am an elite contextual AI. Ask me to explain complex topics, summarize sections, or generate novel examples from this document.
+                            <h3 className="text-lg font-serif italic mb-1 text-theme-text">Auremous</h3>
+                            <p className="text-[12px] text-theme-muted max-w-xs mx-auto font-light leading-relaxed">
+                                Ask me anything about this document — explanations, examples, or deep dives.
                             </p>
                         </div>
                     </div>
                 )}
 
                 {chatMessages.map((msg, i) => (
-                    <div key={i} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-500`}>
-                        <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                            <div className="flex items-center mb-2 px-1 gap-2">
-                                {msg.role === 'model' && (
-                                    <div className="w-4 h-4 rounded-full border border-theme-primary/30 flex items-center justify-center">
-                                        <Sparkles className="w-2 h-2 text-theme-primary" />
-                                    </div>
-                                )}
-                                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-muted">
-                                    {msg.role === 'user' ? 'You' : 'Auremous'}
-                                </span>
-                            </div>
-                            <div className={`relative p-5 sm:p-6 rounded-[20px] transition-all duration-300
+                    <div key={i} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-400`}>
+                        <div className={`flex flex-col max-w-[90%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                            <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-theme-muted mb-1 px-1">
+                                {msg.role === 'user' ? 'You' : 'Auremous'}
+                            </span>
+                            <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed transition-all duration-300
                                 ${msg.role === 'user'
-                                    ? 'bg-theme-surface border border-theme-border text-theme-text rounded-tr-sm shadow-depth'
-                                    : 'bg-transparent border border-theme-primary/10 rounded-tl-sm'
+                                    ? 'bg-theme-primary/[0.08] border border-theme-primary/[0.12] text-theme-text rounded-tr-sm'
+                                    : 'bg-white/[0.03] border border-white/[0.05] rounded-tl-sm'
                                 }
                             `}>
                                 {msg.role === 'user' ? (
-                                    <div className="whitespace-pre-wrap text-[14px] leading-relaxed font-light">{msg.text}</div>
+                                    <div className="whitespace-pre-wrap font-light">{msg.text}</div>
                                 ) : (
                                     <MarkdownRenderer text={msg.text} isDark={isDark} />
                                 )}
@@ -1066,36 +1086,34 @@ You are writing a comprehensive textbook chapter.`;
                 ))}
 
                 {isActionLoading && (
-                    <div className="flex justify-start pl-1 animate-in fade-in zoom-in-95 duration-300">
-                        <div className="p-4 rounded-[16px] border border-theme-border bg-theme-surface shadow-sm rounded-tl-sm">
-                            <div className="flex items-center gap-3">
-                                <Loader2 className="w-4 h-4 text-theme-primary animate-spin" />
-                                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-theme-primary/70">Synthesizing...</span>
-                            </div>
+                    <div className="flex justify-start">
+                        <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white/[0.03] border border-white/[0.05] flex items-center gap-2">
+                            <Loader2 className="w-3.5 h-3.5 text-theme-primary animate-spin" />
+                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-theme-primary/60">Thinking...</span>
                         </div>
                     </div>
                 )}
                 <div ref={chatEndRef} />
             </div>
 
-            {/* Chat Input Floating Bar */}
-            <div className="p-4 sm:p-6 shrink-0 relative z-20">
-                <form onSubmit={handleChatSubmit} className="max-w-4xl mx-auto relative">
-                    <div className="flex items-center p-2 rounded-[20px] border border-theme-border bg-theme-surface shadow-depth focus-within:border-theme-primary/50 transition-colors">
+            {/* Chat Input */}
+            <div className="p-3 shrink-0 border-t border-white/[0.04]">
+                <form onSubmit={handleChatSubmit} className="relative">
+                    <div className="flex items-center gap-2 p-1.5 rounded-xl border border-white/[0.06] bg-[#0e0b07] focus-within:border-gold/20 transition-colors">
                         <input
                             type="text"
                             value={chatInput}
                             onChange={e => setChatInput(e.target.value)}
-                            placeholder="Ask Auremous to explain a concept..."
+                            placeholder="Ask about this document..."
                             disabled={isActionLoading}
-                            className="flex-1 py-3 pl-4 pr-4 bg-transparent text-[14px] font-light outline-none text-theme-text placeholder:text-theme-muted"
+                            className="flex-1 py-2 pl-3 pr-2 bg-transparent text-[13px] font-light outline-none text-theme-text placeholder:text-cream/15"
                         />
                         <button
                             type="submit"
                             disabled={isActionLoading || !chatInput.trim()}
-                            className="p-3 mr-1 bg-theme-primary/10 text-theme-primary hover:bg-theme-primary hover:text-theme-bg disabled:opacity-30 border border-theme-primary/20 rounded-xl transition-all duration-300 flex items-center justify-center cursor-none"
+                            className="p-2 bg-theme-primary/10 text-theme-primary hover:bg-theme-primary hover:text-theme-bg disabled:opacity-20 border border-theme-primary/15 rounded-lg transition-all duration-300 cursor-none"
                         >
-                            <Send className="w-4 h-4" />
+                            <Send className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 </form>
@@ -1124,13 +1142,14 @@ You are writing a comprehensive textbook chapter.`;
         <div className="h-full flex flex-col md:flex-row overflow-hidden relative">
             {/* Ambient Deep Field Background for Study Mode */}
             <div className="absolute inset-0 bg-theme-bg z-0 pointer-events-none overflow-hidden">
-                <div className="absolute -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full blur-[100px] opacity-[0.03] bg-theme-primary" style={{ animationDuration: '15s' }}></div>
+                <div className="absolute -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full blur-[100px] opacity-[0.03] bg-theme-primary float-slow"></div>
+                <div className="absolute bottom-[10%] left-[5%] w-[40vw] h-[40vw] rounded-full blur-[120px] opacity-[0.02] bg-theme-secondary float-slow" style={{ animationDelay: '-5s', animationDuration: '16s' }}></div>
             </div>
 
             {/* Premium Sidebar */}
-            <aside className={`flex flex-col z-20 shrink-0 transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] transform-gpu ${isSidebarCollapsed ? 'w-full md:w-24 h-auto md:h-full' : 'w-full md:w-72 h-full'} 
-                bg-theme-surface border-r border-theme-border shadow-depth`}>
-                <div className="p-6 md:p-8 flex items-center justify-between relative overflow-hidden">
+            <aside className={`flex flex-col z-20 shrink-0 transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] transform-gpu ${isSidebarCollapsed ? 'w-full md:w-20 h-auto md:h-full' : 'w-full md:w-56 h-full'} 
+                bg-[#0c0906] border-r border-white/[0.06] shadow-[4px_0_40px_rgba(0,0,0,0.5)]`}>
+                <div className="p-5 md:p-6 flex items-center justify-between relative overflow-hidden">
                     {!isSidebarCollapsed && (
                         <div className="flex flex-col animate-in slide-in-from-left-4 duration-700">
                             <span className="font-bold text-theme-primary uppercase tracking-[0.2em] text-[9px] flex items-center gap-2 mb-1.5 opacity-80">
@@ -1148,13 +1167,12 @@ You are writing a comprehensive textbook chapter.`;
                     </button>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-3">
+                <nav className="flex-1 px-3 space-y-2">
                     {[
                         { id: 'notes', label: 'Detailed Notes', icon: FileText, color: 'indigo' },
                         { id: 'summaries', label: 'Executive Summary', icon: Layers, color: 'violet' },
                         { id: 'cards', label: 'Flashcards & Maps', icon: CreditCard, color: 'emerald' },
                         { id: 'quiz', label: 'Quiz & Assessment', icon: Trophy, color: 'amber' },
-                        { id: 'socratic', label: 'Socratic Tutor', icon: ShieldAlert, color: 'indigo' },
                         ...(masterpieceContent ? [
                             { id: 'masterpiece', label: 'Definitive Chapter', icon: Crown, color: 'orange' }
                         ] : [])
@@ -1171,8 +1189,8 @@ You are writing a comprehensive textbook chapter.`;
                             }}
                             className={`w-full flex items-center justify-between p-4 rounded-xl font-bold text-[10px] uppercase tracking-[0.2em] transition-all duration-500 group relative overflow-hidden
                                 ${activeSection === item.id
-                                    ? 'text-theme-primary border border-theme-primary/20 bg-theme-primary/5'
-                                    : 'text-theme-muted border border-transparent hover:text-theme-text hover:bg-theme-primary/5'
+                                    ? 'text-theme-primary border border-theme-primary/20 bg-theme-primary/8 shadow-[0_0_20px_rgba(201,165,90,0.08)] nav-active-glow'
+                                    : 'text-theme-muted border border-transparent hover:text-theme-text hover:bg-white/[0.03]'
                                 }
                                 ${item.disabled ? 'opacity-50 cursor-not-allowed text-theme-muted hover:text-theme-muted hover:bg-transparent' : 'cursor-none'}
                                 ${isSidebarCollapsed ? 'justify-center px-0' : ''}
@@ -1213,7 +1231,7 @@ You are writing a comprehensive textbook chapter.`;
                     ))}
                 </nav>
 
-                <div className="p-6 mt-auto space-y-3 border-t border-theme-border relative overflow-hidden">
+                <div className="p-4 mt-auto space-y-2 border-t border-white/[0.04] relative overflow-hidden">
                     <button
                         onClick={() => {
                             setViewMode('input');
@@ -1238,14 +1256,14 @@ You are writing a comprehensive textbook chapter.`;
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-hidden relative z-10 bg-theme-bg">
-                <div className="flex-1 overflow-y-auto p-6 md:p-10 lg:p-12 custom-scrollbar">
+            <main className="flex-1 flex flex-col overflow-hidden relative z-10 bg-[#0a0806]">
+                <div className="flex-1 overflow-y-auto p-5 md:p-8 lg:p-10 custom-scrollbar">
                     <div className="w-full mx-auto">
 
                         {/* Notes Section */}
                         {activeSection === 'notes' && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="rounded-[32px] border p-8 md:p-14 lg:p-20 border-theme-border/50 bg-gradient-to-br from-theme-surface via-theme-bg to-theme-surface shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                            <div className="section-enter">
+                                <div className="rounded-[28px] border p-6 md:p-10 lg:p-14 border-white/[0.06] bg-[#0e0b07]/80 shadow-[0_40px_100px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.03)] relative overflow-hidden">
                                     <div className="absolute inset-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] pointer-events-none" />
                                     <MarkdownRenderer text={notes} isDark={isDark} />
                                 </div>
@@ -1277,6 +1295,7 @@ You are writing a comprehensive textbook chapter.`;
                                                 className="group px-10 py-4 bg-theme-primary/10 text-theme-primary hover:bg-theme-primary hover:text-theme-bg font-bold tracking-[0.1em] uppercase text-sm rounded-xl transition-colors duration-300 flex items-center gap-3 relative overflow-hidden border border-theme-primary/30 cursor-none"
                                             >
                                                 <span className="relative z-10">Take {masteryLevel} Assessment</span>
+                                                <div className="absolute inset-0 bg-theme-primary/5 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500" />
                                                 <ChevronRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
                                             </button>
                                         </div>
@@ -1287,8 +1306,8 @@ You are writing a comprehensive textbook chapter.`;
 
                         {/* Summaries Section */}
                         {activeSection === 'summaries' && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="rounded-[24px] border border-theme-border bg-theme-surface p-8 md:p-12 shadow-depth relative overflow-hidden">
+                            <div className="section-enter">
+                                <div className="rounded-[24px] border border-white/[0.06] bg-[#0e0b07]/80 p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.03)] relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-64 h-64 bg-theme-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
 
                                     <div className="relative z-10">
@@ -1301,7 +1320,14 @@ You are writing a comprehensive textbook chapter.`;
                                                 <p className="text-[10px] font-bold text-theme-primary uppercase tracking-[0.2em] mt-1">High-Level Overview</p>
                                             </div>
                                         </div>
-                                        <MarkdownRenderer text={summary} />
+                                        {summary ? (
+                                            <MarkdownRenderer text={summary} isDark={isDark} />
+                                        ) : (
+                                            <div className="py-12 text-center space-y-4">
+                                                <Loader2 className="w-8 h-8 text-theme-primary animate-spin mx-auto" />
+                                                <p className="text-theme-muted text-sm font-light">Generating detailed summary...</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1309,9 +1335,9 @@ You are writing a comprehensive textbook chapter.`;
 
                         {/* Flashcards & Mindmaps */}
                         {activeSection === 'cards' && (
-                            <div className="max-w-5xl mx-auto space-y-12 pb-12 animate-in fade-in duration-500">
+                            <div className="max-w-5xl mx-auto space-y-12 pb-12 section-enter">
                                 {!flashcards.length && !isActionLoading && (
-                                    <div className="text-center py-20 border border-theme-border border-dashed rounded-[24px] bg-theme-surface/50">
+                                    <div className="text-center py-20 border border-theme-border border-dashed rounded-[24px] bg-theme-surface/50 breathe-border">
                                         <CreditCard className="w-12 h-12 text-theme-muted mx-auto mb-4 opacity-50" />
                                         <h3 className="text-xl font-serif italic text-theme-text mb-4">No Learning Assets Yet</h3>
                                         <button
@@ -1331,38 +1357,32 @@ You are writing a comprehensive textbook chapter.`;
                                 )}
 
                                 {flashcards.length > 0 && (
-                                    <div className="space-y-12">
+                                    <div className="space-y-10">
                                         <section>
                                             <div className="flex justify-between items-center mb-6">
-                                                <h3 className="text-lg font-bold">Interactive Flashcards</h3>
-                                                <span className="text-xs text-slate-500 uppercase font-bold tracking-widest">{flashcards.length} Cards Generated</span>
+                                                <h3 className="text-lg font-serif italic text-theme-text tracking-wide">Interactive Flashcards</h3>
+                                                <span className="text-[10px] text-theme-muted uppercase font-bold tracking-[0.2em]">{flashcards.length} Cards</span>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 stagger-cards">
                                                 {flashcards.map((card, i) => (
                                                     <Flashcard key={i} card={card} isDark={isDark} />
                                                 ))}
                                             </div>
                                         </section>
 
-                                        <section className="bg-theme-surface border-theme-border border rounded-2xl overflow-hidden shadow-depth">
-                                            <div className="p-8 border-b flex justify-between items-center border-theme-border">
+                                        <section className="bg-[#0e0b07]/80 border-white/[0.06] border rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+                                            <div className="p-6 border-b flex justify-between items-center border-white/[0.04]">
                                                 <div>
-                                                    <h3 className="text-xl font-serif italic tracking-wide text-theme-text">Interactive Knowledge Graph</h3>
-                                                    <p className="text-theme-muted text-sm font-light mt-1">Orbital visualization of core concepts</p>
+                                                    <h3 className="text-lg font-serif italic tracking-wide text-theme-text">Knowledge Graph</h3>
+                                                    <p className="text-theme-muted text-xs font-light mt-1">Orbital visualization of core concepts</p>
                                                 </div>
-                                                <button
-                                                    onClick={() => generateSpecificTool('mindmap')}
-                                                    className="px-6 py-2 border border-theme-primary/30 text-theme-primary text-xs uppercase tracking-widest hover:bg-theme-primary/10 transition-colors rounded-lg cursor-none focus:outline-none"
-                                                >
-                                                    Regenerate
-                                                </button>
                                             </div>
-                                            <div className="w-full bg-theme-bg/50">
+                                            <div className="w-full bg-[#0a0806]/50">
                                                 {mindMapData ? (
                                                     <KnowledgeGraph data={mindMapData} />
                                                 ) : (
-                                                    <div className="h-full flex items-center justify-center text-theme-muted font-serif italic">
-                                                        Click 'Regenerate' to visualize concepts
+                                                    <div className="h-48 flex items-center justify-center">
+                                                        <Loader2 className="w-6 h-6 text-theme-primary/40 animate-spin" />
                                                     </div>
                                                 )}
                                             </div>
@@ -1495,15 +1515,6 @@ You are writing a comprehensive textbook chapter.`;
                             </div>
                         )}
 
-                        {/* Socratic Room Section */}
-                        {activeSection === 'socratic' && (
-                            <SocraticRoom
-                                topic={fileName}
-                                documentContent={documentContent}
-                                isDark={isDark}
-                                MarkdownRenderer={MarkdownRenderer}
-                            />
-                        )}
                     </div>
                 </div>
             </main>
@@ -1511,14 +1522,14 @@ You are writing a comprehensive textbook chapter.`;
             {/* Floating Chat Toggle */}
             <button
                 onClick={() => setIsChatOpen(true)}
-                className="fixed bottom-8 right-8 z-40 p-4 border border-theme-primary/30 bg-theme-surface text-theme-primary hover:bg-theme-primary hover:text-theme-bg rounded-xl shadow-depth transition-colors duration-300 group cursor-none"
+                className="fixed bottom-8 right-8 z-40 p-4 border border-white/[0.06] bg-[#0c0906] text-theme-primary hover:bg-theme-primary hover:text-theme-bg rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 group cursor-none hover:scale-110 hover:shadow-[0_12px_40px_rgba(201,165,90,0.2)] breathe-border"
                 title="Open Study Assistant"
             >
                 <MessageSquare className="w-5 h-5 group-hover:rotate-12 transition-transform" />
             </button>
 
-            {/* Full-screen Chat Overlay */}
-            {isChatOpen && renderChatFullScreen()}
+            {/* Side Panel Chat */}
+            {isChatOpen && renderChatSidePanel()}
         </div>
     );
 

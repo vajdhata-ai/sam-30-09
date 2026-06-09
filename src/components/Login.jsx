@@ -102,13 +102,10 @@ const Login = ({ onSwitchToSignup }) => {
 
                     <h2 className="text-3xl font-serif italic mb-2 tracking-wide text-theme-text">
                         Welcome to{' '}
-                        <span className="text-theme-primary">Auremous</span>
+                        <span className="text-theme-primary">Samvada</span>
                     </h2>
 
-                    <p className="text-sm mb-8 leading-relaxed max-w-[280px] text-theme-muted">
-                        Where curiosity becomes clarity.
-                        <br />Your AI-powered study companion.
-                    </p>
+                    <p className="text-theme-muted mb-8 tracking-widest text-[11px] font-bold uppercase mt-2">Cadet & CO Portal</p>
 
                     {error && (
                         <div className="mb-6 w-full p-3 rounded-xl bg-red-500/10 border border-red-500/15 flex items-center gap-3 text-red-400 text-xs text-left">
@@ -142,7 +139,7 @@ const Login = ({ onSwitchToSignup }) => {
 
                     {/* Footer */}
                     <div className="mt-10 pt-6 w-full flex justify-between items-center text-[11px] border-t border-theme-border text-theme-muted" style={{ opacity: 0.4 }}>
-                        <span className="font-medium">Auremous v2.0</span>
+                        <span className="font-medium">Samvada</span>
                         <div className="flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                             <span>Systems Online</span>

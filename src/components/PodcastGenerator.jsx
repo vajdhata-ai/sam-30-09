@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Mic, Play, Pause, SkipBack, SkipForward, Radio, Volume2,
     FileText, Upload, Loader2, Check, Copy, X, ChevronRight,
-    Layers, Sparkles, MessageSquare, Bot, User, FilePlus, Crown
+    Layers, Sparkles, MessageSquare, Bot, User, FilePlus, Crown, Lock
 } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -295,205 +295,37 @@ Cover: key concepts, real-world applications, common misconceptions, exam-releva
                 {/* Left Sidebar: Controls & Input */}
                 <div className="lg:col-span-4 space-y-6 animate-enter opacity-0 delay-100 fill-mode-forwards" style={{ animationFillMode: 'forwards' }}>
 
-                    {/* Mode Selection Tabs */}
-                    <div className="flex gap-2 p-1 rounded-2xl bg-theme-surface border border-theme-border backdrop-blur-sm">
-                        <button
-                            onClick={() => setActiveMode('upload')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all duration-300
-                            ${activeMode === 'upload'
-                                    ? 'bg-theme-primary text-theme-bg shadow-[0_0_15px_var(--theme-primary)] scale-[1.02]'
-                                    : 'text-theme-muted hover:bg-theme-bg'}
-                        `}
-                        >
-                            <Upload className="w-4 h-4" /> Personal
-                        </button>
-                        <button
-                            onClick={() => setActiveMode('syllabus')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all duration-300
-                            ${activeMode === 'syllabus'
-                                    ? 'bg-theme-primary text-theme-bg shadow-[0_0_15px_var(--theme-primary)] scale-[1.02]'
-                                    : 'text-theme-muted hover:bg-theme-bg'}
-                        `}
-                        >
-                            <Sparkles className="w-4 h-4" /> Syllabus
-                        </button>
-                    </div>
-
-                    {/* Duration Selection */}
-                    <div className={`p-4 rounded-3xl border bg-theme-surface border-theme-border`}>
-                        <h3 className="text-xs font-bold text-theme-primary uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <Mic className="w-4 h-4" /> Podcast Duration
+                    {/* Locked Syllabus Section */}
+                    <div className={`p-6 rounded-3xl border space-y-4 bg-theme-surface border-theme-border shadow-sm`}>
+                        <h3 className="text-xs font-bold text-theme-primary uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Sparkles className="w-4 h-4" /> NCC Curriculum (Locked)
                         </h3>
-                        <div className="grid grid-cols-2 gap-2">
-                            {DURATION_SLOTS.map(slot => (
-                                <button
-                                    key={slot.value}
-                                    onClick={() => setSelectedDuration(slot.value)}
-                                    className={`p-3 rounded-xl text-center transition-all duration-300 border group
-                                        ${selectedDuration === slot.value
-                                            ? 'bg-theme-primary/10 border-theme-primary text-theme-primary shadow-[0_0_12px_var(--theme-primary)] scale-[1.03]'
-                                            : 'border-theme-border hover:border-theme-primary/40 text-theme-muted hover:text-theme-text'}
-                                    `}
-                                >
-                                    <span className="text-lg block mb-0.5">{slot.icon}</span>
-                                    <span className="text-sm font-black block">{slot.label}</span>
-                                    <span className="text-[9px] uppercase tracking-wider opacity-70">{slot.desc}</span>
-                                </button>
+                        <p className="text-xs text-theme-muted mb-4">
+                            Official syllabus integration is pending. Chapters will be unlocked once the curated NCC syllabus is deployed.
+                        </p>
+                        
+                        <div className="space-y-3">
+                            {['Drill & Commands', 'Weapon Training', 'National Integration', 'Disaster Management', 'Social Service'].map((chapter, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-theme-bg border border-theme-border opacity-70 cursor-not-allowed">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-theme-surface flex items-center justify-center text-theme-muted font-bold text-xs">
+                                            {idx + 1}
+                                        </div>
+                                        <span className="text-sm font-semibold text-theme-text">{chapter}</span>
+                                    </div>
+                                    <span className="text-theme-muted"><Lock className="w-4 h-4" /></span>
+                                </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* Tier Info */}
-                    <div className={`p-4 rounded-3xl border flex items-center justify-between bg-theme-surface border-theme-border`}>
-                        <div className="flex items-center gap-2">
-                            {isPro ? (
-                                <>
-                                    <Crown className="w-4 h-4 text-theme-primary" />
-                                    <span className="text-[10px] font-black text-theme-primary uppercase tracking-widest">PRO • All durations</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="text-[10px] font-black text-theme-muted uppercase tracking-widest">BASIC</span>
-                                    <span className="text-[10px] text-theme-primary font-bold">({getRemainingUses('podcast')} left today)</span>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {activeMode === 'upload' ? (
-                        <>
-                            {/* Upload Section */}
-                            <div className={`p-6 rounded-3xl border bg-theme-surface border-theme-border shadow-sm`}>
-                                <h3 className="text-xs font-bold text-theme-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <Upload className="w-4 h-4" /> Source Document
-                                </h3>
-
-                                <div
-                                    onClick={() => fileInputRef.current?.click()}
-                                    onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                                    onDragLeave={() => setIsDragging(false)}
-                                    onDrop={e => { e.preventDefault(); setIsDragging(false); processFile(e.dataTransfer.files?.[0]); }}
-                                    className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-300
-                                    ${isDragging ? 'border-theme-primary bg-theme-primary/10' : 'border-theme-border bg-theme-bg hover:border-theme-primary'}
-                                `}
-                                >
-                                    <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md" onChange={e => processFile(e.target.files?.[0])} className="hidden" />
-                                    {fileName ? (
-                                        <div>
-                                            <FilePlus className="w-8 h-8 mx-auto mb-2 text-theme-primary" />
-                                            <p className="text-sm font-bold truncate px-2 text-theme-text">{fileName}</p>
-                                            <p className="text-[10px] text-theme-muted mt-1">Click to change</p>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <Upload className={`w-8 h-8 mx-auto mb-2 ${isPdfLoading ? 'text-theme-primary animate-bounce' : 'text-theme-muted'}`} />
-                                            <p className="text-sm font-bold text-theme-muted">{isPdfLoading ? 'Reading...' : 'Drop PDF or Text'}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Topics Section */}
-                            <div className={`p-6 rounded-3xl border bg-theme-surface border-theme-border shadow-sm`}>
-                                <h3 className="text-xs font-bold text-theme-primary uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <Layers className="w-4 h-4" /> Focal Points
-                                </h3>
-                                <textarea
-                                    value={topics}
-                                    onChange={e => setTopics(e.target.value)}
-                                    placeholder="e.g., Focus on the methodology, or make it more humorous..."
-                                    className={`w-full h-24 p-4 text-xs rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-theme-primary transition-all
-                                    bg-theme-bg text-theme-text placeholder-theme-muted border border-theme-border
-                                `}
-                                />
-                            </div>
-                        </>
-                    ) : (
-                        <div className={`p-6 rounded-3xl border space-y-4 bg-theme-surface border-theme-border shadow-sm`}>
-                            <h3 className="text-xs font-bold text-theme-primary uppercase tracking-widest mb-2 flex items-center gap-2">
-                                <Sparkles className="w-4 h-4" /> Syllabus Details
-                            </h3>
-
-                            <div>
-                                <label className="text-[10px] font-black text-theme-muted uppercase tracking-[0.2em] mb-2 block">Subject</label>
-                                <input
-                                    type="text"
-                                    value={syllabus.subject}
-                                    onChange={e => setSyllabus({ ...syllabus, subject: e.target.value })}
-                                    placeholder="e.g., Biology, Economics..."
-                                    className={`w-full p-4 rounded-xl text-xs focus:ring-2 focus:ring-theme-primary outline-none transition-all
-                                    bg-theme-bg text-theme-text border border-theme-border
-                                `}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] font-black text-theme-muted uppercase tracking-[0.2em] mb-2 block">Topic Name</label>
-                                <input
-                                    type="text"
-                                    value={syllabus.topic}
-                                    onChange={e => setSyllabus({ ...syllabus, topic: e.target.value })}
-                                    placeholder="e.g., Mitochondrial DNA, Inflation..."
-                                    className={`w-full p-4 rounded-xl text-xs focus:ring-2 focus:ring-theme-primary outline-none transition-all
-                                    bg-theme-bg text-theme-text border border-theme-border
-                                `}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] font-black text-theme-muted uppercase tracking-[0.2em] mb-2 block">Education Level</label>
-                                <select
-                                    value={syllabus.level}
-                                    onChange={e => setSyllabus({ ...syllabus, level: e.target.value })}
-                                    className={`w-full p-4 rounded-xl text-xs focus:ring-2 focus:ring-theme-primary outline-none transition-all appearance-none
-                                    bg-theme-bg text-theme-text border border-theme-border
-                                `}
-                                >
-                                    <option>High School</option>
-                                    <option>University</option>
-                                    <option>Post Graduate</option>
-                                    <option>Expert/Professional</option>
-                                </select>
-                            </div>
-
-                            {syllabus.level === 'High School' && (
-                                <div className="animate-fade-in">
-                                    <label className="text-[10px] font-black text-theme-muted uppercase tracking-[0.2em] mb-2 block">Class / Grade</label>
-                                    <input
-                                        type="text"
-                                        value={syllabus.studentClass || ''}
-                                        onChange={e => setSyllabus({ ...syllabus, studentClass: e.target.value })}
-                                        placeholder="e.g., 10th Grade, 12th Standard..."
-                                        className={`w-full p-4 rounded-xl text-xs focus:ring-2 focus:ring-theme-primary outline-none transition-all
-                                        bg-theme-bg text-theme-text border border-theme-border
-                                    `}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    )}
-
                     {/* Generate Button */}
                     <button
-                        onClick={handleGeneratePodcast}
-                        disabled={isGenerating || (activeMode === 'upload' ? !documentContent : (!syllabus.topic || !syllabus.subject))}
-                        className={`w-full py-5 rounded-3xl font-black text-sm uppercase tracking-widest transition-all duration-500 flex items-center justify-center gap-3 group
-                        ${isGenerating || (activeMode === 'upload' ? !documentContent : (!syllabus.topic || !syllabus.subject))
-                                ? 'bg-theme-surface border border-theme-border text-theme-muted cursor-not-allowed opacity-50'
-                                : 'bg-theme-primary text-theme-bg shadow-[0_0_20px_var(--theme-primary)] hover:scale-[1.02] opacity-90 hover:opacity-100'}
-                    `}
+                        disabled={true}
+                        className={`w-full py-5 rounded-3xl font-black text-sm uppercase tracking-widest transition-all duration-500 flex items-center justify-center gap-3 group bg-theme-surface border border-theme-border text-theme-muted cursor-not-allowed opacity-50`}
                     >
-                        {isGenerating ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Scripting {selectedDuration}-min Podcast...
-                            </>
-                        ) : (
-                            <>
-                                <Mic className="w-5 h-5 group-hover:animate-bounce" />
-                                Generate {selectedDuration}-min Podcast
-                            </>
-                        )}
+                        <Lock className="w-5 h-5" />
+                        Awaiting Curriculum
                     </button>
 
                 </div>

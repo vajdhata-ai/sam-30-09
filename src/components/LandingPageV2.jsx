@@ -5,88 +5,88 @@ import { AuremLogo } from './Icons';
 
 const features = [
     {
-        icon: '🧠',
-        name: 'Neural Query',
-        tag: 'AI Doubt Solver',
-        desc: 'Ask anything — get deep, Socratic answers with step-by-step reasoning. Upload images of problems. Supports vision AI for diagrams and equations.',
+        icon: '📖',
+        name: 'Cadet Handbook',
+        tag: 'Knowledge Base',
+        desc: 'Everything an NCC cadet needs — code of conduct, rank structure, daily routines, certificate guidelines, and parade commands at your fingertips.',
         color: 'feature-gold',
     },
     {
-        icon: '🔭',
-        name: 'Auremous Lens',
-        tag: 'Visual AI',
-        desc: 'Point your camera at any object, diagram, or text. Auremous Lens instantly identifies and teaches — turning the real world into your classroom.',
+        icon: '🎯',
+        name: 'Command Center',
+        tag: 'Exam Prep & Analytics',
+        desc: 'Track your battalion rank, study streak, accuracy, and growth. Focused preparation for NCC A, B, and C certificate examinations.',
         color: 'feature-teal',
     },
     {
-        icon: '📋',
-        name: 'Quiz & Assessment',
-        tag: 'Smart Testing',
-        desc: 'Auto-generate quizzes on any topic with adjustable difficulty. Get instant feedback, explanations, and a detailed performance report after every session.',
+        icon: '🧠',
+        name: 'Neural Query',
+        tag: 'AI Doubt Solver',
+        desc: 'Ask any NCC-related question — drill procedures, map reading, weapon training theory, first aid — and get deep, step-by-step reasoning.',
         color: 'feature-rose',
     },
     {
-        icon: '📄',
-        name: 'Document Study',
-        tag: 'AI Reading',
-        desc: 'Upload PDFs or paste text. Auremous reads it, creates flashcards, summaries, and lets you ask questions about your own documents.',
+        icon: '🔭',
+        name: 'Samvada Lens',
+        tag: 'Visual AI',
+        desc: 'Point your camera at insignias, rank badges, or field maps. Samvada Lens instantly identifies and teaches — turning the parade ground into your classroom.',
         color: 'feature-indigo',
     },
     {
         icon: '🎙️',
         name: 'Audio Studio',
         tag: 'Voice AI',
-        desc: 'Convert any topic into a professional AI-narrated audio lesson. Study hands-free — while commuting, exercising, or resting.',
+        desc: 'Convert NCC syllabus topics into professional audio lessons. Study drill theory, national integration, and adventure training hands-free.',
         color: 'feature-amber',
     },
     {
         icon: '⚔️',
         name: 'Cognitive Colosseum',
         tag: 'Competitive Arena',
-        desc: 'Challenge yourself in timed, high-intensity knowledge battles. Competitive quiz arena with live scoring to sharpen speed and recall.',
+        desc: 'Timed, high-intensity knowledge battles on NCC syllabus. Compete with fellow cadets in live scoring to sharpen speed and recall.',
         color: 'feature-purple',
     },
     {
-        icon: '🎯',
-        name: 'Competitive Prep',
-        tag: 'Exam Prep',
-        desc: 'Targeted preparation for JEE, NEET, UPSC, IELTS, CAT, and more. Curated mock tests, strategies, and performance analytics.',
+        icon: '🛡️',
+        name: 'Samvada Shield',
+        tag: 'Grievance Portal',
+        desc: 'Confidential reporting system for bullying, food quality, or unfair treatment. Reports go directly to your Commanding Officer for immediate action.',
         color: 'feature-green',
     },
     {
-        icon: '🏛️',
-        name: 'Admissions Pilot',
-        tag: 'College Compass',
-        desc: 'Navigate college admissions with AI. Get personalized recommendations, essay feedback, timeline planning, and interview preparation.',
+        icon: '📋',
+        name: 'Adaptive Testing',
+        tag: 'Smart Assessment',
+        desc: 'Auto-generated quizzes on NCC subjects with adjustable difficulty. Instant feedback, detailed performance reports, and topic-wise analysis.',
         color: 'feature-sky',
     },
 ];
 
 const stats = [
-    { num: '10+', label: 'AI Features' },
-    { num: '∞', label: 'Subjects Covered' },
-    { num: '100%', label: 'Personalized' },
-    { num: '24/7', label: 'Available' },
+    { num: '10+', label: 'AI Tools' },
+    { num: 'A/B/C', label: 'Certificate Prep' },
+    { num: '100%', label: 'NCC Focused' },
+    { num: '24/7', label: 'Always Ready' },
 ];
 
 const testimonials = [
     {
-        quote: "Neural Query feels like having a private tutor at 2 AM. It walks me through problems without just giving me the answer.",
-        name: "Aarav S.",
-        role: "JEE Aspirant",
+        quote: "The Cadet Handbook saved me before my B Certificate exam. Every drill command, every rank — all in one place. It's like a pocket JD for cadets.",
+        name: "Cadet Arjun M.",
+        role: "Senior Division, 2 Raj Bn NCC",
         init: "A",
     },
     {
-        quote: "I uploaded my entire textbook PDF and Auremous turned it into flashcards and a quiz in minutes. Genuinely magical.",
-        name: "Priya K.",
-        role: "MBBS Student",
-        init: "P",
+        quote: "Samvada Shield let me report a bullying incident anonymously. My CO took action the same day. Every unit needs this.",
+        name: "Cadet Sneha R.",
+        role: "Senior Wing, 7 Girls Bn NCC",
+        init: "S",
     },
     {
-        quote: "The Audio Studio changed everything for me. I commute 2 hours daily — now it's all study time.",
-        name: "James O.",
-        role: "Working Professional",
-        init: "J",
+        quote: "The Command Center analytics showed me exactly where I was weak — map reading and weapon training. I focused there and cracked my C Certificate.",
+        name: "Cadet Vikram P.",
+        role: "Senior Division, 1 UP Bn NCC",
+        init: "V",
     },
 ];
 
@@ -123,14 +123,14 @@ const LandingPageV2 = ({ onGetStarted }) => {
             <nav className="lp-nav">
                 <div className="lp-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <AuremLogo style={{ width: '28px', height: '28px' }} />
-                    Auremous
+                    Samvada
                 </div>
                 <ul className="lp-nav-links">
                     <li><a href="#features">Features</a></li>
                     <li><a href="#how">How It Works</a></li>
-                    <li><a href="#testimonials">Stories</a></li>
+                    <li><a href="#testimonials">Cadets Speak</a></li>
                 </ul>
-                <button className="lp-nav-pill" onClick={onGetStarted}>Get Started Free</button>
+                <button className="lp-nav-pill" onClick={onGetStarted}>Join Your Battalion</button>
             </nav>
 
             {/* ── HERO ── */}
@@ -140,13 +140,13 @@ const LandingPageV2 = ({ onGetStarted }) => {
                 <div className="lp-hero-orb orb3" />
 
                 <div className="lp-hero-left">
-                    <p className="lp-eyebrow">Your AI-Powered Study Companion</p>
-                    <h1>Study smarter.<br />Learn <span className="gradient-text">deeper.</span><br />Achieve more.</h1>
+                    <p className="lp-eyebrow">The AI-Powered NCC Cadet Portal</p>
+                    <h1>Train smarter.<br />Serve <span className="gradient-text">stronger.</span><br />Lead with honor.</h1>
                     <p className="lp-hero-sub">
-                        Auremous is an all-in-one AI learning platform with 10+ intelligent tools — from instant doubt solving to vision AI, audio lessons, competitive prep, and personalized assessments.
+                        Samvada is the all-in-one AI platform built exclusively for NCC Cadets — from exam prep and drill theory to confidential grievance reporting and battalion analytics. Unity and Discipline, powered by intelligence.
                     </p>
                     <div className="lp-hero-actions">
-                        <button className="lp-btn-dark" onClick={onGetStarted}>Start Learning Free</button>
+                        <button className="lp-btn-dark" onClick={onGetStarted}>Report for Duty</button>
                         <a href="#features" className="lp-btn-text-link">Explore Features</a>
                     </div>
                     <div className="lp-trust-strip">
@@ -172,23 +172,23 @@ const LandingPageV2 = ({ onGetStarted }) => {
                             </div>
                             <div className="lp-ui-chat-bubble lp-bubble-ai">
                                 <span className="lp-bubble-icon">✦</span>
-                                <p>Explain Newton's third law with an example from daily life.</p>
+                                <p>What are the NCC pledge words and when is it recited?</p>
                             </div>
                             <div className="lp-ui-chat-bubble lp-bubble-user">
-                                <p>For every action, there is an equal and opposite reaction...</p>
+                                <p>The NCC pledge is recited at the beginning of every NCC event. It starts with: "We, the cadets of the National Cadet Corps..."</p>
                             </div>
                             <div className="lp-ui-chat-bubble lp-bubble-ai">
                                 <span className="lp-bubble-icon">✦</span>
-                                <p>Exactly! When you push against a wall, the wall pushes back with the same force. This is why rockets work — exhaust gas pushed out creates thrust upward.</p>
+                                <p>Correct! The full pledge emphasizes serving the nation with all our might, upholding the ideals of Unity and Discipline, and always being prepared to render selfless service.</p>
                             </div>
                             <div className="lp-ui-input-row">
-                                <div className="lp-ui-input-pill">Ask anything...</div>
+                                <div className="lp-ui-input-pill">Ask anything about NCC...</div>
                                 <div className="lp-ui-send-btn">→</div>
                             </div>
                         </div>
                     </div>
-                    <div className="lp-floating-badge">🔭 Auremous Lens <strong>Active</strong></div>
-                        <div className="lp-floating-badge2">📋 Quiz Ready <strong>8 Qs</strong></div>
+                    <div className="lp-floating-badge">🛡️ Samvada Shield <strong>Active</strong></div>
+                        <div className="lp-floating-badge2">📋 B-Cert Quiz <strong>Ready</strong></div>
                     </div>
                 </div>
             </section>
@@ -196,8 +196,8 @@ const LandingPageV2 = ({ onGetStarted }) => {
             {/* ── MARQUEE ── */}
             <div className="lp-marquee-strip">
                 <div className="lp-marquee-track">
-                    {['Neural Query', 'Auremous Lens', 'Quiz & Assessment', 'Document Study', 'Audio Studio', 'Cognitive Colosseum', 'Competitive Prep', 'Admissions Pilot', 'Adaptive Testing', 'Visual Studio',
-                        'Neural Query', 'Auremous Lens', 'Quiz & Assessment', 'Document Study', 'Audio Studio', 'Cognitive Colosseum', 'Competitive Prep', 'Admissions Pilot', 'Adaptive Testing', 'Visual Studio'
+                    {['Cadet Handbook', 'Command Center', 'Neural Query', 'Samvada Lens', 'Cognitive Colosseum', 'Audio Studio', 'Samvada Shield', 'Adaptive Testing',
+                        'Cadet Handbook', 'Command Center', 'Neural Query', 'Samvada Lens', 'Cognitive Colosseum', 'Audio Studio', 'Samvada Shield', 'Adaptive Testing'
                     ].map((item, i) => (
                         <React.Fragment key={i}>
                             <span>{item}</span>
@@ -210,9 +210,9 @@ const LandingPageV2 = ({ onGetStarted }) => {
             {/* ── FEATURES ── */}
             <section id="features" className="lp-features-section">
                 <div className="lp-section-header lp-reveal">
-                    <p className="lp-kicker-center">Everything You Need</p>
-                    <h2>10+ AI Tools. <span className="gradient-text">One Platform.</span></h2>
-                    <p className="lp-section-sub">Every tool is built to think, adapt, and teach — not just answer.</p>
+                    <p className="lp-kicker-center">Purpose-Built for NCC</p>
+                    <h2>Every tool a cadet <span className="gradient-text">needs.</span></h2>
+                    <p className="lp-section-sub">From drill theory to grievance reporting — every feature is designed around NCC training, examinations, and cadet welfare.</p>
                 </div>
                 <div className="lp-features-grid">
                     {features.map((f, i) => (
@@ -232,24 +232,24 @@ const LandingPageV2 = ({ onGetStarted }) => {
                 {/* Extra features row */}
                 <div className="lp-extra-features lp-reveal">
                     <div className="lp-extra-item">
-                        <span>🧩</span>
+                        <span>🎥</span>
                         <div>
-                            <strong>Adaptive Testing</strong>
-                            <p>Tests that adjust difficulty in real-time based on your performance.</p>
+                            <strong>Video Studio</strong>
+                            <p>Generate visual explainers on NCC topics — map reading, weapon training, and more.</p>
                         </div>
                     </div>
                     <div className="lp-extra-item">
-                        <span>🎨</span>
+                        <span>📄</span>
                         <div>
-                            <strong>Visual Studio</strong>
-                            <p>Generate educational diagrams, mind maps, and visual summaries with AI.</p>
+                            <strong>Document Study</strong>
+                            <p>Upload NCC training manuals and let AI create summaries, flashcards, and interactive Q&A.</p>
                         </div>
                     </div>
                     <div className="lp-extra-item">
                         <span>🔁</span>
                         <div>
                             <strong>Learn Loop</strong>
-                            <p>Spaced repetition engine that schedules reviews at the optimal moment for retention.</p>
+                            <p>Spaced repetition engine for NCC syllabus — reviews timed perfectly for maximum retention.</p>
                         </div>
                     </div>
                 </div>
@@ -261,25 +261,25 @@ const LandingPageV2 = ({ onGetStarted }) => {
             <section id="how" className="lp-how-section">
                 <div className="lp-section-header lp-reveal">
                     <p className="lp-kicker-center">How It Works</p>
-                    <h2>Three steps to <span className="gradient-text">mastery.</span></h2>
+                    <h2>Three steps to <span className="gradient-text">readiness.</span></h2>
                 </div>
                 <div className="lp-steps-row">
                     <div className="lp-step lp-reveal">
                         <div className="lp-step-num">01</div>
-                        <h4>Sign in with Google</h4>
-                        <p>One click and you're inside. No setup, no credit card, no friction.</p>
+                        <h4>Sign in & select your role</h4>
+                        <p>One-click Google sign-in. Choose "NCC Cadet" or "Commanding Officer" — each gets a tailored dashboard.</p>
                     </div>
                     <div className="lp-step-arrow">→</div>
                     <div className="lp-step lp-reveal" style={{ transitionDelay: '100ms' }}>
                         <div className="lp-step-num">02</div>
-                        <h4>Choose your tool</h4>
-                        <p>Pick from 10+ AI features — ask a doubt, take a quiz, upload a PDF, or start an audio lesson.</p>
+                        <h4>Explore your tools</h4>
+                        <p>Access the Cadet Handbook, start a quiz, file a grievance, or challenge a fellow cadet in the Cognitive Colosseum.</p>
                     </div>
                     <div className="lp-step-arrow">→</div>
                     <div className="lp-step lp-reveal" style={{ transitionDelay: '200ms' }}>
                         <div className="lp-step-num">03</div>
-                        <h4>Learn deeply</h4>
-                        <p>Auremous adapts to your pace, tracks your progress, and helps you build lasting understanding.</p>
+                        <h4>Rise through the ranks</h4>
+                        <p>Track your progress with battalion analytics, earn study streaks, and prepare for your next NCC certificate exam.</p>
                     </div>
                 </div>
             </section>
@@ -289,7 +289,7 @@ const LandingPageV2 = ({ onGetStarted }) => {
             {/* ── TESTIMONIALS ── */}
             <section id="testimonials" className="lp-testimonial">
                 <div className="lp-testimonial-header lp-reveal">
-                    <h2>What learners say</h2>
+                    <h2>What cadets say</h2>
                 </div>
                 <div className="lp-testimonial-grid">
                     {testimonials.map((t, i) => (
@@ -314,28 +314,28 @@ const LandingPageV2 = ({ onGetStarted }) => {
             {/* ── CTA ── */}
             <section className="lp-cta-section">
                 <div className="lp-cta-left">
-                    <h2>Your smartest study session<br />starts <span className="gradient-text">right now.</span></h2>
-                    <p>Free to use. No credit card. Powered by cutting-edge AI, designed for serious learners.</p>
+                    <h2>Your next parade<br />starts <span className="gradient-text">right here.</span></h2>
+                    <p>Free for all NCC cadets. No credit card. Powered by cutting-edge AI, built with discipline.</p>
                     <div className="lp-cta-btns">
-                        <button className="lp-btn-dark" onClick={onGetStarted}>Begin for Free</button>
+                        <button className="lp-btn-dark" onClick={onGetStarted}>Report for Duty</button>
                     </div>
                 </div>
                 <div className="lp-cta-right">
                     <div className="lp-cta-feature lp-reveal">
-                        <span className="lp-cta-feature-icon">✦</span>
-                        <div className="lp-cta-feature-text"><strong>Neural Query</strong>Instant AI doubt solving with vision support</div>
+                        <span className="lp-cta-feature-icon">📖</span>
+                        <div className="lp-cta-feature-text"><strong>Cadet Handbook</strong>Complete NCC knowledge base — ranks, drills, conduct</div>
                     </div>
                     <div className="lp-cta-feature lp-reveal" style={{ transitionDelay: '60ms' }}>
-                        <span className="lp-cta-feature-icon">📋</span>
-                        <div className="lp-cta-feature-text"><strong>Auto Quiz Generation</strong>Any topic, any difficulty, instant feedback</div>
+                        <span className="lp-cta-feature-icon">🎯</span>
+                        <div className="lp-cta-feature-text"><strong>Command Center</strong>Battalion rank, study streaks, exam analytics</div>
                     </div>
                     <div className="lp-cta-feature lp-reveal" style={{ transitionDelay: '120ms' }}>
-                        <span className="lp-cta-feature-icon">🎙️</span>
-                        <div className="lp-cta-feature-text"><strong>Audio Lessons</strong>Convert any topic into podcast-style audio</div>
+                        <span className="lp-cta-feature-icon">🛡️</span>
+                        <div className="lp-cta-feature-text"><strong>Samvada Shield</strong>Anonymous grievance reporting to your CO</div>
                     </div>
                     <div className="lp-cta-feature lp-reveal" style={{ transitionDelay: '180ms' }}>
                         <span className="lp-cta-feature-icon">🔒</span>
-                        <div className="lp-cta-feature-text"><strong>Ad-Free & Private</strong>Pure focus, zero distractions</div>
+                        <div className="lp-cta-feature-text"><strong>Secure & Private</strong>Role-based access — cadet & CO dashboards</div>
                     </div>
                 </div>
             </section>
@@ -344,9 +344,9 @@ const LandingPageV2 = ({ onGetStarted }) => {
             <footer className="lp-footer">
                 <div className="lp-footer-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <AuremLogo style={{ width: '20px', height: '20px' }} />
-                    Auremous
+                    Samvada
                 </div>
-                <p>© 2026 Auremous — The AI Study Companion. Crafted with care.</p>
+                <p>© 2026 Samvada — Unity and Discipline. The AI-Powered NCC Cadet Portal.</p>
                 <p>Privacy · Terms · Support</p>
             </footer>
 

@@ -133,19 +133,29 @@ export const PerformanceProvider = ({ children }) => {
         const xpNeededForNext = xpForNextLevel - xpForCurrentLevel;
         const progressPercentage = (xpIntoLevel / xpNeededForNext) * 100;
 
-        let rankTitle = "Novice";
-        if (currentLevel >= 5) rankTitle = "Apprentice";
-        if (currentLevel >= 15) rankTitle = "Scholar";
-        if (currentLevel >= 30) rankTitle = "Master";
-        if (currentLevel >= 50) rankTitle = "Grandmaster";
+        let rankTitle = "Cadet";
+        let rankAbbr = "CDT";
+        
+        if (currentLevel >= 5) { rankTitle = "Lance Corporal"; rankAbbr = "L/CPL"; }
+        if (currentLevel >= 10) { rankTitle = "Corporal"; rankAbbr = "CPL"; }
+        if (currentLevel >= 20) { rankTitle = "Sergeant"; rankAbbr = "SGT"; }
+        if (currentLevel >= 35) { rankTitle = "Under Officer"; rankAbbr = "UO"; }
+        if (currentLevel >= 50) { rankTitle = "Senior Under Officer"; rankAbbr = "SUO"; }
 
         return {
             level: currentLevel,
             rankTitle,
+            rankAbbr,
             xp,
             xpForNextLevel,
             progressPercentage: Math.min(100, Math.max(0, progressPercentage))
         };
+    };
+
+    const getPerformanceData = () => {
+        const quizzesTaken = performanceData.length;
+        const accuracy = quizzesTaken === 0 ? 0 : performanceData.reduce((acc, curr) => acc + curr.score, 0) / (quizzesTaken * 100);
+        return { accuracy, quizzesTaken };
     };
 
     const value = {
@@ -155,7 +165,8 @@ export const PerformanceProvider = ({ children }) => {
         getDifficultyLevel,
         xp,
         addXp,
-        getLevelInfo
+        getLevelInfo,
+        getPerformanceData
     };
 
     return (

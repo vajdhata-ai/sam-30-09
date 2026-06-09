@@ -14,7 +14,6 @@ const UpgradeModal = () => {
     if (!showUpgradeModal) return null;
 
     const featureNames = {
-        'college-compass': 'College Compass',
         'podcast': 'Podcast Studio',
         'quiz': 'Quiz Generation',
         'mindmap': 'Mind Map Generation',
@@ -103,7 +102,7 @@ const UpgradeModal = () => {
                         </h2>
                         <p className="text-white/80 text-sm">
                             {paymentSuccess
-                                ? `Welcome to Auremous ${selectedPlan === 'go' ? 'Go' : 'Pro'}! Activating...`
+                                ? `Welcome to Samvada ${selectedPlan === 'go' ? 'Go' : 'Pro'}! Activating...`
                                 : showPayment
                                     ? 'Enter your payment details below'
                                     : isDirectUpgrade
@@ -124,7 +123,7 @@ const UpgradeModal = () => {
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-2">
                                         <Zap className="w-5 h-5 text-emerald-500" />
-                                        <span className="font-black text-md text-emerald-500">AUREM GO</span>
+                                        <span className="font-black text-md text-emerald-500">SAMVADA GO</span>
                                     </div>
                                     <div className="text-right">
                                         <span className="text-xl font-black text-emerald-500">₹600</span>
@@ -134,8 +133,7 @@ const UpgradeModal = () => {
                                 <ul className="space-y-2 mb-6 flex-1">
                                     {[
                                         { icon: Mic, text: '5 Podcasts / day' },
-                                        { icon: Brain, text: '10 Quizzes / day' },
-                                        { icon: GraduationCap, text: '5 College Compass' }
+                                        { icon: Brain, text: '10 Quizzes / day' }
                                     ].map((item, i) => (
                                         <li key={`go-${i}`} className="flex items-center gap-2">
                                             <div className={`p-1 rounded-lg ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
@@ -160,7 +158,7 @@ const UpgradeModal = () => {
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-2">
                                         <Sparkles className="w-5 h-5 text-orange-500" />
-                                        <span className="font-black text-md text-orange-500">AUREM PRO</span>
+                                        <span className="font-black text-md text-orange-500">SAMVADA PRO</span>
                                     </div>
                                     <div className="text-right">
                                         <span className="text-xl font-black text-orange-500">₹900</span>
@@ -281,7 +279,7 @@ const UpgradeModal = () => {
                                         <Check className="w-10 h-10 text-green-500" />
                                     </div>
                                     <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                        Welcome to {selectedPlan === 'go' ? 'Auremous Go' : 'Auremous Pro'}!
+                                        Welcome to {selectedPlan === 'go' ? 'Samvada Go' : 'Samvada Pro'}!
                                     </h3>
                                     <p className="text-gray-500">
                                         Activating your unlimited access...

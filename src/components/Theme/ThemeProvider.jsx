@@ -15,11 +15,11 @@ export default function UniverseThemeProvider({ children }) {
     // Fallbacks to generic variables if needed based on `activeUniverse`.
     // Example: dynamic document title change based on universe
     if (activeUniverse === 'hp') {
-      document.title = "Auremous | Hogwarts Edition";
+      document.title = "Samvada | Hogwarts Edition";
     } else if (activeUniverse === 'avengers') {
-      document.title = "Auremous | S.H.I.E.L.D. Protocol";
+      document.title = "Samvada | S.H.I.E.L.D. Protocol";
     } else {
-      document.title = "Auremous Premium";
+      document.title = "Samvada";
     }
   }, [activeUniverse]);
 

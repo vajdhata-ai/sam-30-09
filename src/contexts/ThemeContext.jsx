@@ -4,10 +4,11 @@ const ThemeContext = createContext(undefined);
 
 export const THEMES = {
     PREMIUM: 'premium',
-    VIBRANT: 'vibrant',
-    SIMPLE: 'simple',
+    OLIVE: 'olive',
+    DESERT: 'desert',
+    NAVY: 'navy',
+    NIGHT_OPS: 'night-ops',
     CUSTOM: 'custom',
-    LIGHT: 'light',
 };
 
 // Helper hex to "r, g, b"
@@ -44,41 +45,53 @@ const THEME_VARS = {
         '--aurora-2': '45, 100%, 50%',
         '--aurora-3': '15, 100%, 50%',
     },
-    [THEMES.VIBRANT]: {
-        '--theme-bg': '15, 23, 42',
-        '--theme-surface': '30, 41, 59',
-        '--theme-text': '248, 250, 252',
-        '--theme-muted': '148, 163, 184',
-        '--theme-primary': '139, 92, 246',
-        '--theme-secondary': '236, 72, 153',
-        '--theme-border': '139, 92, 246',
-        '--aurora-1': '260, 80%, 60%',
-        '--aurora-2': '320, 80%, 60%',
-        '--aurora-3': '200, 80%, 60%',
+    [THEMES.OLIVE]: {
+        '--theme-bg': '26, 31, 22',
+        '--theme-surface': '34, 43, 28',
+        '--theme-text': '232, 238, 224',
+        '--theme-muted': '142, 153, 128',
+        '--theme-primary': '184, 150, 80',
+        '--theme-secondary': '155, 178, 122',
+        '--theme-border': '184, 150, 80',
+        '--aurora-1': '80, 40%, 40%',
+        '--aurora-2': '90, 50%, 30%',
+        '--aurora-3': '45, 60%, 40%',
     },
-    [THEMES.SIMPLE]: {
-        '--theme-bg': '30, 30, 30',
-        '--theme-surface': '44, 44, 44',
-        '--theme-text': '225, 225, 225',
-        '--theme-muted': '156, 153, 147',
-        '--theme-primary': '217, 119, 87',
-        '--theme-secondary': '230, 144, 116',
-        '--theme-border': '225, 225, 225',
-        '--aurora-1': '20, 10%, 40%',
-        '--aurora-2': '30, 10%, 30%',
-        '--aurora-3': '0, 0%, 20%',
+    [THEMES.DESERT]: {
+        '--theme-bg': '36, 32, 26',
+        '--theme-surface': '48, 42, 34',
+        '--theme-text': '248, 243, 232',
+        '--theme-muted': '178, 163, 142',
+        '--theme-primary': '156, 118, 62',
+        '--theme-secondary': '124, 138, 92',
+        '--theme-border': '156, 118, 62',
+        '--aurora-1': '40, 50%, 40%',
+        '--aurora-2': '30, 40%, 30%',
+        '--aurora-3': '50, 30%, 45%',
     },
-    [THEMES.LIGHT]: {
-        '--theme-bg': '222, 213, 196',
-        '--theme-surface': '236, 230, 218',
-        '--theme-text': '35, 28, 18',
-        '--theme-muted': '108, 96, 78',
-        '--theme-primary': '155, 118, 48',
-        '--theme-secondary': '178, 142, 72',
-        '--theme-border': '195, 185, 165',
-        '--aurora-1': '35, 50%, 55%',
-        '--aurora-2': '45, 50%, 50%',
-        '--aurora-3': '25, 40%, 45%',
+    [THEMES.NAVY]: {
+        '--theme-bg': '10, 16, 28',
+        '--theme-surface': '18, 26, 44',
+        '--theme-text': '230, 240, 255',
+        '--theme-muted': '120, 140, 170',
+        '--theme-primary': '220, 220, 220',
+        '--theme-secondary': '100, 160, 220',
+        '--theme-border': '220, 220, 220',
+        '--aurora-1': '210, 60%, 40%',
+        '--aurora-2': '220, 70%, 50%',
+        '--aurora-3': '200, 50%, 30%',
+    },
+    [THEMES.NIGHT_OPS]: {
+        '--theme-bg': '5, 5, 5',
+        '--theme-surface': '15, 15, 15',
+        '--theme-text': '200, 255, 200',
+        '--theme-muted': '100, 150, 100',
+        '--theme-primary': '0, 255, 100',
+        '--theme-secondary': '255, 50, 50',
+        '--theme-border': '0, 255, 100',
+        '--aurora-1': '140, 100%, 30%',
+        '--aurora-2': '130, 100%, 20%',
+        '--aurora-3': '0, 100%, 30%',
     },
 };
 
@@ -124,13 +137,8 @@ const applyTheme = (theme, customColors = null) => {
     root.classList.add(`theme-${theme}`);
     document.body.classList.add(`theme-${theme}`);
     
-    if (theme === THEMES.LIGHT) {
-        root.classList.remove('dark');
-        document.body.classList.remove('dark');
-    } else {
-        root.classList.add('dark');
-        document.body.classList.add('dark');
-    }
+    root.classList.add('dark');
+    document.body.classList.add('dark');
 };
 
 export const ThemeProvider = ({ children }) => {
@@ -151,7 +159,7 @@ export const ThemeProvider = ({ children }) => {
         return saved;
     });
 
-    const isDark = theme !== THEMES.LIGHT;
+    const isDark = true;
 
     useEffect(() => {
         applyTheme(theme, customColors);

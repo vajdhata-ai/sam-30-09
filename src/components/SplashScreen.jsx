@@ -63,10 +63,10 @@ const SplashScreen = ({ onComplete }) => {
                     ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
                 `}>
                     <h1 className="text-5xl font-serif italic tracking-wide text-theme-text">
-                        Auremous
+                        Samvada
                     </h1>
-                    <p className="text-xs mt-3 tracking-[0.35em] uppercase font-medium text-theme-primary" style={{ opacity: 0.5 }}>
-                        Your AI Study Companion
+                    <p className="text-[10px] mt-3 tracking-[0.35em] uppercase font-bold text-theme-primary" style={{ opacity: 0.8 }}>
+                        NCC Cadet Portal
                     </p>
                 </div>
 
