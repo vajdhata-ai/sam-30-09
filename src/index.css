@@ -17,7 +17,7 @@
 
   html {
     scroll-behavior: smooth;
-    font-size: 100%; /* Restore original default scale */
+    font-size: 103%; /* Subtle scale bump — just a touch bigger */
   }
 
   @keyframes gradientBG {

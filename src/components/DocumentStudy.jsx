@@ -7,7 +7,7 @@ import AuremIngestion from './AuremIngestion';
 import LensChat from './LensChat';
 import MindMapViewer from './MindMapViewer';
 
-const DocumentStudy = ({ onNavigate, setAssessmentContext }) => {
+const DocumentStudy = ({ onNavigate, assessmentContext, setAssessmentContext }) => {
     const { userProfile } = useAuth();
     const { isDark } = useTheme();
 
@@ -84,7 +84,7 @@ const DocumentStudy = ({ onNavigate, setAssessmentContext }) => {
 
     // Ingestion View
     if (!masteryContext) {
-        return <AuremIngestion onIntelligenceGenerated={setMasteryContext} onExit={() => onNavigate('cadet-dashboard')} />;
+        return <AuremIngestion onIntelligenceGenerated={setMasteryContext} onExit={() => onNavigate('cadet-dashboard')} autoSelectTopic={assessmentContext?.topic} />;
     }
 
     // Active Mastery Dashboard

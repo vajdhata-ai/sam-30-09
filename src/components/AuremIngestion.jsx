@@ -80,11 +80,11 @@ const LensSplash = ({ onComplete }) => {
 // ═══════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // ═══════════════════════════════════════════════════════
-const AuremIngestion = ({ onIntelligenceGenerated, onExit }) => {
+const AuremIngestion = ({ onIntelligenceGenerated, onExit, autoSelectTopic }) => {
     const { userProfile } = useAuth();
     const userWing = userProfile?.wing || 'army';
     
-    const [showSplash, setShowSplash] = useState(true);
+    const [showSplash, setShowSplash] = useState(!autoSelectTopic); // Skip splash when auto-selecting
     const [activeInput, setActiveInput] = useState('syllabus'); // 'syllabus', 'upload'
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -97,6 +97,23 @@ const AuremIngestion = ({ onIntelligenceGenerated, onExit }) => {
         ...(nccSyllabusData[userWing] || [])
     ].sort((a, b) => a.chapterNumber - b.chapterNumber);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Auto-select topic from "Let's Fix This" flow
+    const autoSelectTriggered = useRef(false);
+    useEffect(() => {
+        if (autoSelectTopic && !autoSelectTriggered.current && availableChapters.length > 0) {
+            autoSelectTriggered.current = true;
+            const topicLower = autoSelectTopic.toLowerCase();
+            const matchedChapter = availableChapters.find(c => 
+                c.chapterName.toLowerCase() === topicLower ||
+                c.chapterName.toLowerCase().includes(topicLower) ||
+                topicLower.includes(c.chapterName.toLowerCase())
+            );
+            if (matchedChapter) {
+                handleSyllabusSelect(matchedChapter);
+            }
+        }
+    }, [autoSelectTopic, availableChapters]);
 
     // Upload State
     const fileInputRef = useRef(null);

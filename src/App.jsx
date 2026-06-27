@@ -201,7 +201,7 @@ const AppContent = () => {
             case 'settings': return <Settings />;
             case 'learn-loop': return <LoopManager />;
             case 'doubt-solver': return <DoubtSolver retryableFetch={retryableFetch} />;
-            case 'document-study': return <DocumentStudy retryableFetch={retryableFetch} onNavigate={setCurrentView} setAssessmentContext={setAssessmentContext} />;
+            case 'document-study': return <DocumentStudy retryableFetch={retryableFetch} onNavigate={setCurrentView} assessmentContext={assessmentContext} setAssessmentContext={setAssessmentContext} />;
             case 'podcast-generator': return <PodcastGenerator retryableFetch={retryableFetch} />;
             case 'quiz-assessment': return <QuizAssessment retryableFetch={retryableFetch} onNavigate={setCurrentView} assessmentContext={assessmentContext} setAssessmentContext={setAssessmentContext} />;
             case 'sample-paper': return <SamplePaperGenerator retryableFetch={retryableFetch} />;
