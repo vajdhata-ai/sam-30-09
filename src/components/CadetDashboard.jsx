@@ -144,9 +144,9 @@ const CadetDashboard = ({ onNavigate }) => {
                         }}
                     />
 
-                    <div className="relative z-10 p-8 md:p-12">
+                    <div className="relative z-10 p-6 md:p-8 lg:p-12">
                         {/* Top Row: Badge + Division */}
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-theme-primary/10 border border-theme-primary/20 w-fit">
                                 <span className="w-2 h-2 rounded-full bg-theme-primary animate-pulse" />
                                 <p className="text-xs font-semibold text-theme-primary tracking-[0.2em] uppercase">
@@ -154,40 +154,40 @@ const CadetDashboard = ({ onNavigate }) => {
                                 </p>
                             </div>
                             <p className="text-theme-muted text-sm font-medium flex items-center gap-2 tracking-wide">
-                                <ShieldAlert className="w-4 h-4 text-theme-primary/60" />
-                                National Cadet Corps • {currentUser?.wing || 'Senior'} Division
+                                <ShieldAlert className="w-4 h-4 text-theme-primary/60 shrink-0" />
+                                <span className="truncate">National Cadet Corps • {currentUser?.wing || 'Senior'} Division</span>
                             </p>
                         </div>
 
                         {/* Greeting */}
-                        <h1 className="text-5xl md:text-7xl font-light text-theme-text leading-[1.1] tracking-wide mb-8">
-                            {greeting},&nbsp;
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-theme-primary via-theme-secondary to-theme-primary italic">
+                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-light text-theme-text leading-[1.1] tracking-wide mb-8">
+                            {greeting},<br className="md:hidden" />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-theme-primary via-theme-secondary to-theme-primary italic md:ml-3">
                                 {currentUser?.displayName?.split(' ')[0] || 'Cadet'}
                             </span>
                         </h1>
 
-                        {/* Stat Cards — clean horizontal ribbon */}
-                        <div className="grid grid-cols-5 gap-4">
-                            <div className="rounded-3xl px-6 py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
-                                <span className="text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1.5">Rank</span>
-                                <span className="text-3xl font-light text-theme-text">{levelInfo.rankAbbr}</span>
+                        {/* Stat Cards — responsive grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
+                            <div className="rounded-2xl md:rounded-3xl px-4 md:px-6 py-4 md:py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] md:text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1 md:mb-1.5 text-center">Rank</span>
+                                <span className="text-2xl md:text-3xl font-light text-theme-text">{levelInfo.rankAbbr}</span>
                             </div>
-                            <div className="rounded-3xl px-6 py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
-                                <span className="text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1.5">Avg Score</span>
-                                <span className="text-3xl font-light text-theme-primary">{avgScore > 0 ? `${avgScore}%` : 'N/A'}</span>
+                            <div className="rounded-2xl md:rounded-3xl px-4 md:px-6 py-4 md:py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] md:text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1 md:mb-1.5 text-center">Avg Score</span>
+                                <span className="text-2xl md:text-3xl font-light text-theme-primary">{avgScore > 0 ? `${avgScore}%` : 'N/A'}</span>
                             </div>
-                            <div className="rounded-3xl px-6 py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
-                                <span className="text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1.5">Tests</span>
-                                <span className="text-3xl font-light text-theme-primary">{quizRecords.length}</span>
+                            <div className="rounded-2xl md:rounded-3xl px-4 md:px-6 py-4 md:py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] md:text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1 md:mb-1.5 text-center">Tests</span>
+                                <span className="text-2xl md:text-3xl font-light text-theme-primary">{quizRecords.length}</span>
                             </div>
-                            <div className="rounded-3xl px-6 py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
-                                <span className="text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1.5">Attendance</span>
-                                <span className="text-3xl font-light text-theme-text">85%</span>
+                            <div className="rounded-2xl md:rounded-3xl px-4 md:px-6 py-4 md:py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] md:text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1 md:mb-1.5 text-center">Attendance</span>
+                                <span className="text-2xl md:text-3xl font-light text-theme-text">85%</span>
                             </div>
-                            <div className="rounded-3xl px-6 py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
-                                <span className="text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1.5">Next Parade</span>
-                                <span className="text-3xl font-light text-theme-text">14 Nov</span>
+                            <div className="col-span-2 sm:col-span-1 md:col-span-1 rounded-2xl md:rounded-3xl px-4 md:px-6 py-4 md:py-5 flex flex-col items-center border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] md:text-xs font-semibold text-theme-muted uppercase tracking-[0.15em] mb-1 md:mb-1.5 text-center">Next Parade</span>
+                                <span className="text-2xl md:text-3xl font-light text-theme-text">14 Nov</span>
                             </div>
                         </div>
                     </div>
