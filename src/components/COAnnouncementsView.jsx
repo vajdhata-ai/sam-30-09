@@ -74,7 +74,7 @@ const COAnnouncementsView = () => {
     };
 
     return (
-        <div className="h-full flex flex-col p-4 md:p-8 overflow-hidden">
+        <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto custom-scrollbar">
             <div className="max-w-4xl mx-auto w-full h-full flex flex-col space-y-6 min-h-0">
                 
                 {/* Header */}
@@ -93,63 +93,72 @@ const COAnnouncementsView = () => {
                     </button>
                 </div>
 
-                {/* Create Modal */}
+                {/* Create Modal - Fixed Overlay */}
                 {isCreating && (
-                    <div className="bg-theme-surface border border-theme-border rounded-3xl p-6 flex-shrink-0 animate-fade-in-down shadow-2xl relative z-20">
-                        <button onClick={() => setIsCreating(false)} className="absolute top-4 right-4 text-theme-muted hover:text-theme-text">✕</button>
-                        <h2 className="text-lg font-bold text-theme-text mb-6 flex items-center gap-2">
-                            <Megaphone className="w-5 h-5 text-theme-primary" /> Compose Broadcast
-                        </h2>
-                        
-                        <form onSubmit={handleCreateAnnouncement} className="space-y-4">
-                            <div>
-                                <label className="text-[10px] text-theme-muted uppercase tracking-widest font-bold mb-1.5 block">Subject / Title</label>
-                                <input 
-                                    type="text" required
-                                    value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
-                                    placeholder="e.g., Change in Morning PT Schedule"
-                                    className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-3 text-sm text-theme-text focus:border-theme-primary/50 outline-none"
-                                />
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <div className="bg-theme-surface border border-theme-border rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between p-6 border-b border-theme-border flex-shrink-0">
+                                <h2 className="text-lg font-bold text-theme-text flex items-center gap-2">
+                                    <Megaphone className="w-5 h-5 text-theme-primary" /> Compose Broadcast
+                                </h2>
+                                <button onClick={() => setIsCreating(false)} className="p-2 text-theme-muted hover:text-theme-text hover:bg-white/5 rounded-xl transition-colors">✕</button>
                             </div>
                             
-                            <div>
-                                <label className="text-[10px] text-theme-muted uppercase tracking-widest font-bold mb-1.5 block">Priority Level</label>
-                                <div className="flex gap-3">
-                                    {['Normal', 'High', 'Critical'].map(p => (
-                                        <button
-                                            key={p} type="button"
-                                            onClick={() => setFormData({...formData, priority: p})}
-                                            className={`flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all
-                                                ${formData.priority === p 
-                                                    ? (p === 'Critical' ? 'bg-red-500 text-white border-red-500' : p === 'High' ? 'bg-orange-500 text-white border-orange-500' : 'bg-theme-primary text-theme-bg border-theme-primary')
-                                                    : 'bg-theme-bg text-theme-muted border-theme-border hover:border-theme-border/50'
-                                                }`}
-                                        >
-                                            {p}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label className="text-[10px] text-theme-muted uppercase tracking-widest font-bold mb-1.5 block">Message Body</label>
-                                <textarea 
-                                    required
-                                    value={formData.body} onChange={e => setFormData({...formData, body: e.target.value})}
-                                    placeholder="Type the official announcement here..."
-                                    className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-3 text-sm text-theme-text focus:border-theme-primary/50 outline-none min-h-[150px] resize-y"
-                                />
+                            {/* Modal Body - Scrollable */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                                <form id="broadcast-form" onSubmit={handleCreateAnnouncement} className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] text-theme-muted uppercase tracking-widest font-bold mb-1.5 block">Subject / Title</label>
+                                        <input 
+                                            type="text" required
+                                            value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
+                                            placeholder="e.g., Change in Morning PT Schedule"
+                                            className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-3 text-sm text-theme-text focus:border-theme-primary/50 outline-none"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="text-[10px] text-theme-muted uppercase tracking-widest font-bold mb-1.5 block">Priority Level</label>
+                                        <div className="flex gap-3">
+                                            {['Normal', 'High', 'Critical'].map(p => (
+                                                <button
+                                                    key={p} type="button"
+                                                    onClick={() => setFormData({...formData, priority: p})}
+                                                    className={`flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all
+                                                        ${formData.priority === p 
+                                                            ? (p === 'Critical' ? 'bg-red-500 text-white border-red-500' : p === 'High' ? 'bg-orange-500 text-white border-orange-500' : 'bg-theme-primary text-theme-bg border-theme-primary')
+                                                            : 'bg-theme-bg text-theme-muted border-theme-border hover:border-theme-primary/30'
+                                                        }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="text-[10px] text-theme-muted uppercase tracking-widest font-bold mb-1.5 block">Message Body</label>
+                                        <textarea 
+                                            required
+                                            value={formData.body} onChange={e => setFormData({...formData, body: e.target.value})}
+                                            placeholder="Type the official announcement here..."
+                                            className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-3 text-sm text-theme-text focus:border-theme-primary/50 outline-none min-h-[150px] resize-y"
+                                        />
+                                    </div>
+                                </form>
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-theme-border">
+                            {/* Modal Footer - Always Visible */}
+                            <div className="flex justify-end gap-3 p-6 pt-4 border-t border-theme-border flex-shrink-0">
                                 <button type="button" onClick={() => setIsCreating(false)} className="px-5 py-2.5 rounded-xl text-sm font-bold text-theme-muted hover:bg-white/5 transition-colors">
                                     Cancel
                                 </button>
-                                <button type="submit" className="px-5 py-2.5 bg-theme-primary text-theme-bg rounded-xl text-sm font-bold hover:opacity-90 transition-colors flex items-center gap-2">
+                                <button type="submit" form="broadcast-form" className="px-5 py-2.5 bg-theme-primary text-theme-bg rounded-xl text-sm font-bold hover:opacity-90 transition-colors flex items-center gap-2">
                                     <Megaphone className="w-4 h-4" /> Broadcast Now
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 )}
 
