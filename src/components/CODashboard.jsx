@@ -19,8 +19,14 @@ const CODashboard = ({ onNavigate }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (!userProfile) return;
+        // Safety net: if data never loads, stop the spinner after 6 seconds
+        const safetyTimer = setTimeout(() => setIsLoading(false), 6000);
 
+        if (!userProfile) {
+            clearTimeout(safetyTimer);
+            setIsLoading(false);
+            return;
+        }
         const fetchInitialData = async () => {
             try {
                 // Fetch Total Cadets (only for CO's wing)
@@ -103,7 +109,10 @@ const CODashboard = ({ onNavigate }) => {
             setIsLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            clearTimeout(safetyTimer);
+        };
     }, [userProfile]);
 
     const recentGrievances = grievances.slice(0, 6);
