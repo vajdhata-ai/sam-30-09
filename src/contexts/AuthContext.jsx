@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, googleProvider, db } from '../firebase';
-import { signInWithPopup, signOut, onAuthStateChanged, getAdditionalUserInfo, deleteUser } from 'firebase/auth';
+import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { ensureUserDocument } from '../utils/firestoreSubscription';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -11,118 +10,176 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [userRole, setUserRole] = useState(null); // 'cadet' | 'co' | null
-    const [isRoleSet, setIsRoleSet] = useState(null); // null = loading, true = role set, false = no role
+    const [userRole, setUserRole] = useState(null); 
+    const [userProfile, setUserProfile] = useState(null);
+    const [isRoleSet, setIsRoleSet] = useState(false);
 
-    const assignRole = async (role, accessCode = null) => {
-        if (!auth.currentUser) throw new Error("No user logged in");
-        
-        if (role === 'co' && accessCode !== 'NCC-CO-2026') {
-            throw new Error("Invalid access code for Commanding Officer");
-        }
+    // Track whether loginWithCredentials already set the role (to avoid race with onAuthStateChanged)
+    const roleSetByLogin = React.useRef(false);
 
+    const loginWithCredentials = async (regNumber, password, role) => {
         try {
-            await setDoc(doc(db, 'userRoles', auth.currentUser.uid), { role }, { merge: true });
+            if (!regNumber || !password) throw new Error("Please fill in all fields.");
+            if (role === 'co' && password !== 'admin123') throw new Error("Invalid Officer credentials.");
+            
+            const sanitizedReg = regNumber.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            const email = `${sanitizedReg}@ncc.com`;
+            
+            roleSetByLogin.current = true;
             setUserRole(role);
             setIsRoleSet(true);
-        } catch (error) {
-            console.warn("Firestore error assigning role, falling back to local storage:", error);
-            localStorage.setItem(`samvada_role_${auth.currentUser.uid}`, role);
-            setUserRole(role);
-            setIsRoleSet(true);
-        }
-    };
+            localStorage.setItem('userRole', role);
 
-    const loginWithGoogle = async () => {
-        try {
-            const result = await signInWithPopup(auth, googleProvider);
-            const additionalInfo = getAdditionalUserInfo(result);
-            if (additionalInfo && additionalInfo.isNewUser) {
-                localStorage.setItem('showOnboarding', 'true');
-            }
-
-            // Ensure Firestore user document exists (creates with default "basic" plan if new)
+            let userCredential;
             try {
-                await ensureUserDocument(result.user);
-                console.log('[Auth] Firestore user document ensured after Google sign-in');
-            } catch (firestoreErr) {
-                console.error('[Auth] Firestore ensureUserDocument failed (non-blocking):', firestoreErr);
-                // Non-blocking — auth still succeeds even if Firestore write fails
+                userCredential = await signInWithEmailAndPassword(auth, email, password);
+            } catch (err) {
+                console.warn("SignIn failed, attempting create:", err.code);
+                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
+                    try {
+                        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    } catch (createErr) {
+                        console.error("CreateUser failed:", createErr.code, createErr.message);
+                        roleSetByLogin.current = false;
+                        setUserRole(null);
+                        setIsRoleSet(false);
+                        localStorage.removeItem('userRole');
+                        throw createErr;
+                    }
+                } else {
+                    roleSetByLogin.current = false;
+                    setUserRole(null);
+                    setIsRoleSet(false);
+                    localStorage.removeItem('userRole');
+                    throw err;
+                }
             }
 
-            return result.user;
+            const user = userCredential.user;
+            
+            // Save role to Firestore
+            try {
+                await setDoc(doc(db, 'userRoles', user.uid), { role, regimentalNumber: regNumber }, { merge: true });
+                
+                // Fetch profile if exists
+                const profileDoc = await getDoc(doc(db, 'userProfiles', user.uid));
+                if (profileDoc.exists()) {
+                    setUserProfile(profileDoc.data());
+                } else {
+                    // Create default profile for new users
+                    const defaultProfile = {
+                        regimentalNumber: regNumber,
+                        wing: 'army',
+                        certificateLevel: 'B',
+                        battalion: '1st Battalion',
+                        rank: role === 'co' ? 'Lieutenant' : 'Cadet'
+                    };
+                    await setDoc(doc(db, 'userProfiles', user.uid), defaultProfile, { merge: true });
+                    setUserProfile(defaultProfile);
+                }
+            } catch (e) {
+                console.warn("Firestore save/fetch failed, relying on local auth state", e);
+            }
+
+            setCurrentUser(user);
+            return user;
         } catch (error) {
-            console.error("Google Sign In Error:", error);
+            console.error("Login Error:", error);
             throw error;
         }
     };
 
-    const logout = () => {
-        setUserRole(null);
-        setIsRoleSet(null);
-        return signOut(auth);
-    };
-
-    const deleteAccount = async () => {
-        if (auth.currentUser) {
-            try {
-                await deleteUser(auth.currentUser);
-            } catch (error) {
-                console.error("Error deleting user:", error);
-                throw error;
-            }
+    const updateProfile = async (profileData) => {
+        if (!auth.currentUser) throw new Error("No user logged in");
+        try {
+            await setDoc(doc(db, 'userProfiles', auth.currentUser.uid), profileData, { merge: true });
+            setUserProfile(prev => ({ ...prev, ...profileData }));
+        } catch (e) {
+            console.error("Failed to update profile", e);
+            throw e;
         }
     };
 
+    const assignRole = async (role, accessCode = null) => {
+        if (!auth.currentUser) throw new Error("No user logged in");
+        if (role === 'co' && accessCode !== 'NCC-CO-2026') {
+            throw new Error("Invalid access code for Commanding Officer");
+        }
+        try {
+            await setDoc(doc(db, 'userRoles', auth.currentUser.uid), { role }, { merge: true });
+        } catch (e) {
+            console.warn("Firestore save blocked, relying on local auth state", e);
+        }
+        setUserRole(role);
+        setIsRoleSet(true);
+        localStorage.setItem('userRole', role);
+    };
+
+    const logout = async () => {
+        setUserRole(null);
+        setUserProfile(null);
+        setIsRoleSet(false);
+        localStorage.removeItem('userRole');
+        await signOut(auth);
+    };
+
+    const deleteAccount = async () => {
+        logout();
+    };
+
     useEffect(() => {
-        console.log("AuthContext: Setting up listener");
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            console.log("AuthContext: User Changed", user);
             setCurrentUser(user);
 
             if (user) {
-                // Fetch role
+                if (roleSetByLogin.current) {
+                    roleSetByLogin.current = false;
+                    setLoading(false);
+                    return;
+                }
+
                 try {
-                    const roleDoc = await getDoc(doc(db, 'userRoles', user.uid));
+                    const [roleDoc, profileDoc] = await Promise.all([
+                        getDoc(doc(db, 'userRoles', user.uid)),
+                        getDoc(doc(db, 'userProfiles', user.uid))
+                    ]);
+
                     if (roleDoc.exists() && roleDoc.data().role) {
                         setUserRole(roleDoc.data().role);
                         setIsRoleSet(true);
+                        localStorage.setItem('userRole', roleDoc.data().role);
                     } else {
-                        const localRole = localStorage.getItem(`samvada_role_${user.uid}`);
+                        const localRole = localStorage.getItem('userRole');
                         if (localRole) {
                             setUserRole(localRole);
                             setIsRoleSet(true);
                         } else {
-                            setUserRole(null);
-                            setIsRoleSet(false);
+                            setUserRole('cadet');
+                            setIsRoleSet(true);
                         }
                     }
+
+                    if (profileDoc.exists()) {
+                        setUserProfile(profileDoc.data());
+                    }
                 } catch (err) {
-                    console.error('[Auth] Failed to fetch user role:', err);
-                    const localRole = localStorage.getItem(`samvada_role_${user.uid}`);
+                    console.error('[Auth] Failed to fetch data from Firestore. Falling back to local storage:', err);
+                    const localRole = localStorage.getItem('userRole');
                     if (localRole) {
                         setUserRole(localRole);
                         setIsRoleSet(true);
                     } else {
-                        setUserRole(null);
-                        setIsRoleSet(false);
+                        setUserRole('cadet');
+                        setIsRoleSet(true);
                     }
-                }
-
-                // Ensure Firestore user document exists
-                try {
-                    await ensureUserDocument(user);
-                } catch (err) {
-                    console.error('[Auth] ensureUserDocument on auth restore failed (non-blocking):', err);
                 }
             } else {
                 setUserRole(null);
-                setIsRoleSet(false); // No user = definitively no role
+                setUserProfile(null);
+                setIsRoleSet(false);
+                localStorage.removeItem('userRole');
             }
             
-            setLoading(false);
-        }, (error) => {
-            console.error("AuthContext: Error", error);
             setLoading(false);
         });
 
@@ -131,17 +188,16 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         currentUser,
-        loginWithGoogle,
+        loginWithCredentials,
         logout,
         deleteAccount,
         loading,
         userRole,
+        userProfile,
+        updateProfile,
         isRoleSet,
         assignRole
     };
-
-    // Non-blocking loading to prevent white screen (black text on black bg)
-    // if (loading) return <div>...</div>;
 
     return (
         <AuthContext.Provider value={value}>

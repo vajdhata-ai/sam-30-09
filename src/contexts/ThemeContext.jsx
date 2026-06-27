@@ -5,10 +5,8 @@ const ThemeContext = createContext(undefined);
 export const THEMES = {
     PREMIUM: 'premium',
     OLIVE: 'olive',
-    DESERT: 'desert',
     NAVY: 'navy',
-    NIGHT_OPS: 'night-ops',
-    CUSTOM: 'custom',
+    AIR_FORCE: 'air-force',
 };
 
 // Helper hex to "r, g, b"
@@ -34,16 +32,16 @@ export const DEFAULT_CUSTOM_COLORS = {
 // Theme variable maps - applied as inline CSS variables on <html>
 const THEME_VARS = {
     [THEMES.PREMIUM]: {
-        '--theme-bg': '14, 11, 7',
-        '--theme-surface': '20, 16, 9',
-        '--theme-text': '240, 232, 216',
-        '--theme-muted': '168, 152, 128',
+        '--theme-bg': '9, 9, 11',
+        '--theme-surface': '24, 24, 27',
+        '--theme-text': '250, 250, 250',
+        '--theme-muted': '161, 161, 170',
         '--theme-primary': '201, 165, 90',
-        '--theme-secondary': '224, 192, 122',
-        '--theme-border': '201, 165, 90',
-        '--aurora-1': '35, 100%, 50%',
-        '--aurora-2': '45, 100%, 50%',
-        '--aurora-3': '15, 100%, 50%',
+        '--theme-secondary': '227, 194, 128',
+        '--theme-border': '39, 39, 42',
+        '--aurora-1': '45, 80%, 40%',
+        '--aurora-2': '50, 70%, 50%',
+        '--aurora-3': '35, 80%, 30%',
     },
     [THEMES.OLIVE]: {
         '--theme-bg': '26, 31, 22',
@@ -57,18 +55,6 @@ const THEME_VARS = {
         '--aurora-2': '90, 50%, 30%',
         '--aurora-3': '45, 60%, 40%',
     },
-    [THEMES.DESERT]: {
-        '--theme-bg': '36, 32, 26',
-        '--theme-surface': '48, 42, 34',
-        '--theme-text': '248, 243, 232',
-        '--theme-muted': '178, 163, 142',
-        '--theme-primary': '156, 118, 62',
-        '--theme-secondary': '124, 138, 92',
-        '--theme-border': '156, 118, 62',
-        '--aurora-1': '40, 50%, 40%',
-        '--aurora-2': '30, 40%, 30%',
-        '--aurora-3': '50, 30%, 45%',
-    },
     [THEMES.NAVY]: {
         '--theme-bg': '10, 16, 28',
         '--theme-surface': '18, 26, 44',
@@ -81,17 +67,17 @@ const THEME_VARS = {
         '--aurora-2': '220, 70%, 50%',
         '--aurora-3': '200, 50%, 30%',
     },
-    [THEMES.NIGHT_OPS]: {
-        '--theme-bg': '5, 5, 5',
-        '--theme-surface': '15, 15, 15',
-        '--theme-text': '200, 255, 200',
-        '--theme-muted': '100, 150, 100',
-        '--theme-primary': '0, 255, 100',
-        '--theme-secondary': '255, 50, 50',
-        '--theme-border': '0, 255, 100',
-        '--aurora-1': '140, 100%, 30%',
-        '--aurora-2': '130, 100%, 20%',
-        '--aurora-3': '0, 100%, 30%',
+    [THEMES.AIR_FORCE]: {
+        '--theme-bg': '12, 18, 30',
+        '--theme-surface': '22, 32, 50',
+        '--theme-text': '240, 248, 255',
+        '--theme-muted': '140, 170, 200',
+        '--theme-primary': '135, 206, 235', /* Sky Blue */
+        '--theme-secondary': '70, 130, 180',
+        '--theme-border': '135, 206, 235',
+        '--aurora-1': '200, 70%, 50%',
+        '--aurora-2': '210, 80%, 60%',
+        '--aurora-3': '190, 60%, 40%',
     },
 };
 
@@ -101,28 +87,7 @@ const applyTheme = (theme, customColors = null) => {
     const root = document.documentElement;
     let vars = THEME_VARS[theme] || THEME_VARS[THEMES.PREMIUM];
 
-    if (theme === THEMES.CUSTOM) {
-        let colorsToUse = customColors;
-        if (!colorsToUse) {
-            try {
-                colorsToUse = JSON.parse(localStorage.getItem('atlas-custom-colors')) || DEFAULT_CUSTOM_COLORS;
-            } catch (e) {
-                colorsToUse = DEFAULT_CUSTOM_COLORS;
-            }
-        }
-        vars = {
-            '--theme-bg': hexToRgbString(colorsToUse.bg),
-            '--theme-surface': hexToRgbString(colorsToUse.surface),
-            '--theme-text': hexToRgbString(colorsToUse.text),
-            '--theme-muted': hexToRgbString(colorsToUse.muted),
-            '--theme-primary': hexToRgbString(colorsToUse.primary),
-            '--theme-secondary': hexToRgbString(colorsToUse.secondary),
-            '--theme-border': hexToRgbString(colorsToUse.primary),
-            '--aurora-1': '260, 80%, 60%',
-            '--aurora-2': '320, 80%, 60%',
-            '--aurora-3': '200, 80%, 60%',
-        };
-    }
+
 
     Object.entries(vars).forEach(([prop, value]) => {
         root.style.setProperty(prop, value);

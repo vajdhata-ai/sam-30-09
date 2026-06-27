@@ -1,28 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
-import { ShieldAlert, CheckCircle, Clock, AlertTriangle, Users, TrendingUp, ChevronRight, Activity } from './Icons';
-
-// Demo data for zones
-const MOCK_ZONES = [
-    { id: 1, name: 'Barracks Area', score: 4.4, status: 'Stable', type: 'stable' },
-    { id: 2, name: 'Camp Mess Hall', score: 3.2, status: 'Low Score', type: 'warning' },
-    { id: 3, name: 'Training Grounds', score: 4.2, status: 'Stable', type: 'stable' },
-    { id: 4, name: 'Barrack B-3', score: 2.1, status: 'Critical', type: 'critical' },
-];
+import { collection, query, onSnapshot, getDocs } from 'firebase/firestore';
+import { ShieldAlert, CheckCircle, Clock, AlertTriangle, Users, TrendingUp, ChevronRight, Activity, BarChart, Shield, Target } from './Icons';
+import { useTheme } from '../contexts/ThemeContext';
 
 const CODashboard = ({ onNavigate }) => {
+    const { isDark } = useTheme();
     const [grievances, setGrievances] = useState([]);
     const [stats, setStats] = useState({
-        totalCadets: 428, // Mocked for now
+        totalCadets: 0,
         unresolved: 0,
         escalations: 0,
-        wellbeing: '4.1/5.0' // Mocked for now
+        avgPerformance: 0
     });
     const [categoryCounts, setCategoryCounts] = useState({});
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch all grievances
+        const fetchInitialData = async () => {
+            try {
+                // Fetch Total Cadets (Assuming 'users' collection exists)
+                const usersSnap = await getDocs(collection(db, 'users'));
+                const cadetsCount = usersSnap.docs.filter(doc => doc.data().role === 'cadet').length;
+
+                // Fetch Performance Data
+                const perfSnap = await getDocs(collection(db, 'userPerformance'));
+                let totalAccuracy = 0;
+                let validRecords = 0;
+                
+                perfSnap.forEach(doc => {
+                    const data = doc.data();
+                    if (data.performanceData && data.performanceData.length > 0) {
+                        const sum = data.performanceData.reduce((acc, curr) => acc + curr.score, 0);
+                        totalAccuracy += (sum / data.performanceData.length);
+                        validRecords++;
+                    }
+                });
+
+                const avgPerformance = validRecords > 0 ? Math.round(totalAccuracy / validRecords) : 0;
+
+                setStats(prev => ({
+                    ...prev,
+                    totalCadets: cadetsCount || usersSnap.size || 0, // Fallback to all users if role not specified
+                    avgPerformance
+                }));
+            } catch (err) {
+                console.error("Failed to fetch static CO stats:", err);
+            }
+        };
+
+        fetchInitialData();
+
+        // Listen to grievances in real-time
         const q = query(collection(db, 'grievances'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -50,98 +79,126 @@ const CODashboard = ({ onNavigate }) => {
                 counts[g.category] = (counts[g.category] || 0) + 1;
             });
             setCategoryCounts(counts);
+            setIsLoading(false);
         }, (error) => {
             console.warn('CODashboard: Firestore listener error:', error.message);
             setGrievances([]);
+            setIsLoading(false);
         });
 
         return () => unsubscribe();
     }, []);
 
-    const recentGrievances = grievances.slice(0, 5);
+    const recentGrievances = grievances.slice(0, 6);
     const maxCategoryCount = Math.max(...Object.values(categoryCounts).concat([1]));
 
     const chartCategories = [
-        { key: 'Food Quality', label: 'Food/Water', color: 'bg-cyan-400' },
-        { key: 'Medical/Health', label: 'Medical', color: 'bg-red-400' },
-        { key: 'Facility/Accommodation', label: 'Facilities', color: 'bg-yellow-500' },
-        { key: 'Bullying/Harassment', label: 'Training', color: 'bg-emerald-400' },
-        { key: 'Unfair Treatment', label: 'Interpersonal', color: 'bg-purple-400' },
-        { key: 'Other', label: 'Other', color: 'bg-gray-400' },
+        { key: 'Food Quality', label: 'Food/Water', color: 'bg-cyan-500' },
+        { key: 'Medical/Health', label: 'Medical', color: 'bg-rose-500' },
+        { key: 'Facility/Accommodation', label: 'Facilities', color: 'bg-amber-500' },
+        { key: 'Bullying/Harassment', label: 'Conduct', color: 'bg-emerald-500' },
+        { key: 'Unfair Treatment', label: 'Discipline', color: 'bg-purple-500' },
+        { key: 'Other', label: 'Other', color: 'bg-slate-500' },
     ];
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'Pending': return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
-            case 'Under Review': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-            case 'Resolved': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
-            case 'Dismissed': return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
-            default: return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
+            case 'Pending': return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+            case 'Under Review': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+            case 'Resolved': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
+            case 'Dismissed': return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+            default: return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
         }
     };
 
+    if (isLoading) {
+        return (
+            <div className="h-full flex items-center justify-center bg-theme-bg">
+                <div className="flex flex-col items-center gap-4">
+                    <Shield className="w-12 h-12 text-theme-primary animate-pulse" />
+                    <p className="text-sm font-black uppercase tracking-widest text-theme-muted">Decrypting Battalion Data...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-8">
+        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-8 bg-theme-bg transition-colors duration-300">
+            <div className="max-w-[1600px] mx-auto space-y-8 animate-fade-in">
                 
+                {/* ═══ HEADER ═══ */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-theme-surface border border-theme-border p-6 rounded-3xl shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <div className="p-4 rounded-2xl bg-theme-primary/10 border border-theme-primary/20">
+                            <Shield className="w-8 h-8 text-theme-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-black uppercase tracking-widest text-theme-text">Command Center</h1>
+                            <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest flex items-center gap-2 mt-1">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Battalion Telemetry
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* ═══ STATS ROW ═══ */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Total Cadets */}
-                    <div className="bg-[#121a28] border border-white/[0.06] rounded-2xl p-5 flex flex-col justify-between group hover:border-teal-500/30 transition-colors">
-                        <div className="flex justify-between items-start mb-4">
+                    <div className="bg-theme-surface border border-theme-border rounded-3xl p-6 flex flex-col justify-between group hover:border-theme-primary/30 hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.1)] transition-all">
+                        <div className="flex justify-between items-start mb-6">
                             <div>
-                                <p className="text-[10px] font-bold tracking-[0.15em] text-gray-500 uppercase mb-1">Total Active Cadets</p>
-                                <span className="text-3xl font-black text-white group-hover:text-teal-400 transition-colors">{stats.totalCadets}</span>
+                                <p className="text-[10px] font-black tracking-widest text-theme-muted uppercase mb-2">Total Active Cadets</p>
+                                <span className="text-4xl font-black text-theme-text group-hover:text-theme-primary transition-colors">{stats.totalCadets}</span>
                             </div>
-                            <div className="p-2.5 bg-[#1a2538] rounded-xl border border-white/[0.06] group-hover:bg-teal-500/10 group-hover:border-teal-500/20 transition-all">
-                                <Users className="w-5 h-5 text-teal-400" />
+                            <div className="p-3 bg-theme-bg rounded-2xl border border-theme-border group-hover:bg-theme-primary/10 group-hover:border-theme-primary/20 transition-all">
+                                <Users className="w-6 h-6 text-theme-primary" />
                             </div>
                         </div>
-                        <div className="text-xs text-gray-500 font-medium">Synced from Battalion roster</div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-theme-muted">Synced from database</div>
                     </div>
 
                     {/* Unresolved Grievances */}
-                    <div className="bg-[#121a28] border border-white/[0.06] rounded-2xl p-5 flex flex-col justify-between group hover:border-yellow-500/30 transition-colors">
-                        <div className="flex justify-between items-start mb-4">
+                    <div className="bg-theme-surface border border-theme-border rounded-3xl p-6 flex flex-col justify-between group hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.1)] transition-all">
+                        <div className="flex justify-between items-start mb-6">
                             <div>
-                                <p className="text-[10px] font-bold tracking-[0.15em] text-gray-500 uppercase mb-1">Unresolved Grievances</p>
-                                <span className="text-3xl font-black text-yellow-500">{stats.unresolved}</span>
+                                <p className="text-[10px] font-black tracking-widest text-theme-muted uppercase mb-2">Active Grievances</p>
+                                <span className="text-4xl font-black text-amber-500">{stats.unresolved}</span>
                             </div>
-                            <div className="p-2.5 bg-[#1a2538] rounded-xl border border-white/[0.06] group-hover:bg-yellow-500/10 group-hover:border-yellow-500/20 transition-all">
-                                <ShieldAlert className="w-5 h-5 text-yellow-500" />
+                            <div className="p-3 bg-theme-bg rounded-2xl border border-theme-border group-hover:bg-amber-500/10 group-hover:border-amber-500/20 transition-all">
+                                <ShieldAlert className="w-6 h-6 text-amber-500" />
                             </div>
                         </div>
-                        <div className="text-xs text-gray-500 font-medium">Awaiting action</div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-theme-muted">Awaiting action</div>
                     </div>
 
                     {/* Emergency Escalations */}
-                    <div className="bg-[#121a28] border border-red-500/20 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group">
-                        {stats.escalations > 0 && <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 blur-2xl animate-pulse" />}
-                        <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="bg-theme-surface border border-rose-500/20 rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group shadow-[0_0_15px_rgba(244,63,94,0.05)]">
+                        {stats.escalations > 0 && <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 blur-3xl animate-pulse" />}
+                        <div className="flex justify-between items-start mb-6 relative z-10">
                             <div>
-                                <p className="text-[10px] font-bold tracking-[0.15em] text-red-400/80 uppercase mb-1">Emergency Escalations</p>
-                                <span className="text-3xl font-black text-red-500">{stats.escalations}</span>
+                                <p className="text-[10px] font-black tracking-widest text-rose-500/80 uppercase mb-2">Emergency Escalations</p>
+                                <span className="text-4xl font-black text-rose-500">{stats.escalations}</span>
                             </div>
-                            <div className="p-2.5 bg-red-500/10 rounded-xl border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-                                <AlertTriangle className="w-5 h-5 text-red-500" />
+                            <div className="p-3 bg-rose-500/10 rounded-2xl border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.2)]">
+                                <AlertTriangle className="w-6 h-6 text-rose-500" />
                             </div>
                         </div>
-                        <div className="text-xs text-red-400/80 font-medium relative z-10">Requires immediate attention</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-rose-500/80 relative z-10">Requires immediate attention</div>
                     </div>
 
-                    {/* Wellbeing Score */}
-                    <div className="bg-[#121a28] border border-white/[0.06] rounded-2xl p-5 flex flex-col justify-between group hover:border-emerald-500/30 transition-colors">
-                        <div className="flex justify-between items-start mb-4">
+                    {/* Average Performance Score */}
+                    <div className="bg-theme-surface border border-theme-border rounded-3xl p-6 flex flex-col justify-between group hover:border-emerald-500/30 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] transition-all">
+                        <div className="flex justify-between items-start mb-6">
                             <div>
-                                <p className="text-[10px] font-bold tracking-[0.15em] text-gray-500 uppercase mb-1">Wellbeing Cohort Score</p>
-                                <span className="text-3xl font-black text-emerald-400">{stats.wellbeing}</span>
+                                <p className="text-[10px] font-black tracking-widest text-theme-muted uppercase mb-2">Battalion Avg Score</p>
+                                <span className="text-4xl font-black text-emerald-500">{stats.avgPerformance}%</span>
                             </div>
-                            <div className="p-2.5 bg-[#1a2538] rounded-xl border border-white/[0.06] group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-all">
-                                <Activity className="w-5 h-5 text-emerald-400" />
+                            <div className="p-3 bg-theme-bg rounded-2xl border border-theme-border group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-all">
+                                <Target className="w-6 h-6 text-emerald-500" />
                             </div>
                         </div>
-                        <div className="text-xs text-emerald-400/70 font-medium flex items-center gap-1">
-                            <TrendingUp className="w-3.5 h-3.5" /> +0.2 this week
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/80 flex items-center gap-1.5">
+                            <TrendingUp className="w-3.5 h-3.5" /> Exam Performance
                         </div>
                     </div>
                 </div>
@@ -153,71 +210,81 @@ const CODashboard = ({ onNavigate }) => {
                     <div className="lg:col-span-2 space-y-6">
                         
                         {/* Chart Area */}
-                        <div className="bg-[#121a28] border border-white/[0.06] rounded-3xl p-6">
-                            <div className="flex items-center gap-2 mb-8">
-                                <BarChart className="w-5 h-5 text-gray-400" />
-                                <h2 className="text-lg font-bold text-white">Complaint Volume by Category</h2>
+                        <div className="bg-theme-surface border border-theme-border rounded-[32px] p-8 shadow-sm">
+                            <div className="flex items-center gap-3 mb-10 border-b border-theme-border pb-6">
+                                <div className="p-2.5 rounded-xl bg-theme-bg border border-theme-border">
+                                    <BarChart className="w-5 h-5 text-theme-primary" />
+                                </div>
+                                <h2 className="text-sm font-black text-theme-text uppercase tracking-widest">Grievance Distribution</h2>
                             </div>
                             
-                            <div className="relative h-48 w-full flex items-end justify-around pb-2 border-b border-white/[0.06]">
+                            <div className="relative h-56 w-full flex items-end justify-around pb-2 border-b border-theme-border">
                                 {/* Horizontal grid lines */}
                                 {[0.25, 0.5, 0.75, 1].map(pct => (
-                                    <div key={pct} className="absolute left-0 w-full border-t border-white/[0.03] border-dashed" style={{ bottom: `${pct * 100}%` }} />
+                                    <div key={pct} className="absolute left-0 w-full border-t border-theme-border/50 border-dashed" style={{ bottom: `${pct * 100}%` }} />
                                 ))}
                                 
                                 {chartCategories.map(cat => {
                                     const count = categoryCounts[cat.key] || 0;
-                                    const heightPct = Math.max((count / maxCategoryCount) * 100, 4); // min 4% height
+                                    const heightPct = Math.max((count / maxCategoryCount) * 100, 5); // min 5% height
                                     return (
-                                        <div key={cat.key} className="flex flex-col items-center group w-12 z-10">
-                                            <span className="text-xs font-bold text-white mb-2 opacity-0 group-hover:opacity-100 transition-opacity">{count}</span>
+                                        <div key={cat.key} className="flex flex-col items-center group w-14 z-10">
+                                            <span className="text-xs font-black text-theme-text mb-2 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0">{count}</span>
                                             <div 
-                                                className={`w-full rounded-t-sm transition-all duration-500 ${cat.color} opacity-80 group-hover:opacity-100 group-hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]`}
+                                                className={`w-full rounded-t-lg transition-all duration-500 ${cat.color} opacity-80 group-hover:opacity-100 hover:scale-105 shadow-lg`}
                                                 style={{ height: `${heightPct}%` }}
                                             />
-                                            <span className="absolute -bottom-8 text-[10px] font-bold text-gray-500 tracking-wide text-center uppercase hidden sm:block w-20 transform -translate-x-1/2 left-1/2">
+                                            <span className="absolute -bottom-10 text-[9px] font-black text-theme-muted tracking-widest text-center uppercase hidden sm:block w-24 transform -translate-x-1/2 left-1/2">
                                                 {cat.label}
                                             </span>
                                         </div>
                                     );
                                 })}
                             </div>
-                            <div className="h-8 sm:h-12" /> {/* Spacer for labels */}
+                            <div className="h-12" /> {/* Spacer for labels */}
                         </div>
 
                         {/* Recent Grievances List */}
-                        <div className="bg-[#121a28] border border-white/[0.06] rounded-3xl p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Clock className="w-5 h-5 text-gray-400" /> Recent Reports
+                        <div className="bg-theme-surface border border-theme-border rounded-[32px] p-8 shadow-sm">
+                            <div className="flex justify-between items-center mb-8 border-b border-theme-border pb-6">
+                                <h2 className="text-sm font-black text-theme-text uppercase tracking-widest flex items-center gap-3">
+                                    <div className="p-2.5 rounded-xl bg-theme-bg border border-theme-border">
+                                        <Clock className="w-5 h-5 text-theme-primary" />
+                                    </div> 
+                                    Recent Reports
                                 </h2>
                                 <button 
                                     onClick={() => onNavigate('co-grievances')}
-                                    className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                                    className="text-[10px] font-black text-theme-primary hover:text-theme-secondary uppercase tracking-widest flex items-center gap-1 bg-theme-primary/10 px-4 py-2 rounded-xl transition-colors"
                                 >
-                                    View All <ChevronRight className="w-3 h-3" />
+                                    View Log <ChevronRight className="w-3 h-3" />
                                 </button>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 {recentGrievances.length === 0 ? (
-                                    <p className="text-sm text-gray-500 text-center py-4">No recent grievances.</p>
+                                    <div className="text-center py-10 bg-theme-bg rounded-2xl border border-theme-border border-dashed">
+                                        <p className="text-[10px] font-black text-theme-muted uppercase tracking-widest">No recent grievances in the battalion.</p>
+                                    </div>
                                 ) : (
                                     recentGrievances.map(g => (
-                                        <div key={g.id} className="p-4 rounded-2xl bg-[#1a2538] border border-white/[0.04] hover:border-white/10 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div key={g.id} className="p-5 rounded-2xl bg-theme-bg border border-theme-border hover:border-theme-primary/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-5 group">
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1.5">
-                                                    <span className={`text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded border ${getStatusColor(g.status)}`}>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className={`text-[9px] uppercase tracking-widest font-black px-2.5 py-1 rounded-md border ${getStatusColor(g.status)}`}>
                                                         {g.status}
                                                     </span>
-                                                    {g.severity === 'Critical' && <span className="text-[9px] font-bold text-red-500 border border-red-500/20 px-2 py-0.5 rounded uppercase tracking-widest bg-red-500/10">Critical</span>}
+                                                    {g.severity === 'Critical' && <span className="text-[9px] font-black text-rose-500 border border-rose-500/20 px-2.5 py-1 rounded-md uppercase tracking-widest bg-rose-500/10 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Critical</span>}
                                                 </div>
-                                                <p className="text-sm font-bold text-white truncate">{g.category}</p>
-                                                <p className="text-xs text-gray-400 truncate">{g.description}</p>
+                                                <p className="text-sm font-bold text-theme-text truncate group-hover:text-theme-primary transition-colors">{g.category}</p>
+                                                <p className="text-[11px] font-medium text-theme-muted truncate mt-1">{g.description}</p>
                                             </div>
-                                            <div className="text-left sm:text-right flex-shrink-0">
-                                                <p className="text-xs text-gray-300 font-medium">{g.cadetName}</p>
-                                                <p className="text-[10px] text-gray-500">{g.createdAt?.toDate().toLocaleDateString()}</p>
+                                            <div className="text-left sm:text-right flex-shrink-0 flex flex-col sm:items-end justify-center">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="w-2 h-2 rounded-full bg-theme-border"></span>
+                                                    <p className="text-[11px] text-theme-text font-black uppercase tracking-widest">{g.cadetName || 'Anonymous'}</p>
+                                                </div>
+                                                <p className="text-[9px] font-bold text-theme-muted uppercase tracking-widest">{g.createdAt?.toDate().toLocaleDateString()}</p>
                                             </div>
                                         </div>
                                     ))
@@ -230,55 +297,23 @@ const CODashboard = ({ onNavigate }) => {
                     {/* Right Col (1/3) */}
                     <div className="space-y-6">
                         
-                        {/* Zone Status */}
-                        <div className="bg-[#121a28] border border-white/[0.06] rounded-3xl p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Activity className="w-5 h-5 text-gray-400" /> Camp Zone Status
-                                </h2>
-                                <span className="text-[9px] font-bold text-teal-500 bg-teal-500/10 px-2 py-1 rounded uppercase tracking-widest">AI Inspected</span>
-                            </div>
-
-                            <div className="space-y-3">
-                                {MOCK_ZONES.map(zone => (
-                                    <div key={zone.id} className={`
-                                        p-4 rounded-2xl border flex items-center justify-between
-                                        ${zone.type === 'stable' ? 'bg-[#1a2538] border-teal-500/20' : ''}
-                                        ${zone.type === 'warning' ? 'bg-[#1a2538] border-yellow-500/20' : ''}
-                                        ${zone.type === 'critical' ? 'bg-[#1a2538] border-red-500/30' : ''}
-                                    `}>
-                                        <div>
-                                            <p className="text-sm font-bold text-white mb-0.5">{zone.name}</p>
-                                            <p className="text-xs text-gray-500">Wellbeing Score: {zone.score}/5.0</p>
-                                        </div>
-                                        <div className={`
-                                            flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border
-                                            ${zone.type === 'stable' ? 'text-teal-400 bg-teal-500/10 border-teal-500/20' : ''}
-                                            ${zone.type === 'warning' ? 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20' : ''}
-                                            ${zone.type === 'critical' ? 'text-red-500 bg-red-500/10 border-red-500/20' : ''}
-                                        `}>
-                                            {zone.type === 'stable' && <CheckCircle className="w-3.5 h-3.5" />}
-                                            {zone.type === 'warning' && <AlertTriangle className="w-3.5 h-3.5" />}
-                                            {zone.type === 'critical' && <ShieldAlert className="w-3.5 h-3.5" />}
-                                            {zone.status}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
                         {/* Quick Actions */}
-                        <div className="bg-[#121a28] border border-white/[0.06] rounded-3xl p-6">
-                            <h2 className="text-lg font-bold text-white mb-4">Quick Actions</h2>
-                            <div className="space-y-2">
-                                <button onClick={() => onNavigate('co-tasks')} className="w-full p-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/20 text-sm font-bold transition-colors flex items-center justify-between group">
-                                    Assign Task <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        <div className="bg-theme-surface border border-theme-border rounded-[32px] p-8 shadow-sm">
+                            <h2 className="text-sm font-black text-theme-text uppercase tracking-widest mb-6 flex items-center gap-3 border-b border-theme-border pb-6">
+                                <div className="p-2.5 rounded-xl bg-theme-bg border border-theme-border">
+                                    <Activity className="w-5 h-5 text-theme-primary" />
+                                </div>
+                                Operations
+                            </h2>
+                            <div className="space-y-3">
+                                <button onClick={() => onNavigate('co-tasks')} className="w-full p-4 rounded-2xl bg-theme-primary/10 hover:bg-theme-primary hover:text-theme-bg text-theme-primary border border-theme-primary/20 text-xs font-black tracking-widest uppercase transition-all flex items-center justify-between group">
+                                    Assign Duty <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </button>
-                                <button onClick={() => onNavigate('co-announcements')} className="w-full p-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-sm font-bold transition-colors flex items-center justify-between group">
-                                    Post Announcement <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                <button onClick={() => onNavigate('co-announcements')} className="w-full p-4 rounded-2xl bg-blue-500/10 hover:bg-blue-500 hover:text-white text-blue-500 border border-blue-500/20 text-xs font-black tracking-widest uppercase transition-all flex items-center justify-between group">
+                                    Broadcast Order <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </button>
-                                <button onClick={() => onNavigate('co-grievances')} className="w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 text-sm font-bold transition-colors flex items-center justify-between group">
-                                    View Grievances <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                <button onClick={() => onNavigate('co-grievances')} className="w-full p-4 rounded-2xl bg-theme-bg hover:bg-theme-surface text-theme-text border border-theme-border text-xs font-black tracking-widest uppercase transition-all flex items-center justify-between group">
+                                    Review Grievances <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </div>
                         </div>

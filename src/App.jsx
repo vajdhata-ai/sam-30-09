@@ -12,7 +12,6 @@ import ChatHistorySidebar from './components/ChatHistorySidebar';
 import DoubtSolver from './components/DoubtSolver';
 import DocumentStudy from './components/DocumentStudy';
 import PodcastGenerator from './components/PodcastGenerator';
-import YoutubeAnalyzer from './components/YoutubeAnalyzer';
 import QuizAssessment from './components/QuizAssessment';
 
 import Login from './components/Login';
@@ -24,14 +23,12 @@ import SamplePaperGenerator from './components/SamplePaperGenerator';
 import LoopManager from './components/LearnLoop/LoopManager';
 import LandingPageV2 from './components/LandingPageV2';
 import NeuralArena from './components/NeuralArena';
-import VideoGenerator from './components/VideoGenerator';
 import ErrorBoundary from './components/ErrorBoundary';
 import OnboardingGuide from './components/OnboardingGuide';
 import UniversalSearch from './components/UniversalSearch';
 import ThemeEffects from './components/ThemeEffects';
 import { AssistantProvider } from './contexts/AssistantContext';
 import { UserPreferencesProvider } from './contexts/UserPreferencesContext';
-import RoleSelection from './components/RoleSelection';
 import CadetHandbook from './components/CadetHandbook';
 import ExamPrepHub from './components/ExamPrepHub';
 import GrievancePortal from './components/GrievancePortal';
@@ -132,14 +129,12 @@ const AppContent = () => {
     const [currentView, setCurrentView] = useState('cadet-dashboard');
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [hasVisited, setHasVisited] = useState(() => localStorage.getItem('hasVisited') === 'true');
+    const [assessmentContext, setAssessmentContext] = useState(null);
 
-    // Initial splash completes
     const handleSplashComplete = () => {
         if (currentUser) {
             if (isRoleSet === true) {
                 setPhase('app');
-            } else if (isRoleSet === false) {
-                setPhase('role-select');
             }
             // If isRoleSet === null (still loading), stay on splash — the useEffect below will handle it
             if (isRoleSet === null) return;
@@ -167,17 +162,9 @@ const AppContent = () => {
     // After successful auth, currentUser changes
     useEffect(() => {
         if (currentUser && isRoleSet !== null) {
-            // If we're logged in but don't have a role, we MUST go to role-select
-            if (isRoleSet === false && phase !== 'splash') {
-                if (phase !== 'role-select') {
-                    setPhase('role-select');
-                }
-            } else if (isRoleSet === true && (phase === 'login' || phase === 'signup' || phase === 'role-select' || phase === 'splash')) {
+            if (isRoleSet === true && (phase === 'login' || phase === 'signup' || phase === 'splash')) {
                 setPhase('app');
-                // Don't override currentView if we just selected a role
-                if (phase !== 'role-select') {
-                    setCurrentView('cadet-dashboard');
-                }
+                setCurrentView('cadet-dashboard');
                 if (localStorage.getItem('showOnboarding') === 'true') {
                     setShowOnboarding(true);
                 }
@@ -187,7 +174,7 @@ const AppContent = () => {
 
     // Handle sign out or account deletion
     useEffect(() => {
-        if (!currentUser && phase === 'app') {
+        if (!currentUser && phase !== 'splash' && phase !== 'splash-to-login' && phase !== 'landing' && phase !== 'login' && phase !== 'signup') {
             setPhase('login');
             setCurrentView('cadet-dashboard');
         }
@@ -214,12 +201,11 @@ const AppContent = () => {
             case 'settings': return <Settings />;
             case 'learn-loop': return <LoopManager />;
             case 'doubt-solver': return <DoubtSolver retryableFetch={retryableFetch} />;
-            case 'document-study': return <DocumentStudy retryableFetch={retryableFetch} onNavigate={setCurrentView} />;
+            case 'document-study': return <DocumentStudy retryableFetch={retryableFetch} onNavigate={setCurrentView} setAssessmentContext={setAssessmentContext} />;
             case 'podcast-generator': return <PodcastGenerator retryableFetch={retryableFetch} />;
-            case 'quiz-assessment': return <QuizAssessment retryableFetch={retryableFetch} onNavigate={setCurrentView} />;
+            case 'quiz-assessment': return <QuizAssessment retryableFetch={retryableFetch} onNavigate={setCurrentView} assessmentContext={assessmentContext} setAssessmentContext={setAssessmentContext} />;
             case 'sample-paper': return <SamplePaperGenerator retryableFetch={retryableFetch} />;
-            case 'neural-arena': return <NeuralArena onExit={() => setCurrentView('document-study')} setIsCollapsed={setIsCollapsed} />;
-            case 'video-generator': return <VideoGenerator />;
+            case 'neural-arena': return <NeuralArena onNavigate={setCurrentView} setIsCollapsed={setIsCollapsed} />;
             case 'cadet-handbook': return <CadetHandbook />;
             case 'cadet-dashboard': return <CadetDashboard onNavigate={setCurrentView} />;
             case 'exam-prep': return <ExamPrepHub onNavigate={setCurrentView} />;
@@ -236,10 +222,9 @@ const AppContent = () => {
             'doubt-solver': 'Neural Query',
             'document-study': 'Samvada Lens',
             'podcast-generator': 'Audio Studio',
-            'quiz-assessment': 'Adaptive Testing',
+            'quiz-assessment': 'Precision Testing',
             'sample-paper': 'Dynamic Paper Gen',
             'neural-arena': 'Cognitive Colosseum',
-            'video-generator': 'Video Studio',
             'cadet-handbook': 'Cadet Handbook',
             'cadet-dashboard': 'Dashboard',
             'exam-prep': 'Command Center',
@@ -259,7 +244,6 @@ const AppContent = () => {
             'quiz-assessment': <ClipboardList className="w-5 h-5 mr-2 text-gold" />,
             'sample-paper': <FileText className="w-5 h-5 mr-2 text-gold-light" />,
             'neural-arena': <Swords className="w-5 h-5 mr-2 text-gold" />,
-            'video-generator': <Video className="w-5 h-5 mr-2 text-gold" />,
             'cadet-handbook': <FileText className="w-5 h-5 mr-2 text-gold" />,
             'cadet-dashboard': <Home className="w-5 h-5 mr-2 text-gold" />,
             'exam-prep': <Trophy className="w-5 h-5 mr-2 text-gold" />,
@@ -296,39 +280,38 @@ const AppContent = () => {
             return <Signup onSwitchToLogin={() => setPhase('login')} />;
         }
 
-        // Role Selection
-        if (phase === 'role-select') {
-            return <RoleSelection onComplete={() => setPhase('app')} />;
-        }
-
         // ═══ MAIN APP ═══
         if (userRole === 'co') {
             return <COLayout />;
         }
 
+        const isImmersiveView = ['document-study', 'quiz-assessment', 'neural-arena'].includes(currentView);
+
         return (
             <div className="flex w-full h-[100dvh] font-sans overflow-hidden bg-theme-bg text-theme-text transition-colors duration-500 relative">
                 <ThemeEffects />
 
-
                 {showOnboarding && <OnboardingGuide onComplete={handleOnboardingComplete} />}
                 <UniversalSearch onNavigate={setCurrentView} />
 
-                <Sidebar
-                    currentView={currentView}
-                    setCurrentView={setCurrentView}
-                    isSidebarOpen={isSidebarOpen}
-                    setIsSidebarOpen={setIsSidebarOpen}
-                    isCollapsed={isCollapsed}
-                    setIsCollapsed={setIsCollapsed}
-                    user={currentUser}
-                    onLogin={() => setPhase('login')}
-                    onLogout={handleLogout}
-                />
+                {!isImmersiveView && (
+                    <Sidebar
+                        currentView={currentView}
+                        setCurrentView={setCurrentView}
+                        isSidebarOpen={isSidebarOpen}
+                        setIsSidebarOpen={setIsSidebarOpen}
+                        isCollapsed={isCollapsed}
+                        setIsCollapsed={setIsCollapsed}
+                        user={currentUser}
+                        onLogin={() => setPhase('login')}
+                        onLogout={handleLogout}
+                    />
+                )}
 
                 <div className={`
                     flex-1 flex flex-col h-full relative z-10 transition-all duration-500
-                    md:my-[2vh] md:mr-[2vh] md:rounded-[32px] overflow-hidden bg-theme-surface/70 backdrop-blur-xl border border-theme-border/8 shadow-depth-xl
+                    ${!isImmersiveView ? 'md:my-[2vh] md:mr-[2vh] md:rounded-[32px] border border-theme-border/8' : ''} 
+                    overflow-hidden bg-theme-surface/70 backdrop-blur-xl shadow-depth-xl
                 `}>
                     <ChatHistorySidebar
                         isOpen={isHistoryOpen}
@@ -340,21 +323,23 @@ const AppContent = () => {
                         }}
                     />
                     {/* Mobile Header */}
-                    <header className="md:hidden p-4 pt-8 flex items-center z-30 sticky top-0 bg-theme-bg/95 backdrop-blur-xl border-b border-theme-border shadow-sm">
-                        <button onClick={() => setIsSidebarOpen(true)} className="mr-3 text-theme-muted hover:text-theme-primary transition-colors cursor-none flex-shrink-0">
-                            <Menu className="w-5 h-5" />
-                        </button>
-                        <h1 className="font-serif italic font-light flex items-center text-theme-text flex-1 min-w-0 overflow-hidden">
-                            <div className="flex-shrink-0">{getHeaderIcon()}</div>
-                            <span className="truncate">{getHeaderTitle()}</span>
-                        </h1>
-                        <button onClick={() => window.dispatchEvent(new CustomEvent('open-universal-search'))} className="ml-2 text-theme-primary opacity-80 hover:opacity-100 transition-colors flex-shrink-0">
-                            <Search className="w-5 h-5" />
-                        </button>
-                        <button onClick={() => setIsHistoryOpen(true)} className="ml-2 text-theme-primary opacity-80 hover:opacity-100 transition-colors flex-shrink-0">
-                            <ClipboardList className="w-5 h-5" />
-                        </button>
-                    </header>
+                    {!isImmersiveView && (
+                        <header className="md:hidden p-4 pt-8 flex items-center z-30 sticky top-0 bg-theme-bg/95 backdrop-blur-xl border-b border-theme-border shadow-sm">
+                            <button onClick={() => setIsSidebarOpen(true)} className="mr-3 text-theme-muted hover:text-theme-primary transition-colors cursor-none flex-shrink-0">
+                                <Menu className="w-5 h-5" />
+                            </button>
+                            <h1 className="font-serif italic font-light flex items-center text-theme-text flex-1 min-w-0 overflow-hidden">
+                                <div className="flex-shrink-0">{getHeaderIcon()}</div>
+                                <span className="truncate">{getHeaderTitle()}</span>
+                            </h1>
+                            <button onClick={() => window.dispatchEvent(new CustomEvent('open-universal-search'))} className="ml-2 text-theme-primary opacity-80 hover:opacity-100 transition-colors flex-shrink-0">
+                                <Search className="w-5 h-5" />
+                            </button>
+                            <button onClick={() => setIsHistoryOpen(true)} className="ml-2 text-theme-primary opacity-80 hover:opacity-100 transition-colors flex-shrink-0">
+                                <ClipboardList className="w-5 h-5" />
+                            </button>
+                        </header>
+                    )}
 
                     <main className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
                         <div key={currentView} className="flex-1 flex flex-col animate-page-enter relative min-h-0">
@@ -413,7 +398,15 @@ const AppContent = () => {
 
 const AuthGate = () => {
     const { currentUser, loading } = useAuth();
-    if (loading) return <SplashScreen />;
+    const [showFallback, setShowFallback] = React.useState(false);
+    
+    React.useEffect(() => {
+        // If loading takes more than 5 seconds, show the app anyway
+        const timeout = setTimeout(() => setShowFallback(true), 5000);
+        return () => clearTimeout(timeout);
+    }, []);
+
+    if (loading && !showFallback) return <SplashScreen />;
     return (
         <ErrorBoundary>
             <AppContent />

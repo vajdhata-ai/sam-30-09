@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,13 +7,20 @@ import { Bot, Eye, ClipboardList, Trophy, ShieldAlert, Swords, CheckCircle, Cloc
 
 const CadetDashboard = ({ onNavigate }) => {
     const { currentUser } = useAuth();
-    const { getLevelInfo } = usePerformance();
+    const { getLevelInfo, getRecords } = usePerformance();
     const levelInfo = getLevelInfo();
+    
+    // Performance Assessment Data
+    const quizRecords = getRecords('quiz-assessment') || [];
+    const avgScore = quizRecords.length > 0 
+        ? Math.round(quizRecords.reduce((acc, r) => acc + Number(r.score), 0) / quizRecords.length) 
+        : 0;
     
     const [tasks, setTasks] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
     
     const [greeting, setGreeting] = useState('Good day');
+    const headerRef = useRef(null);
 
     useEffect(() => {
         const hour = new Date().getHours();
@@ -114,67 +121,96 @@ const CadetDashboard = ({ onNavigate }) => {
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-theme-bg overflow-y-auto custom-scrollbar p-4 md:p-8 font-sans">
-            <div className="max-w-6xl mx-auto w-full space-y-8">
+        <div className="flex-1 flex flex-col h-full bg-theme-bg overflow-y-auto custom-scrollbar p-3 md:p-6 font-sans">
+            <div className="w-full space-y-5">
                 
                 {/* ═══ HEADER / GREETING ═══ */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 glass-3d-elevated p-6 md:p-8 rounded-[32px] animate-fade-in-up relative overflow-hidden">
-                    {/* Background glow */}
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-theme-primary/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                <div 
+                    ref={headerRef}
+                    onMouseMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+                        e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+                    }}
+                    className="group relative overflow-hidden rounded-3xl animate-fade-in-up bg-gradient-to-br from-theme-surface/80 to-theme-bg border border-theme-border/50 shadow-2xl transition-all duration-700 hover:shadow-theme-primary/10"
+                >
+                    {/* Dynamic Interactive Glow */}
+                    <div 
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                        style={{
+                            background: `radial-gradient(circle 600px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(var(--theme-primary), 0.08), transparent 80%)`
+                        }}
+                    />
 
-                    <div className="relative z-10">
-                        <p className="text-sm font-bold text-theme-primary tracking-widest uppercase mb-2">
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                        </p>
-                        <h1 className="text-3xl md:text-4xl font-black text-theme-text leading-tight">
-                            {greeting},<br/>
-                            <span className="text-theme-primary">{currentUser?.displayName || 'Cadet'}</span>
-                        </h1>
-                    </div>
+                    <div className="relative z-10 p-7 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        {/* Left: Greeting */}
+                        <div className="flex-1 min-w-0">
+                            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-theme-primary/10 border border-theme-primary/20 w-fit mb-5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse" />
+                                <p className="text-[10px] font-semibold text-theme-primary tracking-[0.2em] uppercase">
+                                    Unity and Discipline
+                                </p>
+                            </div>
+                            <h1 className="text-4xl md:text-5xl font-light text-theme-text leading-[1.1] tracking-wide">
+                                {greeting},<br/>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-theme-primary via-theme-secondary to-theme-primary italic">
+                                    {currentUser?.displayName?.split(' ')[0] || 'Cadet'}
+                                </span>
+                            </h1>
+                            <p className="text-theme-muted mt-3.5 text-sm font-medium flex items-center gap-2 tracking-wide">
+                                <ShieldAlert className="w-4 h-4 text-theme-primary/60" />
+                                National Cadet Corps • {currentUser?.wing || 'Senior'} Division
+                            </p>
+                        </div>
 
-                    <div className="flex flex-wrap gap-4 relative z-10">
-                        <div className="glass-card rounded-2xl p-4 flex flex-col justify-center items-center min-w-[100px] hover:-translate-y-1 transition-transform duration-300">
-                            <span className="text-xl font-black text-theme-text">{levelInfo.rankAbbr}</span>
-                            <span className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Rank</span>
-                        </div>
-                        <div className="glass-card rounded-2xl p-4 flex flex-col justify-center items-center min-w-[100px] hover:-translate-y-1 transition-transform duration-300">
-                            <span className="text-2xl font-black text-emerald-400">85%</span>
-                            <span className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Attendance</span>
-                        </div>
-                        <div className="glass-card rounded-2xl p-4 flex flex-col justify-center items-center min-w-[100px] hover:-translate-y-1 transition-transform duration-300">
-                            <span className="text-xl font-black text-blue-400">14 Nov</span>
-                            <span className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Next Parade</span>
+                        {/* Right: Stat Cards in a clean row */}
+                        <div className="flex gap-3 flex-shrink-0">
+                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[120px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] font-semibold text-theme-muted uppercase tracking-[0.2em] mb-1">Rank</span>
+                                <span className="text-2xl font-light text-theme-text">{levelInfo.rankAbbr}</span>
+                            </div>
+                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[120px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] font-semibold text-theme-muted uppercase tracking-[0.2em] mb-1">Avg Score</span>
+                                <span className="text-2xl font-light text-theme-primary">{avgScore > 0 ? `${avgScore}%` : 'N/A'}</span>
+                            </div>
+                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[120px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] font-semibold text-theme-muted uppercase tracking-[0.2em] mb-1">Tests Taken</span>
+                                <span className="text-2xl font-light text-theme-primary">{quizRecords.length}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
                     {/* Left Col (2/3): Tasks & Actions */}
-                    <div className="lg:col-span-2 space-y-8">
+                    <div className="lg:col-span-2 space-y-6">
                         
                         {/* Daily Tasks */}
                         <section>
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-black text-theme-text flex items-center gap-2">
+                                <h2 className="text-xl font-light text-theme-text flex items-center gap-2">
                                     <ClipboardList className="w-5 h-5 text-theme-primary" /> Today's Objectives
                                 </h2>
                             </div>
 
                             <div className="space-y-3">
                                 {tasks.length === 0 ? (
-                                    <div className="bg-theme-surface/50 border border-theme-border border-dashed rounded-2xl p-8 text-center">
-                                        <CheckCircle className="w-10 h-10 text-theme-muted mx-auto mb-3 opacity-50" />
-                                        <p className="text-theme-muted font-medium">All caught up! No active tasks for today.</p>
+                                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-theme-border rounded-[24px] bg-theme-surface/30">
+                                        <CheckCircle className="w-16 h-16 text-theme-muted mb-4 opacity-50" />
+                                        <p className="text-lg text-theme-text font-bold">All caught up!</p>
+                                        <p className="text-sm text-theme-muted mt-1 text-center max-w-sm">No active tasks for today. Continue with your syllabus study or take a mock test.</p>
                                     </div>
                                 ) : (
                                     tasks.map(task => (
                                         <div key={task.id} className="glass-input rounded-2xl p-4 flex items-start gap-4 transition-all hover:border-theme-primary/40 group">
                                             <button 
                                                 onClick={() => handleCompleteTask(task)}
-                                                className="mt-1 w-6 h-6 rounded-full border-2 border-theme-muted hover:border-teal-500 hover:bg-teal-500/20 hover:scale-110 flex items-center justify-center transition-all duration-300 flex-shrink-0"
+                                                className="mt-1 w-6 h-6 rounded-full border-2 border-theme-muted hover:border-theme-primary hover:bg-theme-primary/20 hover:scale-110 flex items-center justify-center transition-all duration-300 flex-shrink-0"
                                             >
-                                                <CheckCircle className="w-4 h-4 text-transparent hover:text-teal-500 transition-colors" />
+                                                <CheckCircle className="w-4 h-4 text-transparent hover:text-theme-primary transition-colors" />
                                             </button>
                                             
                                             <div className="flex-1 min-w-0">
@@ -193,52 +229,23 @@ const CadetDashboard = ({ onNavigate }) => {
                             </div>
                         </section>
 
-                        {/* Quick Actions Grid */}
-                        <section>
-                            <h2 className="text-xl font-black text-theme-text mb-4">Quick Access</h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                {QUICK_ACTIONS.map(action => {
-                                    const Icon = action.icon;
-                                    return (
-                                        <button
-                                            key={action.id}
-                                            onClick={() => onNavigate(action.id)}
-                                            className="glass-card glow-border rounded-2xl p-4 text-left transition-all duration-300 group relative overflow-hidden h-[120px] flex flex-col justify-between hover:-translate-y-1 hover:shadow-glow"
-                                        >
-                                            {/* Glow effect on hover */}
-                                            <div className="absolute top-0 right-0 w-24 h-24 bg-theme-primary/5 rounded-full blur-xl scale-0 group-hover:scale-100 transition-transform duration-500 -translate-y-1/2 translate-x-1/2" />
-                                            
-                                            <div className={`w-10 h-10 rounded-xl ${action.bg} flex items-center justify-center mb-2`}>
-                                                <Icon className={`w-5 h-5 ${action.color}`} />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold text-theme-text text-sm leading-tight mb-0.5">{action.label}</h3>
-                                                <p className="text-[10px] text-theme-muted line-clamp-1">{action.desc}</p>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </section>
-
                     </div>
 
                     {/* Right Col (1/3): Announcements */}
                     <div className="space-y-6">
-                        <section className="glass-3d rounded-[32px] p-6 h-full min-h-[400px] animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+                        <section className="glass-3d rounded-[32px] p-6 h-full animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-black text-theme-text flex items-center gap-2">
+                                <h2 className="text-lg font-light text-theme-text flex items-center gap-2">
                                     <Megaphone className="w-5 h-5 text-blue-400" /> Command Comms
                                 </h2>
                             </div>
 
                             <div className="space-y-4">
                                 {announcements.length === 0 ? (
-                                    <div className="text-center py-10">
-                                        <div className="w-12 h-12 bg-theme-surface rounded-full flex items-center justify-center mx-auto mb-3 border border-theme-border">
-                                            <Megaphone className="w-5 h-5 text-theme-muted" />
-                                        </div>
-                                        <p className="text-sm text-theme-muted font-medium">No new announcements</p>
+                                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-theme-border rounded-[24px] bg-theme-surface/30 text-center">
+                                        <Megaphone className="w-12 h-12 text-theme-muted mb-4 opacity-50" />
+                                        <p className="text-theme-text font-bold text-lg">No Comms</p>
+                                        <p className="text-sm text-theme-muted mt-1">No new announcements from Command.</p>
                                     </div>
                                 ) : (
                                     announcements.map(announcement => (
@@ -262,6 +269,56 @@ const CadetDashboard = ({ onNavigate }) => {
                     </div>
 
                 </div>
+
+                {/* ═══ FULL-WIDTH QUICK ACCESS ═══ */}
+                <section className="animate-fade-in-up w-full mt-8" style={{ animationDelay: '200ms' }}>
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-3xl font-light text-theme-text flex items-center gap-4 tracking-wide">
+                            <div className="p-3 bg-theme-primary/10 rounded-2xl border border-theme-primary/20 shadow-[0_0_15px_rgba(var(--theme-primary),0.2)]">
+                                <Bot className="w-6 h-6 text-theme-primary" />
+                            </div>
+                            Operations Palette
+                        </h2>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[
+                            { id: 'doubt-solver', label: 'Neural Query', icon: Bot, desc: 'AI assistant for instant answers and deep reasoning.', glow: 'hover:shadow-[0_20px_40px_rgba(59,130,246,0.15)]', border: 'hover:border-blue-500/50', iconBg: 'bg-blue-500/10 border-blue-500/20', iconColor: 'text-blue-500' },
+                            { id: 'document-study', label: 'Samvada Lens', icon: Eye, desc: 'Analyze study materials and extract insights.', glow: 'hover:shadow-[0_20px_40px_rgba(168,85,247,0.15)]', border: 'hover:border-purple-500/50', iconBg: 'bg-purple-500/10 border-purple-500/20', iconColor: 'text-purple-500' },
+                            { id: 'quiz-assessment', label: 'Precision Testing', icon: ClipboardList, desc: 'Take dynamic practice tests for your exams.', glow: 'hover:shadow-[0_20px_40px_rgba(16,185,129,0.15)]', border: 'hover:border-emerald-500/50', iconBg: 'bg-emerald-500/10 border-emerald-500/20', iconColor: 'text-emerald-500' },
+                            { id: 'exam-prep', label: 'B & C Cert Prep', icon: Trophy, desc: 'Track your progress and battalion ranking.', glow: 'hover:shadow-[0_20px_40px_rgba(201,165,90,0.15)]', border: 'hover:border-theme-primary/50', iconBg: 'bg-theme-primary/10 border-theme-primary/20', iconColor: 'text-theme-primary' },
+                            { id: 'neural-arena', label: 'Colosseum', icon: Swords, desc: 'Compete in live quiz arenas with other cadets.', glow: 'hover:shadow-[0_20px_40px_rgba(239,68,68,0.15)]', border: 'hover:border-red-500/50', iconBg: 'bg-red-500/10 border-red-500/20', iconColor: 'text-red-500' },
+                            { id: 'quartermaster', label: 'Quartermaster', icon: FilePlus, desc: 'Request kit, uniform items, and manage inventory.', glow: 'hover:shadow-[0_20px_40px_rgba(249,115,22,0.15)]', border: 'hover:border-orange-500/50', iconBg: 'bg-orange-500/10 border-orange-500/20', iconColor: 'text-orange-500' },
+                        ].map((item, idx) => {
+                            const Icon = item.icon;
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => onNavigate(item.id)}
+                                    className={`relative group overflow-hidden flex flex-col items-start px-6 py-8 rounded-[32px] bg-theme-surface/40 backdrop-blur-xl border border-theme-border/40 transition-all duration-500 hover:-translate-y-3 hover:bg-theme-surface/60 ${item.glow} ${item.border}`}
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                                    
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 mb-6 ${item.iconBg}`}>
+                                        <Icon className={`w-7 h-7 ${item.iconColor}`} />
+                                    </div>
+                                    
+                                    <h3 className="text-lg font-light text-theme-text mb-3 leading-tight group-hover:text-theme-primary transition-colors text-left">
+                                        {item.label}
+                                    </h3>
+                                    
+                                    <p className="text-xs font-medium text-theme-muted text-left leading-relaxed line-clamp-3">
+                                        {item.desc}
+                                    </p>
+                                    
+                                    <div className="mt-auto pt-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-theme-muted group-hover:text-theme-primary transition-colors">
+                                        Launch Module <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </section>
             </div>
         </div>
     );

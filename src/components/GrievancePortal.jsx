@@ -5,7 +5,7 @@ import { ShieldAlert, Send, AlertTriangle, MessageCircle, RefreshCw, Eye } from 
 import { useAuth } from '../contexts/AuthContext';
 
 const GrievancePortal = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, userProfile } = useAuth();
     const [complaints, setComplaints] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
@@ -62,6 +62,8 @@ const GrievancePortal = () => {
                 cadetUid: currentUser.uid,
                 cadetName: formData.anonymous ? 'Anonymous Cadet' : currentUser.displayName || 'Cadet',
                 cadetEmail: formData.anonymous ? 'Hidden' : currentUser.email,
+                wing: userProfile?.wing || 'army',
+                battalion: userProfile?.battalion || '1st Battalion',
                 category: formData.category,
                 severity: formData.severity,
                 description: formData.description,
@@ -94,7 +96,7 @@ const GrievancePortal = () => {
 
     return (
         <div className="flex-1 flex flex-col h-full bg-theme-bg overflow-y-auto custom-scrollbar p-4 md:p-8 font-sans">
-            <div className="max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="max-w-[1400px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
                 
                 {/* Left: Filing Form */}
                 <div className="space-y-6">

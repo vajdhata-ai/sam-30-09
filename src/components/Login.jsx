@@ -1,15 +1,28 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { AuremLogo } from './Icons';
-import { X } from './Icons';
+import { useTheme, THEMES } from '../contexts/ThemeContext';
+import { Shield, Star, Anchor, X, Map, Crosshair, ChevronRight } from './Icons';
 
 const Login = ({ onSwitchToSignup }) => {
     const [error, setError] = useState('');
-    const { loginWithGoogle } = useAuth();
-    const { isDark } = useTheme();
+    const { loginWithCredentials } = useAuth();
+    const { isDark, setTheme } = useTheme();
     const [loading, setLoading] = useState(false);
+    
+    // Form State
+    const [regNumber, setRegNumber] = useState('');
+    const [password, setPassword] = useState('');
+    const [role, setRole] = useState('cadet'); // 'cadet' or 'co'
+    const [selectedWing, setSelectedWing] = useState('army'); // 'army', 'navy', 'airforce'
+    
     const cardRef = useRef(null);
+
+    // Update theme when wing changes
+    useEffect(() => {
+        if (selectedWing === 'army') setTheme(THEMES.OLIVE);
+        if (selectedWing === 'navy') setTheme(THEMES.NAVY);
+        if (selectedWing === 'airforce') setTheme(THEMES.NIGHT_OPS); // Or a specific Air Force theme if added
+    }, [selectedWing, setTheme]);
 
     const handleMouseMove = (e) => {
         if (!cardRef.current) return;
@@ -19,8 +32,8 @@ const Login = ({ onSwitchToSignup }) => {
         const y = e.clientY - rect.top;
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
-        const rotateX = ((y - centerY) / centerY) * -6;
-        const rotateY = ((x - centerX) / centerX) * 6;
+        const rotateX = ((y - centerY) / centerY) * -4;
+        const rotateY = ((x - centerX) / centerX) * 4;
         card.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     };
 
@@ -30,130 +43,195 @@ const Login = ({ onSwitchToSignup }) => {
         }
     };
 
-    const handleGoogleLogin = async () => {
+    const handleLogin = async (e) => {
+        if (e) e.preventDefault();
         try {
             setError('');
             setLoading(true);
-            await loginWithGoogle();
+            await loginWithCredentials(regNumber, password, role);
+            // We pass wing/cert/battalion to userProfile via AuthContext defaults if new user
         } catch (err) {
             console.error(err);
-            let msg = 'Failed to sign in.';
-            if (err.code === 'auth/popup-closed-by-user') msg = 'Sign-in cancelled.';
-            if (err.code === 'auth/network-request-failed') msg = 'Connection error. Check your internet.';
-            if (err.code === 'auth/invalid-api-key') msg = 'System Error: Invalid API Key.';
-            setError(msg);
+            setError(err.message || 'Failed to sign in. Please check your credentials.');
             setLoading(false);
         }
     };
 
-    return (
-        <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden cursor-none bg-theme-bg">
-            {/* Ambient orbs using theme colors */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[20%] left-[20%] w-[400px] h-[400px] rounded-full blur-[150px]"
-                    style={{ background: 'rgba(var(--theme-primary), 0.08)', animation: 'auth-float 12s ease-in-out infinite' }} />
-                <div className="absolute bottom-[15%] right-[15%] w-[350px] h-[350px] rounded-full blur-[130px]"
-                    style={{ background: 'rgba(var(--theme-secondary), 0.05)', animation: 'auth-float 15s ease-in-out infinite', animationDelay: '-5s' }} />
-                <div className="absolute top-8 right-20 w-20 h-20 rounded-full blur-2xl opacity-20"
-                    style={{ background: 'rgba(var(--theme-primary), 0.2)', animation: 'auth-float 8s ease-in-out infinite' }} />
-                <div className="absolute bottom-12 left-12 w-28 h-28 rounded-full blur-2xl opacity-15"
-                    style={{ background: 'rgba(var(--theme-primary), 0.15)', animation: 'auth-float 10s ease-in-out infinite', animationDelay: '2s' }} />
-            </div>
+    // Wing data for selector
+    const wings = [
+        { id: 'army', name: 'Army Wing', icon: Crosshair, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+        { id: 'navy', name: 'Naval Wing', icon: Anchor, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/30' },
+        { id: 'airforce', name: 'Air Wing', icon: Map, color: 'text-sky-300', bg: 'bg-sky-300/10', border: 'border-sky-300/30' }
+    ];
 
-            {/* Grid overlay */}
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{
-                backgroundImage: 'linear-gradient(rgba(var(--theme-primary), 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--theme-primary), 0.5) 1px, transparent 1px)',
-                backgroundSize: '60px 60px',
-            }} />
+    return (
+        <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-theme-bg font-sans">
+            {/* Military Camo/Topographic Background Element */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(var(--theme-primary), 1) 1px, transparent 0)',
+                backgroundSize: '32px 32px'
+            }}></div>
+
+            {/* Ambient Lighting */}
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-theme-primary/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-theme-secondary/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none" />
 
             {/* 3D Tilt Card */}
             <div
                 ref={cardRef}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
-                className="w-full max-w-[440px] relative group transition-all duration-500 ease-out z-10"
-                style={{ transform: 'perspective(2000px)', transformStyle: 'preserve-3d' }}
+                className="w-full max-w-[480px] relative z-10 transition-transform duration-500 ease-out"
+                style={{ transformStyle: 'preserve-3d' }}
             >
                 {/* Glow behind card */}
-                <div className="absolute -inset-4 rounded-[40px] blur-3xl transition duration-1000 group-hover:opacity-100 opacity-20 animate-pulse"
-                    style={{ background: 'linear-gradient(135deg, rgba(var(--theme-primary), 0.15), rgba(var(--theme-secondary), 0.1))' }} />
+                <div className="absolute -inset-1 rounded-[32px] blur-xl opacity-30 animate-pulse bg-gradient-to-r from-theme-primary to-theme-secondary" />
 
-                {/* Card */}
-                <div className="relative p-12 rounded-[40px] flex flex-col items-center text-center border shadow-2xl shadow-black/60 bg-theme-surface border-theme-primary/10"
-                    style={{ backdropFilter: 'blur(24px)' }}
-                >
-                    {/* Accent bar */}
-                    <div className="absolute top-0 left-0 w-full h-0.5 rounded-t-[40px]"
-                        style={{ background: 'linear-gradient(90deg, transparent, rgba(var(--theme-primary),1), transparent)' }} />
-
-                    {/* Light Sweep Effect */}
-                    <div className="absolute inset-0 rounded-[40px] overflow-hidden pointer-events-none">
-                        <div className="absolute -inset-[100%] bg-gradient-to-tr from-transparent via-white/[0.02] to-transparent rotate-45 group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+                {/* Card Main */}
+                <div className="relative p-8 md:p-10 rounded-[32px] border shadow-2xl bg-theme-surface/90 backdrop-blur-2xl border-theme-border flex flex-col items-center">
+                    
+                    {/* NCC Tricolor Accent Bar */}
+                    <div className="absolute top-0 left-0 w-full h-1.5 flex rounded-t-[32px] overflow-hidden">
+                        <div className="flex-1 bg-[#800000]"></div> {/* Maroon - Army */}
+                        <div className="flex-1 bg-[#000080]"></div> {/* Navy Blue - Navy */}
+                        <div className="flex-1 bg-[#87CEEB]"></div> {/* Sky Blue - Air Force */}
                     </div>
 
-                    {/* Logo */}
-                    <div className="mb-8 relative">
-                        <div className="relative">
-                            <AuremLogo className="w-20 h-20" />
-                            <div className="absolute -inset-4 rounded-full blur-2xl -z-10"
-                                style={{ background: 'rgba(var(--theme-primary), 0.12)', animation: 'pulse 3s ease-in-out infinite' }} />
-                        </div>
+                    {/* Logo Area */}
+                    <div className="w-20 h-20 rounded-2xl bg-theme-bg border border-theme-border flex items-center justify-center mb-6 shadow-inner relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-theme-primary/10 group-hover:bg-theme-primary/20 transition-colors"></div>
+                        <Shield className="w-10 h-10 text-theme-primary" />
                     </div>
 
-                    <h2 className="text-3xl font-serif italic mb-2 tracking-wide text-theme-text">
-                        Welcome to{' '}
-                        <span className="text-theme-primary">Samvada</span>
-                    </h2>
-
-                    <p className="text-theme-muted mb-8 tracking-widest text-[11px] font-bold uppercase mt-2">Cadet & CO Portal</p>
+                    <h1 className="text-3xl font-black uppercase tracking-widest text-theme-text mb-1 text-center">
+                        National Cadet Corps
+                    </h1>
+                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-theme-primary mb-2">
+                        Training Command Portal
+                    </p>
+                    <p className="text-[10px] uppercase tracking-widest text-theme-muted mb-8 italic">
+                        "Unity and Discipline" (एकता और अनुशासन)
+                    </p>
 
                     {error && (
-                        <div className="mb-6 w-full p-3 rounded-xl bg-red-500/10 border border-red-500/15 flex items-center gap-3 text-red-400 text-xs text-left">
+                        <div className="mb-6 w-full p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400 text-xs">
                             <X className="w-4 h-4 flex-shrink-0" />
                             <p>{error}</p>
                         </div>
                     )}
 
-                    <div className="w-full space-y-4">
+                    <form onSubmit={handleLogin} className="w-full space-y-5">
+                        
+                        {/* Wing Selector */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-theme-muted block ml-1">Select Wing</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {wings.map(wing => {
+                                    const Icon = wing.icon;
+                                    const isSelected = selectedWing === wing.id;
+                                    return (
+                                        <button
+                                            key={wing.id}
+                                            type="button"
+                                            onClick={() => setSelectedWing(wing.id)}
+                                            className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                                                isSelected 
+                                                ? `${wing.bg} ${wing.border} scale-105 shadow-lg` 
+                                                : 'bg-theme-bg border-theme-border opacity-70 hover:opacity-100 hover:border-theme-primary/50'
+                                            }`}
+                                        >
+                                            <Icon className={`w-6 h-6 mb-1.5 ${isSelected ? wing.color : 'text-theme-muted'}`} />
+                                            <span className={`text-[9px] font-bold uppercase tracking-wider ${isSelected ? wing.color : 'text-theme-text'}`}>
+                                                {wing.name.replace(' Wing', '')}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Role Toggle */}
+                        <div className="flex p-1 bg-theme-bg rounded-xl border border-theme-border mt-4">
+                            <button
+                                type="button"
+                                onClick={() => setRole('cadet')}
+                                className={`flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${
+                                    role === 'cadet' ? 'bg-theme-primary text-theme-bg shadow-md' : 'text-theme-muted hover:text-theme-text'
+                                }`}
+                            >
+                                Cadet
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setRole('co')}
+                                className={`flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${
+                                    role === 'co' ? 'bg-theme-primary text-theme-bg shadow-md' : 'text-theme-muted hover:text-theme-text'
+                                }`}
+                            >
+                                Officer (CO)
+                            </button>
+                        </div>
+
+                        {/* Credentials */}
+                        <div className="space-y-4 pt-2">
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-theme-muted block ml-1 mb-1.5">
+                                    {role === 'cadet' ? 'Regimental Number' : 'Officer ID'}
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        type="text" 
+                                        value={regNumber}
+                                        onChange={(e) => setRegNumber(e.target.value)}
+                                        placeholder={role === 'cadet' ? "e.g. DL/22/SDA/100452" : "e.g. NCC-OFF-001"}
+                                        className="w-full bg-theme-bg border border-theme-border rounded-xl pl-4 pr-10 py-3.5 text-theme-text text-sm font-medium outline-none focus:border-theme-primary focus:shadow-[0_0_15px_rgba(var(--theme-primary),0.15)] transition-all uppercase"
+                                    />
+                                    {regNumber && <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-theme-muted block ml-1 mb-1.5">Access Code</label>
+                                <input 
+                                    type="password" 
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Enter your security code"
+                                    className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-3.5 text-theme-text text-sm font-medium outline-none focus:border-theme-primary focus:shadow-[0_0_15px_rgba(var(--theme-primary),0.15)] transition-all"
+                                />
+                            </div>
+                        </div>
+
                         <button
-                            onClick={handleGoogleLogin}
-                            disabled={loading}
-                            className="group relative w-full flex items-center justify-center gap-3 px-5 py-4 rounded-2xl font-semibold
-                                transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]
-                                disabled:opacity-60 disabled:cursor-not-allowed cursor-none
-                                bg-theme-primary text-theme-bg hover:opacity-90 shadow-lg
-                            "
+                            type="submit"
+                            disabled={loading || !regNumber || !password}
+                            className="w-full flex items-center justify-center gap-3 py-4 mt-6 rounded-xl font-black uppercase tracking-[0.2em] text-xs transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-theme-primary text-theme-bg hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.4)]"
                         >
                             {loading ? (
                                 <div className="w-5 h-5 border-2 border-theme-bg/30 border-t-theme-bg rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    <svg className="w-5 h-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" />
-                                    </svg>
-                                    <span>Continue with Google</span>
+                                    <span>Authenticate</span>
+                                    <ChevronRight className="w-4 h-4" />
                                 </>
                             )}
                         </button>
+                    </form>
+
+                    {/* Security Notice */}
+                    <div className="mt-8 pt-6 w-full border-t border-theme-border flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest text-theme-muted">
+                        <Shield className="w-3 h-3" />
+                        <span>Secure Military Network</span>
                     </div>
 
-                    {/* Footer */}
-                    <div className="mt-10 pt-6 w-full flex justify-between items-center text-[11px] border-t border-theme-border text-theme-muted" style={{ opacity: 0.4 }}>
-                        <span className="font-medium">Samvada</span>
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            <span>Systems Online</span>
-                        </div>
+                    <div className="mt-4 text-center text-[10px] font-bold uppercase tracking-wider text-theme-muted">
+                        First time cadet?{' '}
+                        <button type="button" onClick={onSwitchToSignup} className="text-theme-primary hover:underline underline-offset-4 ml-1 ">
+                            Enlist Here
+                        </button>
                     </div>
                 </div>
             </div>
-
-            <style>{`
-                @keyframes auth-float {
-                    0%, 100% { transform: translate(0, 0); }
-                    50% { transform: translate(15px, -20px); }
-                }
-            `}</style>
         </div>
     );
 };

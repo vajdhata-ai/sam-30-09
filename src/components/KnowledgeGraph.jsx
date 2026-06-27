@@ -86,7 +86,7 @@ const KnowledgeGraph = ({
             <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
                 <button 
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="p-2 rounded-xl bg-[#0c0906] border border-white/[0.06] text-theme-muted hover:text-theme-primary hover:border-theme-primary/30 transition-all duration-300 shadow-depth hover-lift cursor-none"
+                    className="p-2 rounded-xl bg-[#0c0906] border border-white/[0.06] text-theme-muted hover:text-theme-primary hover:border-theme-primary/30 transition-all duration-300 shadow-depth hover-lift "
                     title={isExpanded ? "Collapse Map" : "Expand Map"}
                 >
                     {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -98,7 +98,7 @@ const KnowledgeGraph = ({
                 <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2 max-w-[70%]">
                     <button 
                         onClick={handleBack}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-theme-primary/10 border border-theme-primary/20 text-theme-primary hover:bg-theme-primary/20 transition-all duration-300 shadow-depth hover-lift cursor-none"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-theme-primary/10 border border-theme-primary/20 text-theme-primary hover:bg-theme-primary/20 transition-all duration-300 shadow-depth hover-lift "
                     >
                         <ChevronLeft className="w-4 h-4" />
                         <span className="text-[10px] font-bold uppercase tracking-wider">Back</span>

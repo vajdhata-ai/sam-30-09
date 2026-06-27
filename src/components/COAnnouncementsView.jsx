@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, where } from 'firebase/firestore';
 import { Megaphone, Plus, Trash2, Clock, AlertCircle } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 
 const COAnnouncementsView = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, userProfile } = useAuth();
     const [announcements, setAnnouncements] = useState([]);
     const [isCreating, setIsCreating] = useState(false);
     const [formData, setFormData] = useState({
@@ -15,7 +15,11 @@ const COAnnouncementsView = () => {
     });
 
     useEffect(() => {
-        const q = query(collection(db, 'announcements'));
+        if (!userProfile) return;
+        const q = query(
+            collection(db, 'announcements'),
+            where('wing', '==', userProfile.wing || 'army')
+        );
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
@@ -40,6 +44,8 @@ const COAnnouncementsView = () => {
             await addDoc(collection(db, 'announcements'), {
                 ...formData,
                 authorName: currentUser?.displayName || 'Commanding Officer',
+                wing: userProfile?.wing || 'army',
+                battalion: userProfile?.battalion || '1st Battalion',
                 createdAt: serverTimestamp()
             });
             setIsCreating(false);

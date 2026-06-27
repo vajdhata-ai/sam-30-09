@@ -126,11 +126,11 @@ const SamplePaperGenerator = () => {
             // 2. Call AI
             setLoadingStep('AI analyzing structure and designing new paper...');
 
-            const prompt = `You are an expert exam paper designer for Indian competitive exams.
-A student has uploaded their question paper.
+            const prompt = `You are an expert exam paper designer for the National Cadet Corps (NCC).
+A cadet has uploaded their previous question paper or study material.
 
 Step 1 — Analyze the paper:
-- Detect subject and exam board/type
+- Detect if it's for 'A', 'B', or 'C' Certificate Exam
 - Count EXACT number of questions per section
 - Identify difficulty distribution (easy/medium/hard %)
 - Identify topics covered
@@ -291,24 +291,24 @@ Return ONLY a JSON object:
     const renderQuestion = (q, index) => {
         return (
             <div key={q.id} className={`p-8 rounded-[32px] border transition-all duration-500 mb-8 relative group overflow-hidden
-                \${isDark 
+                ${isDark 
                     ? 'bg-theme-surface/40 border-theme-border/20 hover:border-theme-primary/40 shadow-[0_10px_40px_rgba(0,0,0,0.2)]' 
                     : 'bg-white border-warm-200 shadow-sm hover:shadow-md'}
             `}>
                 <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors duration-500
-                    \${isDark ? 'bg-theme-primary/30 group-hover:bg-theme-primary' : 'bg-slate-200 group-hover:bg-indigo-500'}
+                    ${isDark ? 'bg-theme-primary/30 group-hover:bg-theme-primary' : 'bg-slate-200 group-hover:bg-indigo-500'}
                 `} />
 
                 <div className="flex justify-between items-start mb-6">
                     <div className="flex items-center gap-3">
                         <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs transition-colors
-                            \${isDark ? 'bg-theme-bg text-theme-muted' : 'bg-slate-100 text-slate-500'}
+                            ${isDark ? 'bg-theme-bg text-theme-muted' : 'bg-slate-100 text-slate-500'}
                         `}>
                             {index + 1}
                         </span>
                         <div className="flex gap-2">
                             <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border
-                                \${isDark 
+                                ${isDark 
                                     ? 'bg-theme-surface/50 text-theme-muted border-theme-border/20' 
                                     : 'bg-slate-50 text-slate-500 border-slate-200'}
                             `}>
@@ -322,7 +322,7 @@ Return ONLY a JSON object:
                 </div>
 
                 <div className={`text-xl md:text-2xl font-serif leading-relaxed mb-8
-                    \${isDark ? 'text-theme-text' : 'text-slate-800'}
+                    ${isDark ? 'text-theme-text' : 'text-slate-800'}
                 `}>
                     {sanitizeLatex(q.text)}
                 </div>
@@ -331,25 +331,25 @@ Return ONLY a JSON object:
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {q.options.map((option, oIdx) => (
                             <label key={oIdx} className={`flex items-center p-5 rounded-2xl border transition-all cursor-pointer group/opt
-                                \${answers[q.id] === option 
+                                ${answers[q.id] === option 
                                     ? (isDark ? 'bg-theme-primary/15 border-theme-primary ring-1 ring-theme-primary' : 'bg-indigo-50 border-indigo-500 ring-1 ring-indigo-500') 
                                     : (isDark ? 'bg-theme-bg/40 border-theme-border/20 hover:border-theme-primary/40' : 'bg-slate-50 border-slate-200 hover:border-indigo-300')}
                             `}>
                                 <input
                                     type="radio"
-                                    name={`q-\${q.id}`}
+                                    name={`q-${q.id}`}
                                     value={option}
                                     checked={answers[q.id] === option}
                                     onChange={(e) => handleAnswerChange(q.id, e.target.value)}
                                     className="hidden"
                                 />
                                 <div className={`w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center flex-shrink-0 transition-all
-                                    \${answers[q.id] === option 
+                                    ${answers[q.id] === option 
                                         ? (isDark ? 'border-theme-primary bg-theme-primary' : 'border-indigo-500 bg-indigo-500') 
                                         : (isDark ? 'border-theme-muted/30' : 'border-slate-300')} `}>
                                     {answers[q.id] === option && <div className="w-2 h-2 rounded-full bg-white shadow-sm" />}
                                 </div>
-                                <span className={`font-medium transition-colors \${answers[q.id] === option ? 'text-theme-primary' : (isDark ? 'text-theme-secondary' : 'text-slate-700')}`}>
+                                <span className={`font-medium transition-colors ${answers[q.id] === option ? 'text-theme-primary' : (isDark ? 'text-theme-secondary' : 'text-slate-700')}`}>
                                     {sanitizeLatex(option)}
                                 </span>
                             </label>
@@ -376,7 +376,7 @@ Return ONLY a JSON object:
 
         return (
             <div className={`mt-6 mb-10 p-6 rounded-3xl border-l-[6px] transition-all duration-500 shadow-xl
-                \${isPositive 
+                ${isPositive 
                     ? (isDark ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' : 'bg-emerald-50 border-emerald-500 text-emerald-800') 
                     : (isDark ? 'bg-rose-500/10 border-rose-500/50 text-rose-400' : 'bg-rose-50 border-rose-500 text-rose-800')}
             `}>
@@ -386,7 +386,7 @@ Return ONLY a JSON object:
                         {isPositive ? 'Evaluation Successful' : 'Needs Improvement'}
                     </span>
                     <span className={`px-4 py-1.5 rounded-full text-xs shadow-lg border backdrop-blur-md
-                        \${isDark 
+                        ${isDark 
                             ? 'bg-theme-bg/80 text-theme-primary border-theme-primary/30' 
                             : 'bg-white text-indigo-600 border-indigo-100'}
                     `}>
@@ -394,7 +394,7 @@ Return ONLY a JSON object:
                     </span>
                 </div>
                 <div className={`p-4 rounded-2xl leading-relaxed italic font-medium
-                    \${isDark ? 'bg-black/20 text-theme-text/90' : 'bg-white/50 text-slate-700'}
+                    ${isDark ? 'bg-black/20 text-theme-text/90' : 'bg-white/50 text-slate-700'}
                 `}>
                     {sanitizeLatex(result.feedback)}
                 </div>
@@ -406,7 +406,7 @@ Return ONLY a JSON object:
         <div className={`w-full h-full overflow-y-auto custom-scrollbar bg-theme-bg text-theme-primary relative transition-colors duration-300 pb-20`}>
             {/* Header */}
             <div className={`px-6 py-5 flex items-center justify-between z-30 glass-3d border-b rounded-3xl mb-8 shrink-0
-                \${isDark ? 'bg-midnight-900/40 border-white/[0.08]' : 'bg-white/40 border-warm-200/50'}
+                ${isDark ? 'bg-midnight-900/40 border-white/[0.08]' : 'bg-white/40 border-warm-200/50'}
             `}>
                 <div className="flex items-center gap-4 group">
                     <div className={`p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-xl shadow-indigo-500/20 group-hover:scale-110 transition-transform duration-500`}>
@@ -423,7 +423,7 @@ Return ONLY a JSON object:
                     </div>
                 </div>
                 <div className="flex items-center gap-4 hidden md:flex">
-                     <button onClick={() => window.location.reload()} className={`p-2.5 rounded-xl border transition-all \${isDark ? 'bg-theme-surface border-theme-border text-theme-muted hover:text-theme-primary' : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-indigo-600'}`}>
+                     <button onClick={() => window.location.reload()} className={`p-2.5 rounded-xl border transition-all ${isDark ? 'bg-theme-surface border-theme-border text-theme-muted hover:text-theme-primary' : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-indigo-600'}`}>
                          <RotateCcw className="w-5 h-5" />
                      </button>
                 </div>
@@ -446,10 +446,10 @@ Return ONLY a JSON object:
                         <div 
                             onClick={() => !isLoading && fileInputRef.current?.click()}
                             className={`relative p-12 rounded-[48px] border-2 border-dashed transition-all duration-500 group overflow-hidden cursor-pointer
-                                \${isDark 
+                                ${isDark 
                                     ? 'bg-theme-surface/30 border-theme-primary/20 hover:border-theme-primary/50 hover:bg-theme-surface/50' 
                                     : 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30'}
-                                \${file ? 'border-solid border-theme-primary/40 bg-theme-primary/5' : ''}
+                                ${file ? 'border-solid border-theme-primary/40 bg-theme-primary/5' : ''}
                             `}
                         >
                             <input
@@ -462,7 +462,7 @@ Return ONLY a JSON object:
                             
                             <div className="relative z-20 flex flex-col items-center justify-center text-center">
                                 <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-500 shadow-inner border border-theme-border/30
-                                    \${file ? 'bg-theme-primary scale-110 shadow-xl shadow-theme-primary/30 border-theme-primary/50' : 'bg-theme-bg/50 group-hover:bg-theme-primary/10'}
+                                    ${file ? 'bg-theme-primary scale-110 shadow-xl shadow-theme-primary/30 border-theme-primary/50' : 'bg-theme-bg/50 group-hover:bg-theme-primary/10'}
                                 `}>
                                     {file ? <CheckCircle2 className="w-10 h-10 text-theme-bg" /> : <Upload className="w-10 h-10 text-theme-muted group-hover:text-theme-primary transition-colors" />}
                                 </div>
@@ -509,7 +509,7 @@ Return ONLY a JSON object:
                         {/* LEFT PANEL: Summary & Stats */}
                         <div className="lg:col-span-1 space-y-8 lg:sticky lg:top-8 h-fit">
                             <div className={`p-8 rounded-[40px] border glass-3d relative overflow-hidden transition-all duration-500
-                                \${isDark ? 'bg-theme-surface/60 border-theme-border/30' : 'bg-slate-50 border-slate-200'}
+                                ${isDark ? 'bg-theme-surface/60 border-theme-border/30' : 'bg-slate-50 border-slate-200'}
                             `}>
                                 <h2 className="text-[20px] font-serif font-bold italic text-theme-text mb-8 flex items-center gap-3">
                                     <Sparkles className="w-5 h-5 text-theme-primary animate-pulse" />
@@ -552,9 +552,9 @@ Return ONLY a JSON object:
                                     <div className="mt-6 pt-4 border-t border-theme-border/50">
                                         <span className="text-theme-muted font-medium text-xs uppercase tracking-widest mb-3 block">Difficulty Split</span>
                                         <div className="flex h-3 rounded-full w-full bg-slate-200 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-700 overflow-hidden">
-                                            <div style={{width: `\${parseFloat(analysisData.difficulty_split?.easy) || 33}%`}} className="bg-emerald-500 h-full" title="Easy"></div>
-                                            <div style={{width: `\${parseFloat(analysisData.difficulty_split?.medium) || 33}%`}} className="bg-amber-500 h-full" title="Medium"></div>
-                                            <div style={{width: `\${parseFloat(analysisData.difficulty_split?.hard) || 34}%`}} className="bg-rose-500 h-full" title="Hard"></div>
+                                            <div style={{width: `${parseFloat(analysisData.difficulty_split?.easy) || 33}%`}} className="bg-emerald-500 h-full" title="Easy"></div>
+                                            <div style={{width: `${parseFloat(analysisData.difficulty_split?.medium) || 33}%`}} className="bg-amber-500 h-full" title="Medium"></div>
+                                            <div style={{width: `${parseFloat(analysisData.difficulty_split?.hard) || 34}%`}} className="bg-rose-500 h-full" title="Hard"></div>
                                         </div>
                                         <div className="flex justify-between text-[10px] font-bold text-theme-muted mt-2 uppercase tracking-wider">
                                             <span>Easy: {parseFloat(analysisData.difficulty_split?.easy) || 0}%</span>
@@ -591,7 +591,7 @@ Return ONLY a JSON object:
                         <div className="lg:col-span-2 relative">
                              {/* Paper Container for PDF Export */}
                              <div ref={printRef} className={`p-8 md:p-12 rounded-[48px] shadow-[0_40px_100px_rgba(0,0,0,0.3)] border transition-all duration-700 print-container relative overflow-hidden
-                                \${isDark 
+                                ${isDark 
                                     ? 'bg-gradient-to-br from-theme-surface/90 to-theme-bg/90 border-theme-border/20' 
                                     : 'bg-white border-warm-200 shadow-2xl'}
                              `}>
@@ -605,34 +605,34 @@ Return ONLY a JSON object:
 
                                 {/* Main Title Block (Aurem Lens Style) */}
                                 <div className={`relative mb-16 p-10 md:p-14 rounded-[40px] border text-center overflow-hidden
-                                    \${isDark ? 'bg-theme-bg/40 border-theme-border/30' : 'bg-slate-50 border-slate-200'}
+                                    ${isDark ? 'bg-theme-bg/40 border-theme-border/30' : 'bg-slate-50 border-slate-200'}
                                 `}>
                                     {isDark && <div className="absolute left-0 top-0 bottom-0 w-2.5 bg-theme-primary shadow-[0_0_30px_var(--theme-primary)] rounded-l-full" />}
                                     <div className="relative z-10">
                                         <h2 className={`text-3xl md:text-5xl font-serif font-black italic tracking-tight mb-4
-                                            \${isDark ? 'text-theme-text drop-shadow-lg' : 'text-slate-900'}
+                                            ${isDark ? 'text-theme-text drop-shadow-lg' : 'text-slate-900'}
                                         `}>
                                             {isDark && <span className="text-theme-primary mr-4 not-italic drop-shadow-[0_0_15px_var(--theme-primary)]">✦</span>}
                                             {paperData.title || "Synthetic Evaluation"}
                                         </h2>
                                         <p className={`font-medium max-w-2xl mx-auto italic leading-relaxed
-                                            \${isDark ? 'text-theme-muted' : 'text-slate-500'}
+                                            ${isDark ? 'text-theme-muted' : 'text-slate-500'}
                                         `}>
                                             {paperData.instructions}
                                         </p>
                                         <div className="flex justify-center flex-wrap gap-4 mt-8">
                                             <div className={`px-5 py-2 rounded-full border font-black text-xs uppercase tracking-widest
-                                                \${isDark ? 'bg-theme-primary/10 border-theme-primary/20 text-theme-primary' : 'bg-indigo-50 border-indigo-100 text-indigo-600'}
+                                                ${isDark ? 'bg-theme-primary/10 border-theme-primary/20 text-theme-primary' : 'bg-indigo-50 border-indigo-100 text-indigo-600'}
                                             `}>
                                                 Max Marks: {analysisData.total_marks || '80'}
                                             </div>
                                             <div className={`px-5 py-2 rounded-full border font-black text-xs uppercase tracking-widest
-                                                \${isDark ? 'bg-theme-secondary/10 border-theme-secondary/20 text-theme-secondary' : 'bg-purple-50 border-purple-100 text-purple-600'}
+                                                ${isDark ? 'bg-theme-secondary/10 border-theme-secondary/20 text-theme-secondary' : 'bg-purple-50 border-purple-100 text-purple-600'}
                                             `}>
                                                 Subject: {analysisData.subject || 'Mixed'}
                                             </div>
                                             <div className={`px-5 py-2 rounded-full border font-black text-xs uppercase tracking-widest
-                                                \${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}
+                                                ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}
                                             `}>
                                                 Standard: {analysisData.exam_type || 'Class X'}
                                             </div>
@@ -644,13 +644,13 @@ Return ONLY a JSON object:
                                     <div key={sIdx} className="mb-16 last:mb-0">
                                         {section.name && (
                                             <div className="flex items-center gap-6 mb-10">
-                                                <div className={`h-px flex-1 \${isDark ? 'bg-gradient-to-r from-transparent to-theme-primary/30' : 'bg-slate-200'}`}></div>
+                                                <div className={`h-px flex-1 ${isDark ? 'bg-gradient-to-r from-transparent to-theme-primary/30' : 'bg-slate-200'}`}></div>
                                                 <h3 className={`text-xl font-serif font-bold italic tracking-[0.2em] uppercase
-                                                    \${isDark ? 'text-theme-primary drop-shadow-[0_0_10px_rgba(201,165,90,0.3)]' : 'text-indigo-600'}
+                                                    ${isDark ? 'text-theme-primary drop-shadow-[0_0_10px_rgba(201,165,90,0.3)]' : 'text-indigo-600'}
                                                 `}>
                                                     {section.name}
                                                 </h3>
-                                                <div className={`h-px flex-1 \${isDark ? 'bg-gradient-to-l from-transparent to-theme-primary/30' : 'bg-slate-200'}`}></div>
+                                                <div className={`h-px flex-1 ${isDark ? 'bg-gradient-to-l from-transparent to-theme-primary/30' : 'bg-slate-200'}`}></div>
                                             </div>
                                         )}
                                         {section.questions.map((q, qIdx) => (

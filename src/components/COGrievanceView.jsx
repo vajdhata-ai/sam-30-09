@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, where } from 'firebase/firestore';
 import { ShieldAlert, AlertTriangle, MessageCircle, Clock } from './Icons';
+import { useAuth } from '../contexts/AuthContext';
 
 const COGrievanceView = () => {
+    const { userProfile } = useAuth();
     const [grievances, setGrievances] = useState([]);
     const [filter, setFilter] = useState('All'); // All, Pending, Critical, Resolved
     const [selectedGrievance, setSelectedGrievance] = useState(null);
@@ -11,7 +13,12 @@ const COGrievanceView = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        const q = query(collection(db, 'grievances'));
+        if (!userProfile) return;
+
+        const q = query(
+            collection(db, 'grievances'),
+            where('wing', '==', userProfile.wing || 'army')
+        );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
@@ -91,7 +98,7 @@ const COGrievanceView = () => {
 
     return (
         <div className="h-full flex flex-col p-4 md:p-8 overflow-hidden">
-            <div className="max-w-7xl mx-auto w-full h-full flex flex-col space-y-6 min-h-0">
+            <div className="max-w-[1600px] mx-auto w-full h-full flex flex-col space-y-6 min-h-0">
                 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 flex-shrink-0">

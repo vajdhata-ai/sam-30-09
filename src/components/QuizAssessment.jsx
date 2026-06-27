@@ -1,696 +1,910 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Loader2, BookOpen, ChevronRight, Brain, Trophy, AlertCircle, RefreshCw, Sparkles, Youtube, Crown, Upload, Image, Lock } from './Icons';
+import React, { useState, useEffect } from 'react';
+import { Brain, Trophy, ChevronRight, ChevronLeft, Lock, Check, CheckCircle, Shield, FileText, AlertCircle, RefreshCw, Eye, Sparkles, X, Target, Loader2 } from './Icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { useAuth } from '../contexts/AuthContext';
 import { usePerformance } from '../contexts/PerformanceContext';
-import { formatGroqPayload } from '../utils/api';
-import { callAI } from '../utils/apiRouter';
-import CloudService from '../utils/cloudService';
-import RagService from '../utils/ragService';
-import { MOCK_SYLLABUS } from '../data/mockData';
-import SamplePaperGenerator from './SamplePaperGenerator';
-import LoopManager from './LearnLoop/LoopManager';
-import { useUserPreferences } from '../contexts/UserPreferencesContext';
+import { getQuestionsForChapter, getQuestionsForWing } from '../data/nccQuestionBank';
+import { nccSyllabusData } from '../data/nccSyllabusData';
+import { callAI as callGroq } from '../utils/apiRouter';
 
-// LaTeX → Unicode sanitizer for math rendering
-const sanitizeLatex = (text) => {
-    if (!text || typeof text !== 'string') return text;
-    let s = text;
-    s = s.replace(/\\\(\s?/g, '').replace(/\s?\\\)/g, '');
-    s = s.replace(/\\\[\s?/g, '').replace(/\s?\\\]/g, '');
-    s = s.replace(/\\alpha/g, 'α').replace(/\\beta/g, 'β').replace(/\\gamma/g, 'γ').replace(/\\delta/g, 'δ');
-    s = s.replace(/\\epsilon/g, 'ε').replace(/\\theta/g, 'θ').replace(/\\lambda/g, 'λ').replace(/\\mu/g, 'μ');
-    s = s.replace(/\\pi/g, 'π').replace(/\\sigma/g, 'σ').replace(/\\phi/g, 'φ').replace(/\\omega/g, 'ω');
-    s = s.replace(/\\Sigma/g, 'Σ').replace(/\\Delta/g, 'Δ').replace(/\\Omega/g, 'Ω').replace(/\\Theta/g, 'Θ');
-    s = s.replace(/\\times/g, '×').replace(/\\div/g, '÷').replace(/\\pm/g, '±').replace(/\\cdot/g, '·');
-    s = s.replace(/\\leq/g, '≤').replace(/\\geq/g, '≥').replace(/\\neq/g, '≠').replace(/\\approx/g, '≈');
-    s = s.replace(/\\infty/g, '∞').replace(/\\partial/g, '∂').replace(/\\nabla/g, '∇').replace(/\\sqrt/g, '√');
-    s = s.replace(/\\sum/g, '∑').replace(/\\int/g, '∫').replace(/\\rightarrow/g, '→').replace(/\\Rightarrow/g, '⇒');
-    // Fix AI escaped asterisks and space-separated asterisks in math expressions
-    s = s.replace(/\\\*/g, '×').replace(/ \* /g, ' × ');
-    s = s.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)');
-    s = s.replace(/\^\{([^}]+)\}/g, (_, p) => {
-        const sup = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','n':'ⁿ'};
-        return p.split('').map(c => sup[c] || c).join('');
-    });
-    s = s.replace(/_\{([^}]+)\}/g, (_, p) => {
-        const sub = {'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','t':'ₜ','n':'ₙ','i':'ᵢ','x':'ₓ'};
-        return p.split('').map(c => sub[c] || c).join('');
-    });
-    s = s.replace(/\^(\d)/g, (_, d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[parseInt(d)]);
-    s = s.replace(/_(\d)/g, (_, d) => '₀₁₂₃₄₅₆₇₈₉'[parseInt(d)]);
-    s = s.replace(/\\text\{([^}]+)\}/g, '$1').replace(/\\mathrm\{([^}]+)\}/g, '$1');
-    s = s.replace(/\\left/g, '').replace(/\\right/g, '');
-    s = s.replace(/\\,/g, ' ').replace(/\\;/g, ' ').replace(/\\!/g, '');
-    return s;
-};
-
-const QuizAssessment = ({ retryableFetch, onNavigate }) => {
-    const { isDark } = useTheme();
-    const { triggerUpgradeModal, canUseFeature, incrementUsage, isPro, getRemainingUses } = useSubscription();
-    const { addRecord } = usePerformance();
-    const { globalInstructions } = useUserPreferences();
-    const [viewMode, setViewMode] = useState('quiz'); // 'quiz', 'paper-gen', 'learn-loop'
-    const [step, setStep] = useState('setup'); // setup, taking, grading, result
-    const [config, setConfig] = useState({
-        curriculum: 'CBSE', // CBSE or ICSE
-        classGrade: '10', // 9, 10, 11, 12
-        subject: '',
-        topic: '',
-        difficulty: 'Medium',
-        count: 5,
-        type: 'Both',
-        docId: 'internal'
-    });
-    const [documents, setDocuments] = useState([]);
-    const [quizData, setQuizData] = useState(null);
-    const [answers, setAnswers] = useState({});
-    const [gradingResult, setGradingResult] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [assessmentStats, setAssessmentStats] = useState(null);
+const TrialsSplash = ({ onComplete }) => {
+    const [progress, setProgress] = useState(0);
+    const [opacity, setOpacity] = useState(1);
 
     useEffect(() => {
-        const loadDocs = async () => {
-            try {
-                const docs = await CloudService.getAllDocuments();
-                setDocuments(docs);
-            } catch (e) {
-                console.error("Failed to load documents", e);
-            }
+        const interval = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    return 100;
+                }
+                return prev + 1;
+            });
+        }, 45);
+
+        const fadeTimer = setTimeout(() => setOpacity(0), 4500);
+        const completeTimer = setTimeout(() => {
+            if (typeof onComplete === 'function') onComplete();
+        }, 5500);
+
+        return () => {
+            clearInterval(interval);
+            clearTimeout(fadeTimer);
+            clearTimeout(completeTimer);
         };
-        loadDocs();
     }, []);
 
-    const handleConfigChange = (e) => {
-        const { name, value } = e.target;
-        let newConfig = { ...config, [name]: value };
+    return (
+        <div 
+            className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-theme-bg transition-opacity duration-500"
+            style={{ opacity }}
+        >
+            {/* Ambient glows */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-theme-primary/[0.06] blur-[150px] animate-pulse" />
+                <div className="absolute top-1/3 right-1/3 w-[250px] h-[250px] rounded-full bg-theme-secondary/[0.04] blur-[100px] animate-pulse" style={{ animationDelay: '0.5s' }} />
+            </div>
 
-        // Auto-switch to Mixed for Full Length Test
-        if (name === 'count' && parseInt(value) === 35) {
-            newConfig.type = 'Mixed';
-        }
+            <div className="relative z-10 flex flex-col items-center gap-6">
+                {/* Logo pulse */}
+                <div className="relative">
+                    <div className="p-5 bg-gradient-to-br from-theme-primary/20 to-theme-primary/5 rounded-3xl border border-theme-primary/20 shadow-2xl shadow-theme-primary/20">
+                        <Target className="w-12 h-12 text-theme-primary" />
+                    </div>
+                    <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-theme-primary rounded-full animate-ping shadow-lg shadow-theme-primary/50" />
+                    <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-theme-primary rounded-full shadow-lg shadow-theme-primary/50" />
+                </div>
 
-        setConfig(newConfig);
-    };
+                {/* Title */}
+                <div className="text-center">
+                    <h1 className="text-3xl md:text-4xl font-serif italic font-light tracking-widest text-theme-primary drop-shadow-[0_0_25px_rgba(var(--theme-primary),0.4)] select-none">
+                        Precision Testing
+                    </h1>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-theme-primary mt-2">
+                        Initializing Assessment Protocol
+                    </p>
+                </div>
 
-    const generateQuiz = async (e) => {
-        e.preventDefault();
+                {/* Progress bar */}
+                <div className="w-48 h-1 bg-theme-border/30 rounded-full overflow-hidden mt-2">
+                    <div 
+                        className="h-full bg-gradient-to-r from-theme-primary to-theme-secondary rounded-full transition-all duration-100 ease-out"
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
 
-        if (!canUseFeature('quiz')) {
-            triggerUpgradeModal('quiz');
-            return;
-        }
+const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext }) => {
+    const { isDark } = useTheme();
+    const { userProfile } = useAuth();
+    const { addRecord } = usePerformance();
+    
+    const userWing = userProfile?.wing || 'army';
+    
+    const availableChapters = [
+        ...(nccSyllabusData.common || []),
+        ...(nccSyllabusData[userWing] || [])
+    ].sort((a, b) => a.chapterNumber - b.chapterNumber);
 
-        setIsLoading(true);
-        setError(null);
+    const [showSplash, setShowSplash] = useState(true);
+    const [step, setStep] = useState('setup'); // setup, chapter-options, bank, custom-paper-setup, taking, result
+    const [activeChapter, setActiveChapter] = useState(null);
+    const [quizData, setQuizData] = useState(null);
+    const [answers, setAnswers] = useState({});
+    const [assessmentStats, setAssessmentStats] = useState(null);
+    const [isProgressionTest, setIsProgressionTest] = useState(false);
+    const [progressionLevel, setProgressionLevel] = useState(null);
+    const [progressionTopic, setProgressionTopic] = useState(null);
+    const [quizConfig, setQuizConfig] = useState({
+        numQuestions: 15,
+        difficulty: 'Medium',
+        pattern: 'MCQs Only'
+    });
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isGeneratingMock, setIsGeneratingMock] = useState(false);
 
-        try {
-            // Intelligent Logic Construction
-            let structuralInstructions = "";
-            let qualityInstructions = "Ensure questions are non-repetitive, conceptually deep, and free of ambiguity.";
-            let isFullLength = parseInt(config.count) === 35;
-            let isSenior = ['11', '12'].includes(config.classGrade);
-            let isScienceMath = /physics|math|chem/i.test(config.subject);
+    // Auto-start if assessmentContext was passed from Samvada Lens
+    useEffect(() => {
+        if (assessmentContext) {
+            setIsProgressionTest(true);
+            setProgressionLevel(assessmentContext.level);
+            setProgressionTopic(assessmentContext.topic);
 
-            let mimicContext = "";
-            if (config.docId !== 'internal') {
-                const doc = await CloudService.getDocument(config.docId);
-                if (doc) {
-                    mimicContext = `STYLE REFERENCE(SAMPLE PAPER): ${doc.content.substring(0, 15000)} INSTRUCTION: Analyze the above Sample Paper.Create a NEW assessment that mimics its exact Difficulty, Question Types, and Phrasing Style.Do NOT copy questions.Create ORIGINAL questions for the Topic: "${config.topic}" that feel like they belong in this sample paper.`;
-                }
-            }
+            // Map level to difficulty
+            const difficultyMap = { beginner: 'Easy', intermediate: 'Medium', advanced: 'Hard' };
+            const difficulty = difficultyMap[assessmentContext.level] || 'Medium';
 
-            // 1. Define Difficulty & Style Profile based on User Request
-            if (!mimicContext) {
-                // JEE is ONLY for Physics, Chemistry, Maths in Class 11-12
-                const isJEEEligible = isSenior && isScienceMath;
+            // Find the matching chapter or create a virtual one
+            const matchingChapter = availableChapters.find(
+                ch => ch.chapterName?.toLowerCase() === assessmentContext.topic?.toLowerCase()
+            );
 
-                // Difficulty Logic
-                if (config.difficulty === 'Easy') {
-                    qualityInstructions = "LEVEL: EASY (BOARD/SCHOOL EXAM). Focus on Theory, Definitions, and Direct Concepts. 90% Theory / 10% Very Basic Numericals. Avoid complex calculations.";
-                } else if (config.difficulty === 'Medium') {
-                    qualityInstructions = "LEVEL: MEDIUM (STANDARD BOARD). EXACTLY 50% Theory (Conceptual) and 50% Numericals. Numericals should increase in difficulty from basic to moderate application.";
-                } else if (config.difficulty === 'Hard') {
-                    if (isJEEEligible) {
-                        // JEE Advanced Level for Physics/Chemistry/Maths Class 11-12
-                        qualityInstructions = `🔥 LEVEL: HARD(JEE ADVANCED / OLYMPIAD LEVEL) 🔥 MANDATORY REQUIREMENTS: - 100 % NUMERICAL PROBLEMS-NO direct theory questions. - Every question must combine 2-3 concepts from the chapter. - Questions should require 3-5 steps minimum to solve. - Include problems that require deriving formulas, not just applying them. - Add tricky conditions(friction, resistance, real-world constraints).QUESTION DIFFICULTY EXAMPLES: - Physics: Projectile on inclined plane with air resistance. - Chemistry: Equilibrium with Le Chatelier shifts. - Maths: Integration requiring substitution.DO NOT CREATE: ❌ Direct formula substitution ❌ Single-concept problems.EACH QUESTION SHOULD MAKE A JEE ASPIRANT THINK FOR 3-5 MINUTES.`;
-                    } else {
-                        // Tough CBSE/ICSE Board Level for ALL other subjects/classes
-                        qualityInstructions = `LEVEL: HARD(CHALLENGING ${config.curriculum} BOARD) - Focus on HOTS(Higher Order Thinking Skills). - Application-based problems requiring analysis. - Case-study type questions. - Questions that test deep understanding, not rote learning. - 70 % Application / Analysis /30 % Conceptual.`;
-                    }
-                }
-
-                // Structure Logic
-                if (isFullLength) {
-                    structuralInstructions = `STRICT MANDATE: GENERATE EXACTLY 35 QUESTIONS.Structure: 1. Section A: 18 Multiple Choice Questions(1 mark each). 2. Section B: 7 Very Short Answer Questions(2 marks each). 3. Section C: 5 Short Answer Questions(3 marks each). 4. Section D: 3 Long Answer Questions(5 marks each). 5. Section E: 2 Case Study / Source Based Questions(4 marks each).Return EXACTLY 35 questions fulfilling this distribution.`;
-                } else if (config.type === 'Objective') {
-                    structuralInstructions = `Generate ${config.count} Multiple Choice Questions(MCQs).Provide 4 options for each.`;
-                } else if (config.type === 'Subjective') {
-                    structuralInstructions = `Generate ${config.count} Subjective questions.Mix short answer(2-3 marks) and long answer(5 marks).`;
+            if (matchingChapter) {
+                setActiveChapter(matchingChapter);
+                let questions = getQuestionsForChapter(matchingChapter.id);
+                if (questions && questions.length > 0) {
+                    let pool = [...questions].sort(() => 0.5 - Math.random()).slice(0, 15);
+                    setQuizData({ questions: pool });
+                    setAnswers({});
+                    setStep('taking');
                 } else {
-                    structuralInstructions = `Generate ${config.count} mixed questions.Provide a realistic mix of 30 % MCQs, 40 % short answer, and 30 % long answer questions.`;
+                    setStep('setup');
                 }
-            }
-            // Image/Visual Constraint
-            if (config.difficulty === 'Hard' || config.difficulty === 'Medium') {
-                qualityInstructions += " Include Visual/Diagram-based questions where relevant (describe the image in 'image_description').";
-            }
-            // Build subject-specific instructions
-            let subjectPatterns = '';
-            const subjectLower = config.subject.toLowerCase();
-
-            if (subjectLower.includes('english')) {
-                subjectPatterns = `
-                ENGLISH PAPER PATTERN(${config.curriculum} CLASS ${config.classGrade}):
-- MUST include 1-2 Unseen Passage / Comprehension questions(read passage + answer questions)
-    - Include Grammar-based MCQs(tenses, voice, articles, prepositions, etc.)
-        - Include Literature-based questions from Class ${config.classGrade} ${config.curriculum} syllabus ONLY
-            - Include Writing Skills questions(letter, essay, notice, etc.) for subjective
-                - DO NOT use poems / chapters from other classes
-                    `;
-            } else if (subjectLower.includes('physics') || subjectLower.includes('chemistry') || subjectLower.includes('math')) {
-                subjectPatterns = `
-SCIENCE / MATH PATTERN(${config.curriculum} CLASS ${config.classGrade}):
-- Questions MUST be from Class ${config.classGrade} ${config.curriculum} syllabus ONLY
-    - Include Conceptual MCQs testing understanding of principles
-        - Include Numerical problems with step-by-step application
-            - Include Diagram / Visual-based questions where relevant
-                - Use formulas and concepts taught in Class ${config.classGrade} ONLY, not higher classes
-                    `;
-            } else if (subjectLower.includes('biology') || subjectLower.includes('science')) {
-                subjectPatterns = `
-BIOLOGY / SCIENCE PATTERN(${config.curriculum} CLASS ${config.classGrade}):
-- Questions MUST be from Class ${config.classGrade} ${config.classGrade} syllabus ONLY
-    - Include Diagram-based questions(label parts, identify structures)
-        - Include Assertion-Reason type MCQs
-                - Include Case-Study based questions for full papers
-    - Test understanding of processes, cycles, and biological concepts
-        `;
-            } else if (subjectLower.includes('social') || subjectLower.includes('history') || subjectLower.includes('geography') || subjectLower.includes('civics')) {
-                subjectPatterns = `
-                SOCIAL SCIENCE PATTERN(${config.curriculum} CLASS ${config.classGrade}):
-- Questions MUST be from Class ${config.classGrade} ${config.curriculum} syllabus ONLY
-    - Include Map-based questions for Geography
-        - Include Source-based questions for History
-            - Include Case-Study questions for Civics / Political Science
-                - Test factual knowledge, dates, events, concepts specific to Class ${config.classGrade}
-`;
-            }
-
-            let prompt = `You are a brilliant ${config.curriculum} educator creating an assessment for Class ${config.classGrade} ${config.subject}, Topic: ${config.topic}.
-                
-                ${qualityInstructions}
-                ${structuralInstructions}
-                ${mimicContext}
-
-                JSON FORMAT REQUIREMENT:
-                Return an exact array of JSON objects.Do not wrap in markdown or add intro text.
-                [
-    {
-        "id": 1,
-        "question": "What is...",
-        "options": ["A", "B", "C", "D"], // Only if objective
-        "correct_answer": "A", // Full text or specific value
-        "explanation": "Because...",
-        "type": "objective", // or "subjective"
-        "marks": 1, // Allocate marks logically based on difficulty/type
-        "section": "Section name if applicable",
-        "image_description": "Optional: Describe an image if the student needs to visualize a diagram."
-    }
-]`;
-
-            if (config.type === 'Diagram') {
-                prompt = `You are an expert question setter for Indian competitive exams.
-Generate ${config.count} image-based MCQs for:
-Exam: ${config.curriculum} Class ${config.classGrade}
-Topic: ${config.topic}
-Difficulty: ${config.difficulty}
-Chapter: ${config.subject}
-
-Return ONLY valid JSON array of objects:
-[
-  {
-    "id": 1,
-    "question": "question text referencing the diagram",
-    "svg": "<svg viewBox='0 0 400 300' xmlns='http://www.w3.org/2000/svg'>...complete SVG diagram code...</svg>",
-    "options": ["A", "B", "C", "D"],
-    "correct_answer": "A",
-    "explanation": "detailed explanation with concept",
-    "diagram_description": "what the diagram shows",
-    "concept_tested": "specific concept name",
-    "type": "objective",
-    "marks": 1
-  }
-]
-
-SVG Rules:
-- Use only basic SVG shapes: rect, circle, line, path, text, arrow
-- Keep it clean, black and white, exam style
-- Label all important parts clearly
-- ViewBox must be 400x300
-- No external images or fonts
-`;
-            }
-
-            // Call Groq with strict class-level system message
-            const systemMessage = `You are a Senior ${config.curriculum} Board Exam Paper Setter with 20 + years of experience. 
-            
-CRITICAL RULES:
-1. You ONLY create questions for CLASS ${config.classGrade} ${config.curriculum} syllabus
-2. You NEVER include content from higher or lower classes
-3. You follow ${config.curriculum} board exam patterns EXACTLY
-4. Every question must be solvable using Class ${config.classGrade} textbook knowledge ONLY
-
-You will be FIRED if you include content from wrong class levels.
-${globalInstructions ? `\nGLOBAL CUSTOM INSTRUCTIONS (PRIORITIZE THESE):\n${globalInstructions}` : ''}`;
-            const messages = [
-                { role: 'system', content: systemMessage },
-                { role: 'user', content: prompt }
-            ];
-            
-            let text = "";
-            if (config.type === 'Diagram') {
-                // Diagram generation is text→SVG, not vision. Router handles tier-based quality.
-                const result = await callAI(messages, null);
-                text = result.choices?.[0]?.message?.content || "";
             } else {
-                const result = await callAI(messages, null);
-                text = result.choices?.[0]?.message?.content || "";
-            }
-
-            let parsedQuiz = RagService.extractJson(text);
-            
-            // Normalize: extractJson may return a raw array
-            if (Array.isArray(parsedQuiz)) {
-                parsedQuiz = { questions: parsedQuiz };
-            }
-            if (!parsedQuiz.questions || parsedQuiz.questions.length === 0) {
-                throw new Error("AI returned no questions. Please try again.");
-            }
-
-            // Post-processing to ensure sections exist if missing in simple mode
-            if (!parsedQuiz.questions[0].section) {
-                parsedQuiz.questions.forEach(q => q.section = "Practice Section");
-            }
-
-            setQuizData(parsedQuiz);
-            setStep('taking');
-            incrementUsage('quiz');
-
-        } catch (err) {
-            console.error("Quiz Gen Error:", err);
-            setError(err.message || "Failed to generate assessment. Please try again.");
-        } finally { setIsLoading(false); }
-    };
-
-    const submitQuiz = async () => {
-        setIsLoading(true);
-        try {
-            let totalMarks = 0;
-            let earnedMarks = 0;
-            const finalResults = [];
-
-            for (const q of quizData.questions) {
-                const studentAns = answers[q.id] || "Not Attempted";
-                totalMarks += (q.marks || 1);
-
-                if (q.type === 'subjective') {
-                    // Universal Grading Logic
-                    const gradePrompt = `Grade this student response for a Class ${config.classGrade} ${config.subject} level question.
-    QUESTION: ${q.question}
-                    MODEL ANSWER: ${q.correct_answer}
-                    STUDENT ANSWER: ${studentAns}
-                    MARKS ALLOTTED: ${q.marks || 5}
-                    
-                    Return ONLY a JSON object: { "score": 0 - ${q.marks || 5}, "feedback": "1 sentence" } `;
-
-                    try {
-                        const gradeMessages = [
-                            { role: 'system', content: 'Expert Academic Grader' },
-                            { role: 'user', content: gradePrompt }
-                        ];
-                        const res = await callAI(gradeMessages, null);
-                        const gradeData = RagService.extractJson(res.choices?.[0]?.message?.content || "{}");
-                        earnedMarks += (gradeData.score || 0);
-                        finalResults.push({ ...q, student_answer: studentAns, is_correct: (gradeData.score / (q.marks || 5)) >= 0.7, explanation: gradeData.feedback });
-                    } catch (e) {
-                        finalResults.push({ ...q, student_answer: studentAns, is_correct: false, explanation: "Grading failed" });
-                    }
+                setActiveChapter({ id: 'lens-progression', chapterName: assessmentContext.topic || 'Samvada Lens Assessment' });
+                const allQuestions = getQuestionsForWing(userWing, 15);
+                if (allQuestions && allQuestions.length > 0) {
+                    setQuizData({ questions: allQuestions });
+                    setAnswers({});
+                    setStep('taking');
                 } else {
-                    const isCorrect = studentAns === q.correct_answer;
-                    if (isCorrect) earnedMarks += (q.marks || 1);
-                    finalResults.push({ ...q, student_answer: studentAns, is_correct: isCorrect });
+                    setStep('setup');
                 }
             }
 
-            const finalPercentage = Math.round((earnedMarks / totalMarks) * 100);
+            setQuizConfig(prev => ({ ...prev, difficulty }));
+            // Clear the context so it doesn't re-trigger
+            if (setAssessmentContext) setAssessmentContext(null);
+        }
+    }, [assessmentContext, availableChapters, userWing, setAssessmentContext]);
 
-            // Persist the performance score
-            addRecord('quiz-assessment', finalPercentage);
+    const handleSelectChapter = (chapter) => {
+        setActiveChapter(chapter);
+        setStep('chapter-options');
+    };
 
-            // AI Analysis for remediation
-            const analysisPrompt = `
-                Analyze Student Performance(Class ${config.classGrade} - ${config.subject}).
-    Topic: ${config.topic}
-DATA: ${JSON.stringify(finalResults.map(a => ({ q: a.question, type: a.type, ans: a.student_answer, correct: a.is_correct })))}
-                OUTPUT JSON: { "overall_feedback": "...", "weak_concepts": [{ "concept": "...", "revision_note": "...", "youtube_query": "..." }] }
-`;
-            let analysisJson = {};
+    const handleModeSelect = (mode) => {
+        if (mode === 'bank') {
+            const questions = getQuestionsForChapter(activeChapter.id);
+            if (questions && questions.length > 0) {
+                setQuizData({ questions });
+                setAnswers({});
+                setStep('bank');
+            } else {
+                alert("No questions available for this chapter yet.");
+            }
+        } else if (mode === 'quiz') {
+            setStep('custom-paper-setup');
+        }
+    };
+
+    const startCustomQuiz = async () => {
+        setIsGenerating(true);
+        try {
+            const numToGenerate = quizConfig.numQuestions === 'All' ? 15 : quizConfig.numQuestions;
+            const prompt = `You are an expert military examiner for the National Cadet Corps (NCC). Generate a custom quiz for the chapter "${activeChapter.chapterName}".
+            Parameters:
+            - Difficulty: ${quizConfig.difficulty}
+            - Question Count: ${numToGenerate}
+            
+            Return ONLY a valid JSON array of question objects matching this exact schema (NO markdown formatting, just raw JSON):
+            [{
+                "id": "unique-string-id",
+                "type": "mcq",
+                "question": "The question text",
+                "options": ["A", "B", "C", "D"],
+                "answer": "The exact string from options that is correct",
+                "explanation": "Brief explanation of why it is correct",
+                "marks": 1
+            }]`;
+
+            const result = await callGroq([{ role: 'user', content: prompt }], null, true);
+            let questions = [];
+            
             try {
-                const analysisMessages = [
-                    { role: 'system', content: 'Expert tutor.' },
-                    { role: 'user', content: analysisPrompt }
-                ];
-                const analysisRes = await callAI(analysisMessages, null);
-                analysisJson = RagService.extractJson(analysisRes.choices?.[0]?.message?.content || "{}");
-            } catch (analysisErr) {
-                console.warn("Analysis failed", analysisErr);
-                analysisJson = { overall_feedback: "Detailed analysis is currently unavailable due to network load, but your score has been recorded." };
+                let textResult = result;
+                if (typeof textResult === 'object' && textResult !== null) {
+                    textResult = textResult.choices?.[0]?.message?.content || JSON.stringify(textResult);
+                }
+                
+                if (typeof textResult === 'string') {
+                    // Extract json from markdown if wrapped
+                    const jsonMatch = textResult.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+                    if (jsonMatch) {
+                        textResult = jsonMatch[1];
+                    } else {
+                        const arrayMatch = textResult.match(/\[\s*\{[\s\S]*\}\s*\]/);
+                        if (arrayMatch) textResult = arrayMatch[0];
+                    }
+                    questions = JSON.parse(textResult);
+                } else {
+                    questions = textResult;
+                }
+            } catch (e) {
+                console.error("Failed to parse questions JSON:", e, result);
+                questions = getQuestionsForChapter(activeChapter.id).slice(0, numToGenerate);
             }
 
-            setAssessmentStats({
-                score: finalPercentage,
-                correct: finalResults.filter(r => r.is_correct).length,
-                total: finalResults.length,
-                detailedAnswers: finalResults,
-                analysis: analysisJson
-            });
-            setGradingResult("Analyzed");
-            setStep('result');
-        } catch (err) {
-            setError(err.message || "Failed to submit. Please try again.");
-            // Do NOT change step to result, stay on 'taking' to let user retry or see error
-        } finally { setIsLoading(false); }
+            if (!Array.isArray(questions) || questions.length === 0) {
+                questions = getQuestionsForChapter(activeChapter.id).slice(0, numToGenerate);
+            }
+
+            setQuizData({ questions });
+            setAnswers({});
+            setStep('taking');
+        } catch (error) {
+            console.error("Error generating custom quiz:", error);
+            alert("Failed to generate custom paper. Falling back to local question bank.");
+            const fallback = getQuestionsForChapter(activeChapter.id).slice(0, quizConfig.numQuestions === 'All' ? 15 : quizConfig.numQuestions);
+            setQuizData({ questions: fallback });
+            setAnswers({});
+            setStep('taking');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleTakeMockTest = () => {
+        setIsGeneratingMock(true);
+        setTimeout(() => {
+            const questions = getQuestionsForWing(userWing, 35); // 35 questions for a full mock
+            
+            if (questions && questions.length > 0) {
+                setActiveChapter({ id: 'mock', chapterName: `${userWing.toUpperCase()} Wing Full Mock Test` });
+                setQuizData({ questions });
+                setAnswers({});
+                setStep('taking');
+            } else {
+                alert("Insufficient questions for a full mock test.");
+            }
+            setIsGeneratingMock(false);
+        }, 3000); // 3 second animation to show loading state
+    };
+
+    const submitQuiz = () => {
+        let totalMarks = 0;
+        let earnedMarks = 0;
+        const finalResults = [];
+
+        quizData.questions.forEach((q) => {
+            const studentAns = answers[q.id] || "Not Attempted";
+            totalMarks += (q.marks || 1);
+
+            const isCorrect = studentAns === (q.answer || q.correct_answer);
+            if (isCorrect) earnedMarks += (q.marks || 1);
+            
+            finalResults.push({ ...q, student_answer: studentAns, is_correct: isCorrect });
+        });
+
+        const finalPercentage = Math.round((earnedMarks / totalMarks) * 100);
+
+        addRecord('quiz-assessment', finalPercentage);
+
+        let levelUnlocked = null;
+        if (isProgressionTest && progressionTopic && finalPercentage > 60) {
+            const savedUnlocksRaw = localStorage.getItem(`unlockedLevels_${progressionTopic}`);
+            const savedUnlocks = savedUnlocksRaw ? JSON.parse(savedUnlocksRaw) : ['beginner'];
+            
+            if (progressionLevel === 'beginner' && !savedUnlocks.includes('intermediate')) {
+                savedUnlocks.push('intermediate');
+                levelUnlocked = 'intermediate';
+            } else if (progressionLevel === 'intermediate' && !savedUnlocks.includes('advanced')) {
+                savedUnlocks.push('advanced');
+                levelUnlocked = 'advanced';
+            } else if (progressionLevel === 'advanced') {
+                levelUnlocked = 'mastery';
+            }
+            localStorage.setItem(`unlockedLevels_${progressionTopic}`, JSON.stringify(savedUnlocks));
+        }
+
+        setAssessmentStats({
+            score: finalPercentage,
+            correct: finalResults.filter(r => r.is_correct).length,
+            total: finalResults.length,
+            detailedAnswers: finalResults,
+            levelUnlocked
+        });
+        
+        setStep('result');
     };
 
     const handleRetake = () => {
         setQuizData(null);
         setAnswers({});
-        setGradingResult(null);
         setAssessmentStats(null);
-        setError(null);
+        setActiveChapter(null);
         setStep('setup');
     };
 
-    // Helper to group questions by section for display
-    const groupQuestionsBySection = (questions) => {
-        const groups = {};
-        questions.forEach(q => {
-            const sec = q.section || "General";
-            if (!groups[sec]) groups[sec] = [];
-            groups[sec].push(q);
-        });
-        return groups;
-    };
+    if (showSplash) {
+        return <TrialsSplash onComplete={() => setShowSplash(false)} />;
+    }
 
     return (
-        <div className={`flex flex-col h-full bg-theme-bg text-theme-primary relative overflow-y-auto custom-scrollbar p-4 md:p-8 transition-colors duration-300 section-quiz`}>
-            <div className={`absolute top-0 right-0 w-[500px] h-[500px] bg-theme-primary/5 rounded-full blur-[100px] -z-10 pointer-events-none`} />
-            <div className={`absolute bottom-0 left-0 w-[500px] h-[500px] bg-theme-secondary/5 rounded-full blur-[100px] -z-10 pointer-events-none`} />
-
-            {/* View Mode Toggle / Header logic if needed could go here, but we put it inside setup for now */}
-
-            {viewMode === 'learn-loop' && (
-                <div className="h-full flex flex-col">
-                    <button
-                        onClick={() => setViewMode('quiz')}
-                        className="mb-4 self-start flex items-center gap-2 text-sm font-bold text-theme-muted hover:text-theme-primary transition-colors z-20"
-                    >
-                        <ChevronRight className="w-4 h-4 rotate-180" /> Back to Assessment Hub
-                    </button>
-                    <LoopManager />
-                </div>
-            )}
-
-            {viewMode === 'paper-gen' && (
-                <div className="h-full flex flex-col">
-                    <button
-                        onClick={() => setViewMode('quiz')}
-                        className="mb-4 self-start flex items-center gap-2 text-sm font-bold text-theme-muted hover:text-theme-primary transition-colors"
-                    >
-                        <ChevronRight className="w-4 h-4 rotate-180" /> Back to Quiz Setup
-                    </button>
-                    <SamplePaperGenerator retryableFetch={retryableFetch} />
-                </div>
-            )}
-
-            {viewMode === 'quiz' && step === 'setup' && (
-                <div className="flex-1 flex flex-col h-full animate-slide-up">
-                    {/* Hero Header */}
-                    <div className="text-center py-6 space-y-3">
-                        <div className="flex items-center justify-center gap-3 perspective-1000">
-                            <div className="p-3 bg-gradient-to-br from-theme-primary to-theme-secondary rounded-2xl shadow-lg tilt-card translate-z-20">
-                                <Brain className="w-8 h-8 text-theme-bg" />
+        <div className={`flex flex-col h-full bg-theme-bg text-theme-text overflow-hidden transition-colors duration-500`}>
+            
+            {/* ═══ STICKY HEADER ═══ */}
+            <header className="shrink-0 sticky top-0 z-40 bg-theme-bg/90 backdrop-blur-2xl border-b border-theme-border/30">
+                <div className="max-w-7xl mx-auto px-6 py-5">
+                    <div className="flex items-center justify-between">
+                        {/* Title & Icon */}
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-theme-primary/20 to-theme-primary/5 border border-theme-primary/20 flex items-center justify-center shadow-lg shadow-theme-primary/10">
+                                <Target className="w-5 h-5 text-theme-primary" />
                             </div>
-                            <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-theme-primary via-theme-secondary to-theme-primary bg-clip-text text-transparent translate-z-10">
-                                Adaptive Testing
-                            </h1>
+                            <div className="flex flex-col">
+                                <h1 className="text-xl font-black uppercase tracking-widest text-theme-text leading-none">
+                                    Precision Testing
+                                </h1>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse" />
+                                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-primary/80">
+                                        Assessment Protocol Active
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <p className="text-theme-muted text-lg max-w-xl mx-auto">
-                            Master your syllabus with AI Quizzes, Sample Papers, and Adaptive Learning Loops.
-                            {!isPro && <span className="text-purple-500 ml-2">({getRemainingUses('quiz')} free left)</span>}
-                        </p>
 
-                        <div className="flex flex-wrap justify-center gap-4 mt-6">
-                            <button
-                                type="button"
-                                onClick={() => setViewMode('paper-gen')}
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-theme-primary/10 border border-theme-primary/20 hover:bg-theme-primary/20 text-theme-primary font-bold rounded-full backdrop-blur-md transition-all hover:scale-105"
+                        {/* Exit Button */}
+                        {step === 'setup' ? (
+                            <button 
+                                onClick={() => typeof onNavigate === 'function' ? onNavigate('cadet-dashboard') : null}
+                                className="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-theme-surface/60 backdrop-blur-xl border border-theme-border/40 hover:border-rose-500/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]"
                             >
-                                <FileText className="w-5 h-5 text-theme-secondary" />
-                                Smart Sample Papers
+                                <span className="text-[10px] font-black uppercase tracking-widest text-theme-muted group-hover:text-rose-500 transition-colors">
+                                    Exit
+                                </span>
+                                <X className="w-4 h-4 text-theme-muted group-hover:text-rose-500 transition-colors" />
                             </button>
-                        </div>
+                        ) : (
+                            <button 
+                                onClick={() => setStep('setup')}
+                                className="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-theme-surface/60 backdrop-blur-xl border border-theme-border/40 hover:border-theme-primary/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.15)]"
+                            >
+                                <ChevronLeft className="w-4 h-4 text-theme-muted group-hover:text-theme-primary transition-colors" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-theme-muted group-hover:text-theme-primary transition-colors">
+                                    Back to Setup
+                                </span>
+                            </button>
+                        )}
                     </div>
-
-                    {/* Main Form */}
-                    <form onSubmit={generateQuiz} className="flex-1 flex flex-col gap-6 px-4 md:px-8 pb-10 max-w-5xl mx-auto w-full overflow-y-auto">
-
-                        {/* Locked Syllabus Section */}
-                        <div className="glass-panel p-8 rounded-3xl bg-theme-surface/80 border border-theme-border shadow-xl relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1.5 h-full bg-theme-primary"></div>
-                            <h3 className="text-sm font-black text-theme-primary uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                <Sparkles className="w-5 h-5" /> NCC Curriculum (Locked)
-                            </h3>
-                            <p className="text-sm text-theme-muted mb-6">
-                                Official syllabus integration is pending. Chapters will be unlocked once the curated NCC syllabus is deployed.
-                            </p>
-                            
-                            <div className="space-y-4">
-                                {['Drill & Commands', 'Weapon Training', 'National Integration', 'Disaster Management', 'Social Service'].map((chapter, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-theme-bg border border-theme-border opacity-70 cursor-not-allowed">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-theme-surface flex items-center justify-center text-theme-muted font-bold text-sm shadow-inner">
-                                                {idx + 1}
-                                            </div>
-                                            <span className="text-base font-semibold text-theme-text">{chapter}</span>
-                                        </div>
-                                        <span className="text-theme-muted"><Lock className="w-5 h-5" /></span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Submit */}
-                        <button type="submit" disabled={true}
-                            className="w-full py-5 bg-theme-surface border border-theme-border text-theme-muted rounded-2xl font-black text-xl shadow-sm cursor-not-allowed opacity-50 flex justify-center items-center gap-3">
-                            <Lock className="w-6 h-6" /> Awaiting Curriculum
-                        </button>
-                        {error && <div className="text-rose-500 text-center p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-center gap-3"><AlertCircle className="w-5 h-5" />{error}</div>}
-                    </form>
                 </div>
-            )}
+            </header>
 
-            {step === 'taking' && quizData && (
-                <div className="max-w-4xl mx-auto w-full animate-slide-up space-y-8 pb-20">
-                    <div className="glass-panel-lighter p-6 rounded-2xl flex justify-between items-center sticky top-0 z-30 backdrop-blur-xl shadow-xl border-b border-theme-border/20 bg-theme-bg/80">
-                        <div>
-                            <h3 className="text-xl font-bold text-theme-primary">{config.subject} Assessment</h3>
-                            <div className="flex items-center gap-2 text-xs font-bold text-theme-muted uppercase tracking-wider">
-                                <span className="text-purple-500">Class {config.classGrade}</span>
-                                <span>•</span>
-                                <span>{config.difficulty}</span>
+            {/* ═══ MAIN SCROLLABLE CONTENT ═══ */}
+            <main className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    
+                    {step === 'setup' && (
+                        <div className="animate-fade-in space-y-12 pb-24">
+                            
+                            {/* Compact Mock Test CTA */}
+                            <button 
+                                onClick={handleTakeMockTest}
+                                disabled={isGeneratingMock}
+                                className={`relative group w-full p-6 md:p-8 rounded-[32px] overflow-hidden text-left cursor-pointer transition-all duration-500 bg-theme-primary/10 border border-theme-primary/20 hover:border-theme-primary/50 hover:bg-theme-primary/20 ${isGeneratingMock ? 'opacity-80 scale-95' : 'hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(var(--theme-primary),0.15)]'}`}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-theme-primary/5 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite] pointer-events-none" />
+                                
+                                <div className="relative z-10 flex items-center justify-between gap-6">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 bg-theme-bg border border-theme-primary/30 rounded-2xl flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-500">
+                                            {isGeneratingMock ? (
+                                                <Loader2 className="w-6 h-6 text-theme-primary animate-spin" />
+                                            ) : (
+                                                <Trophy className="w-6 h-6 text-theme-primary" />
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-theme-text mb-1">
+                                                {isGeneratingMock ? 'Initializing Protocol...' : 'Full Mock Test'}
+                                            </h2>
+                                            <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-theme-primary/80 flex items-center gap-2">
+                                                <Shield className="w-3 h-3" />
+                                                Comprehensive Directorate Assessment
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0 hidden md:flex">
+                                        <div className="w-10 h-10 rounded-full bg-theme-bg/50 border border-theme-primary/20 flex items-center justify-center group-hover:bg-theme-primary group-hover:border-theme-primary transition-colors duration-500">
+                                            {isGeneratingMock ? (
+                                                <div className="w-4 h-4 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                <ChevronRight className="w-5 h-5 text-theme-primary group-hover:text-theme-bg transition-colors duration-500" />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+
+                            {/* Chapter Grid */}
+                            <div className="pt-4">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+                                    <h3 className="text-sm font-black text-theme-text uppercase tracking-[0.2em] flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-theme-primary" />
+                                        Chapter-wise Assessments
+                                    </h3>
+                                    <div className="h-[1px] flex-1 bg-theme-border/40 mx-4 hidden sm:block" />
+                                </div>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                                    {availableChapters.map((chapter, idx) => {
+                                        const isCompleted = idx % 3 === 0; // Mock completion
+                                        return (
+                                            <div 
+                                                key={chapter.id} 
+                                                onClick={() => handleSelectChapter(chapter)}
+                                                className="group flex flex-col justify-between min-h-[180px] p-6 rounded-3xl bg-theme-surface/40 backdrop-blur-sm border border-theme-border/40 hover:border-theme-primary/60 hover:bg-theme-surface/80 transition-all duration-500 cursor-pointer relative overflow-hidden"
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-br from-theme-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                                                
+                                                {isCompleted && (
+                                                    <div className="absolute top-4 right-4 w-8 h-8 bg-theme-primary/10 rounded-full flex items-center justify-center border border-theme-primary/20">
+                                                        <CheckCircle className="w-4 h-4 text-theme-primary" />
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-start gap-4 mb-4 relative z-10">
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black border transition-all duration-500 ${isCompleted ? 'bg-theme-primary/10 border-theme-primary/30 text-theme-primary group-hover:bg-theme-primary group-hover:text-theme-bg shadow-[0_0_15px_rgba(var(--theme-primary),0.2)]' : 'bg-theme-surface border-theme-border/60 text-theme-muted group-hover:border-theme-primary/40 group-hover:text-theme-primary group-hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.1)]'}`}>
+                                                        {chapter.chapterNumber}
+                                                    </div>
+                                                    <div className="flex flex-col pr-8">
+                                                        <span className={`text-base font-black uppercase tracking-wider leading-tight ${isCompleted ? 'text-theme-text' : 'text-theme-text/80'} group-hover:text-theme-text transition-colors line-clamp-2`}>
+                                                            {chapter.chapterName}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mt-1.5 line-clamp-1">
+                                                            {chapter.topicName}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-end justify-between relative z-10">
+                                                    <span className="text-[10px] font-black text-theme-primary/80 uppercase tracking-widest bg-theme-primary/5 px-3 py-1.5 rounded-lg border border-theme-primary/10">
+                                                        {getQuestionsForChapter(chapter.id).length} Questions
+                                                    </span>
+                                                    <div className="w-8 h-8 rounded-full bg-theme-bg border border-theme-border/50 flex items-center justify-center group-hover:bg-theme-primary group-hover:border-theme-primary group-hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.3)] transition-all duration-500">
+                                                        <ChevronRight className={`w-4 h-4 transition-colors ${isCompleted ? 'text-theme-primary' : 'text-theme-muted'} group-hover:text-theme-bg group-hover:translate-x-0.5`} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                        <button onClick={submitQuiz} disabled={isLoading} className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg font-bold shadow-lg hover:shadow-green-500/20 transition-all text-white text-sm disabled:opacity-50 flex items-center gap-2">
-                            {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : "Submit Exam"}
-                        </button>
-                    </div>
-
-                    {error && (
-                        <div className="text-rose-500 text-center p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-center gap-3">
-                            <AlertCircle className="w-5 h-5" />{error}
                         </div>
                     )}
 
-                    <div className="space-y-8">
-                        {Object.entries(groupQuestionsBySection(quizData.questions)).sort().map(([sectionName, questions]) => (
-                            <div key={sectionName} className="space-y-4">
-                                {(config.type === 'Mixed' || parseInt(config.count) === 35) && (
-                                    <div className="flex items-center gap-4 px-2">
-                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-theme-primary/50 to-transparent"></div>
-                                        <h4 className="text-lg font-bold text-theme-primary uppercase tracking-widest">{sectionName}</h4>
-                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-theme-primary/50 to-transparent"></div>
+                    {step === 'chapter-options' && activeChapter && (
+                        <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in p-4 md:p-8">
+                            <div className="max-w-4xl w-full">
+                                <div className="text-center mb-16 relative">
+                                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-[28px] bg-gradient-to-br from-theme-primary/20 to-theme-primary/5 text-theme-primary mb-8 shadow-[0_0_40px_rgba(var(--theme-primary),0.2)] border border-theme-primary/30">
+                                        <Target className="w-10 h-10" />
                                     </div>
-                                )}
+                                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-widest text-theme-text mb-4 leading-tight">
+                                        {activeChapter.chapterName}
+                                    </h2>
+                                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-theme-primary/80 flex items-center justify-center gap-3">
+                                        <Shield className="w-4 h-4" />
+                                        Select Operating Mode
+                                        <Shield className="w-4 h-4" />
+                                    </p>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                    {/* Question Bank Option */}
+                                    <button 
+                                        onClick={() => handleModeSelect('bank')}
+                                        className="group p-10 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 hover:border-theme-primary/60 hover:bg-theme-surface/80 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-b from-theme-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                        <div className="w-24 h-24 rounded-[32px] bg-theme-bg border border-theme-border/60 text-theme-primary flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500 z-10 shadow-lg group-hover:border-theme-primary/40 group-hover:bg-theme-primary/10 group-hover:shadow-[0_0_30px_rgba(var(--theme-primary),0.2)]">
+                                            <FileText className="w-10 h-10" />
+                                        </div>
+                                        <h3 className="text-2xl font-black uppercase tracking-widest text-theme-text mb-4 z-10">Question Bank</h3>
+                                        <p className="text-sm text-theme-muted leading-relaxed z-10 font-medium max-w-xs">
+                                            Study all questions and their correct answers without timer or scoring. Perfect for deep revision.
+                                        </p>
+                                    </button>
 
-                                {questions.map((q, i) => (
-                                    <div key={q.id} className="glass-panel p-8 rounded-3xl shadow-sm hover:shadow-md transition-all border border-transparent hover:border-purple-500/20">
-                                        <div className="flex gap-5">
-                                            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-theme-bg-secondary text-theme-muted flex items-center justify-center font-bold text-sm">
-                                                {q.id}
+                                    {/* Custom Paper Option */}
+                                    <button 
+                                        onClick={() => handleModeSelect('quiz')}
+                                        className="group p-10 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 hover:border-theme-primary/60 hover:bg-theme-surface/80 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-b from-theme-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                        <div className="w-24 h-24 rounded-[32px] bg-theme-bg border border-theme-border/60 text-theme-primary flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500 z-10 shadow-lg group-hover:border-theme-primary/40 group-hover:bg-theme-primary/10 group-hover:shadow-[0_0_30px_rgba(var(--theme-primary),0.2)]">
+                                            <Trophy className="w-10 h-10" />
+                                        </div>
+                                        <h3 className="text-2xl font-black uppercase tracking-widest text-theme-text mb-4 z-10">Custom Paper</h3>
+                                        <p className="text-sm text-theme-muted leading-relaxed z-10 font-medium max-w-xs">
+                                            Configure a custom mock test. Select difficulty, pattern, and question count to evaluate readiness.
+                                        </p>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'custom-paper-setup' && activeChapter && (
+                        <div className="flex flex-col items-center min-h-[60vh] animate-fade-in p-4 md:p-8">
+                            <div className="max-w-5xl w-full pt-8 pb-24">
+                                <div className="text-center mb-16">
+                                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-[24px] bg-theme-primary/10 text-theme-primary mb-6 shadow-[0_0_30px_rgba(var(--theme-primary),0.2)] border border-theme-primary/30">
+                                        <Target className="w-8 h-8" />
+                                    </div>
+                                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-[0.15em] text-theme-text mb-4 leading-tight">
+                                        Test Configuration
+                                    </h2>
+                                    <p className="text-sm font-bold uppercase tracking-widest text-theme-muted/80 max-w-xl mx-auto">
+                                        Setting parameters for <span className="text-theme-primary">{activeChapter.chapterName}</span>
+                                    </p>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+                                    
+                                    {/* Number of Questions */}
+                                    <div className="p-8 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 shadow-xl flex flex-col relative overflow-hidden group hover:border-theme-primary/30 transition-all duration-500">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted mb-8 flex items-center gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-theme-bg border border-theme-border flex items-center justify-center">
+                                                <FileText className="w-3 h-3 text-theme-primary" />
                                             </div>
-                                            <div className="flex-1 space-y-4">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <p className="text-lg font-medium text-theme-primary leading-relaxed">{sanitizeLatex(q.question)}</p>
-                                                        {q.svg && (
-                                                            <div className="mt-4 mb-4 flex justify-center bg-white rounded-xl p-4 overflow-hidden border border-slate-200 shadow-sm" dangerouslySetInnerHTML={{ __html: q.svg }} />
-                                                        )}
-                                                        {q.image_description && (
-                                                            <div className={`mt-4 p-5 rounded-2xl bg-theme-surface/50 border-theme-border/50 border-2 border-dashed`}>
-                                                                <div className="flex items-center gap-3 mb-3">
-                                                                    <div className="p-2 rounded-xl bg-indigo-500/20">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" /></svg>
-                                                                    </div>
-                                                                    <div>
-                                                                        <span className="font-bold text-theme-primary text-sm uppercase tracking-wide">📐 Diagram Required</span>
-                                                                        <p className="text-xs text-theme-muted">Visualize this for the question</p>
-                                                                    </div>
-                                                                </div>
-                                                                <div className={`p-4 rounded-xl bg-theme-surface/80 text-theme-secondary leading-relaxed`}>
-                                                                    {q.image_description}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-xs font-bold text-theme-muted px-2 py-1 rounded bg-theme-bg-secondary flex-shrink-0 ml-2">{q.marks} Marks</span>
-                                                </div>
+                                            Question Count
+                                        </h3>
+                                        <div className="flex flex-wrap gap-3">
+                                            {[5, 10, 15, 20].map(num => (
+                                                <button 
+                                                    key={num}
+                                                    onClick={() => setQuizConfig({...quizConfig, numQuestions: num})}
+                                                    className={`px-8 py-4 rounded-2xl font-black text-lg transition-all duration-300 ${quizConfig.numQuestions === num ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-105 border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
+                                                >
+                                                    {num}
+                                                </button>
+                                            ))}
+                                            <button 
+                                                onClick={() => setQuizConfig({...quizConfig, numQuestions: 'All'})}
+                                                className={`w-full mt-2 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 ${quizConfig.numQuestions === 'All' ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-[1.02] border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
+                                            >
+                                                <Target className="w-4 h-4" /> All Available
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                                {q.type === 'objective' ? (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {q.options.map((opt, idx) => (
-                                                            <label key={idx} className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all ${answers[q.id] === opt ? 'bg-theme-primary/20 border-theme-primary shadow-md' : 'bg-theme-surface border-transparent hover:bg-theme-surface/80'} `}>
-                                                                <input type="radio" name={`q-`} value={opt} checked={answers[q.id] === opt} onChange={() => setAnswers({ ...answers, [q.id]: opt })} className="hidden" />
-                                                                <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center flex-shrink-0 ${answers[q.id] === opt ? 'border-theme-primary bg-theme-primary' : 'border-theme-muted'} `}>
-                                                                    {answers[q.id] === opt && <div className="w-2 h-2 rounded-full bg-theme-bg" />}
+                                    {/* Difficulty Level */}
+                                    <div className="p-8 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 shadow-xl flex flex-col relative overflow-hidden group hover:border-theme-primary/30 transition-all duration-500">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted mb-8 flex items-center gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-theme-bg border border-theme-border flex items-center justify-center">
+                                                <Trophy className="w-3 h-3 text-theme-primary" />
+                                            </div>
+                                            Difficulty Level
+                                        </h3>
+                                        <div className="flex flex-col gap-3">
+                                            {[
+                                                { id: 'Easy', desc: 'Basics & Theory' },
+                                                { id: 'Medium', desc: '50/50 Mix' },
+                                                { id: 'Hard', desc: 'HOTS & Logic' }
+                                            ].map(level => (
+                                                <button 
+                                                    key={level.id}
+                                                    onClick={() => setQuizConfig({...quizConfig, difficulty: level.id})}
+                                                    className={`w-full px-6 py-4 rounded-2xl font-black flex items-center justify-between transition-all duration-300 ${quizConfig.difficulty === level.id ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-[1.02] border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
+                                                >
+                                                    <span className="uppercase tracking-widest">{level.id}</span>
+                                                    <span className={`text-[9px] uppercase tracking-widest ${quizConfig.difficulty === level.id ? 'text-theme-bg/70' : 'text-theme-muted'}`}>{level.desc}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Question Pattern */}
+                                    <div className="p-8 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 shadow-xl flex flex-col relative overflow-hidden group hover:border-theme-primary/30 transition-all duration-500">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted mb-8 flex items-center gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-theme-bg border border-theme-border flex items-center justify-center">
+                                                <Shield className="w-3 h-3 text-theme-primary" />
+                                            </div>
+                                            Pattern Matrix
+                                        </h3>
+                                        <div className="flex flex-col gap-3">
+                                            {[
+                                                { id: 'MCQs Only', icon: CheckCircle },
+                                                { id: 'Theory Only', icon: FileText },
+                                                { id: 'Mixed Pattern', icon: RefreshCw }
+                                            ].map(pattern => {
+                                                const Icon = pattern.icon;
+                                                return (
+                                                    <button 
+                                                        key={pattern.id}
+                                                        onClick={() => setQuizConfig({...quizConfig, pattern: pattern.id})}
+                                                        className={`w-full px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center gap-4 transition-all duration-300 ${quizConfig.pattern === pattern.id ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-[1.02] border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
+                                                    >
+                                                        <Icon className={`w-4 h-4 ${quizConfig.pattern === pattern.id ? 'text-theme-bg' : 'text-theme-primary'}`} />
+                                                        <span>{pattern.id}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                </div>
+                                
+                                <div className="mt-16 flex justify-center">
+                                    <button 
+                                        onClick={startCustomQuiz}
+                                        disabled={isGenerating}
+                                        className={`group relative inline-flex items-center gap-4 px-12 py-5 bg-theme-primary text-theme-bg font-black uppercase tracking-[0.2em] rounded-full overflow-hidden transition-all shadow-[0_0_40px_rgba(var(--theme-primary),0.4)] ${isGenerating ? 'opacity-80 cursor-not-allowed scale-95' : 'hover:scale-105'}`}
+                                    >
+                                        {!isGenerating && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />}
+                                        {isGenerating && <Loader2 className="w-5 h-5 animate-spin relative z-10" />}
+                                        <span className="relative z-10">{isGenerating ? 'Generating...' : 'Initialize Test'}</span> 
+                                        {!isGenerating && <ChevronRight className="w-5 h-5 relative z-10" />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'bank' && quizData && (
+                        <div className="max-w-4xl mx-auto w-full animate-fade-in space-y-8 pb-24">
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-xl md:text-2xl font-black text-theme-text uppercase tracking-widest">
+                                    {activeChapter.chapterName}
+                                </h3>
+                                <div className="px-4 py-2 rounded-xl bg-theme-primary/10 border border-theme-primary/20 text-[10px] font-black uppercase tracking-widest text-theme-primary">
+                                    {quizData.questions.length} Questions
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {quizData.questions.map((q, i) => (
+                                    <div key={q.id} className="p-6 md:p-8 rounded-[32px] bg-theme-surface/60 backdrop-blur-md border border-theme-border/50 shadow-lg relative overflow-hidden group">
+                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-theme-primary/50 to-transparent opacity-50" />
+                                        
+                                        <div className="flex flex-col md:flex-row gap-6">
+                                            <div className="flex-shrink-0">
+                                                <div className="w-12 h-12 rounded-2xl bg-theme-bg border border-theme-border/60 text-theme-primary flex items-center justify-center font-black text-lg shadow-inner">
+                                                    {i + 1}
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 space-y-6">
+                                                <p className="text-lg md:text-xl font-bold text-theme-text leading-relaxed">
+                                                    {q.question}
+                                                </p>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {q.options.map((opt, idx) => {
+                                                        const isCorrect = opt === q.correct_answer;
+                                                        return (
+                                                            <div 
+                                                                key={idx} 
+                                                                className={`flex items-center p-4 rounded-2xl border transition-all duration-300 ${
+                                                                    isCorrect 
+                                                                        ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                                                                        : 'bg-theme-bg/60 border-theme-border/40 opacity-70'
+                                                                }`}
+                                                            >
+                                                                <div className={`w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center flex-shrink-0 ${
+                                                                    isCorrect ? 'border-emerald-500 bg-emerald-500' : 'border-theme-muted/40'
+                                                                }`}>
+                                                                    {isCorrect && <Check className="w-3 h-3 text-white" />}
                                                                 </div>
-                                                                <span className={`${answers[q.id] === opt ? 'text-theme-secondary font-semibold' : 'text-theme-secondary'} `}>{sanitizeLatex(opt)}</span>
-                                                            </label>
-                                                        ))}
+                                                                <span className={`font-bold text-sm ${isCorrect ? 'text-emerald-500' : 'text-theme-text/70'}`}>
+                                                                    {opt}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                
+                                                {q.explanation && (
+                                                    <div className="mt-6 p-5 rounded-2xl bg-theme-primary/5 border border-theme-primary/20 flex gap-4 items-start">
+                                                        <Sparkles className="w-5 h-5 text-theme-primary shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <span className="font-black text-theme-primary uppercase tracking-[0.2em] text-[9px] block mb-1">Concept Insight</span>
+                                                            <p className="text-sm text-theme-text/90 font-medium leading-relaxed">{q.explanation}</p>
+                                                        </div>
                                                     </div>
-                                                ) : (
-                                                    <textarea
-                                                        rows="3"
-                                                        className="w-full glass-input p-4 rounded-xl focus:outline-none text-base resize-none"
-                                                        placeholder="Type your answer here..."
-                                                        value={answers[q.id] || ''}
-                                                        onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
-                                                    />
                                                 )}
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                        </div>
+                    )}
 
-            {(step === 'grading' || step === 'result') && assessmentStats && (
-                <div className="max-w-4xl mx-auto w-full animate-slide-up space-y-8 pb-20">
-                    {/* ... Result View (Kept mostly same, just ensuring variables match) ... */}
-                    <div className="space-y-8 pb-10">
-                        {/* Score Dashboard */}
-                        <div className={`glass-panel p-8 rounded-[40px] relative overflow-hidden perspective-2000 tilt-card bg-theme-surface/30`}>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center preserve-3d">
-                                {/* Main Score */}
-                                <div className="md:col-span-1 flex flex-col items-center justify-center translate-z-50">
-                                    <div className={`w-32 h-32 rounded-full flex items-center justify-center text-5xl font-black bg-gradient-to-br ${assessmentStats.score >= 75 ? 'from-emerald-500 to-green-600' : assessmentStats.score >= 50 ? 'from-theme-primary to-theme-secondary' : 'from-rose-500 to-red-600'} text-theme-bg shadow-2xl depth-glow`}>
-                                        {assessmentStats.score}%
-                                    </div>
-                                    <p className="text-lg font-bold text-theme-primary mt-3">
-                                        {assessmentStats.score >= 90 ? '🎉 Outstanding!' : assessmentStats.score >= 75 ? '👏 Great Job!' : assessmentStats.score >= 50 ? '💪 Keep Going!' : '📚 Need Practice'}
+                    {step === 'taking' && quizData && (
+                        <div className="max-w-4xl mx-auto w-full animate-fade-in space-y-8 pb-24">
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+                                <div>
+                                    <h3 className="text-xl md:text-2xl font-black text-theme-text uppercase tracking-widest">
+                                        {activeChapter.chapterName}
+                                    </h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-theme-primary mt-1">
+                                        Live Assessment • {quizData.questions.length} Items
                                     </p>
                                 </div>
-
-                                {/* Stats Grid */}
-                                <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-surface/50 border-theme-border/50 shadow-lg`}>
-                                        <p className="text-3xl font-black text-emerald-500">{assessmentStats.correct}</p>
-                                        <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Correct</p>
-                                    </div>
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-surface/50 border-theme-border/50 shadow-lg`}>
-                                        <p className="text-3xl font-black text-rose-500">{assessmentStats.total - assessmentStats.correct}</p>
-                                        <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Incorrect</p>
-                                    </div>
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-surface/50 border-theme-border/50 shadow-lg`}>
-                                        <p className="text-3xl font-black text-purple-500">{assessmentStats.total}</p>
-                                        <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Total MCQs</p>
-                                    </div>
-                                    <div className={`p-4 rounded-2xl glass-3d glow-border bg-theme-surface/50 border-theme-border/50 shadow-lg`}>
-                                        <p className="text-3xl font-black text-indigo-500">{config.difficulty}</p>
-                                        <p className="text-xs font-bold text-theme-muted uppercase tracking-wider">Difficulty</p>
-                                    </div>
-                                </div>
+                                <button 
+                                    onClick={submitQuiz} 
+                                    className="px-8 py-3.5 bg-theme-primary text-theme-bg rounded-xl font-black uppercase tracking-widest hover:scale-105 transition-all text-xs shadow-[0_0_20px_rgba(var(--theme-primary),0.3)] border border-theme-primary"
+                                >
+                                    Submit Protocol
+                                </button>
                             </div>
 
-                            {/* AI Feedback */}
-                            {assessmentStats.analysis?.overall_feedback && (
-                                <div className={`mt-6 p-4 rounded-xl bg-theme-surface/80`}>
-                                    <p className="text-theme-secondary text-center">💡 {assessmentStats.analysis.overall_feedback}</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Weak Concepts */}
-                        {assessmentStats.analysis?.weak_concepts?.length > 0 && (
-                            <div className="glass-panel p-8 rounded-[40px] glass-3d glow-border">
-                                <h3 className="text-xl font-bold text-theme-primary mb-6 flex items-center gap-2"><Brain className="w-6 h-6 text-purple-500" /> Smart Remedial Plan</h3>
-                                <div className="grid gap-4">
-                                    {assessmentStats.analysis.weak_concepts.map((c, i) => (
-                                        <div key={i} className="p-5 rounded-2xl bg-theme-bg-secondary border border-theme-border">
-                                            <h4 className="font-bold text-rose-500 mb-2">{c.concept}</h4>
-                                            <p className="text-sm text-theme-secondary mb-3">{c.revision_note}</p>
-                                            <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(c.youtube_query + " class " + config.classGrade)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors">
-                                                <Youtube className="w-3 h-3" /> Watch Lesson
-                                            </a >
-                                        </div >
-                                    ))}
-                                </div >
-                            </div >
-                        )}
-
-                        {/* Answer Key */}
-                        <div className="glass-panel p-8 rounded-[40px] glass-3d glow-border">
-                            <h3 className="text-xl font-bold text-theme-primary mb-6">Detailed Solutions</h3>
                             <div className="space-y-6">
-                                {assessmentStats.detailedAnswers.map((a, i) => (
-                                    <div key={i} className="border-b border-theme-border pb-6 last:border-0">
-                                        <p className="font-medium text-theme-primary mb-3">Q{i + 1}. {sanitizeLatex(a.question)}</p>
-                                        <div className="text-sm space-y-2">
-                                            <div className={`p-3 rounded-lg ${a.is_correct ? 'bg-green-500/10 text-green-600' : 'bg-rose-500/10 text-rose-600'}`}>
-                                                <span className="font-bold text-xs uppercase opacity-70 block mb-1">Your Answer</span>
-                                                {sanitizeLatex(a.student_answer)}
+                                {quizData.questions.map((q, i) => (
+                                    <div key={q.id} className="p-6 md:p-8 rounded-[32px] bg-theme-surface/60 backdrop-blur-md border border-theme-border/50 shadow-lg relative overflow-hidden group hover:border-theme-primary/40 transition-colors duration-500">
+                                        <div className="flex flex-col md:flex-row gap-6">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="w-12 h-12 rounded-2xl bg-theme-bg border border-theme-border/60 text-theme-primary flex items-center justify-center font-black text-lg shadow-inner">
+                                                    {i + 1}
+                                                </div>
                                             </div>
-                                            <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-600">
-                                                <span className="font-bold text-xs uppercase opacity-70 block mb-1">Correct Answer</span>
-                                                {sanitizeLatex(a.correct_answer)}
+                                            <div className="flex-1 space-y-6">
+                                                <p className="text-lg md:text-xl font-bold text-theme-text leading-relaxed">
+                                                    {q.question}
+                                                </p>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {q.options.map((opt, idx) => {
+                                                        const isSelected = answers[q.id] === opt;
+                                                        return (
+                                                            <label 
+                                                                key={idx} 
+                                                                className={`flex items-center p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${
+                                                                    isSelected 
+                                                                        ? 'bg-theme-primary/10 border-theme-primary shadow-[0_0_15px_rgba(var(--theme-primary),0.15)] scale-[1.02]' 
+                                                                        : 'bg-theme-bg/60 border-theme-border/40 hover:bg-theme-surface hover:border-theme-border'
+                                                                }`}
+                                                            >
+                                                                <input 
+                                                                    type="radio" 
+                                                                    name={`q-${q.id}`} 
+                                                                    value={opt} 
+                                                                    checked={isSelected} 
+                                                                    onChange={() => setAnswers({ ...answers, [q.id]: opt })} 
+                                                                    className="hidden" 
+                                                                />
+                                                                <div className={`w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                                                    isSelected ? 'border-theme-primary bg-theme-primary' : 'border-theme-muted/50'
+                                                                }`}>
+                                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-theme-bg" />}
+                                                                </div>
+                                                                <span className={`font-bold text-sm ${isSelected ? 'text-theme-primary' : 'text-theme-text/80'}`}>
+                                                                    {opt}
+                                                                </span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                            {a.explanation && <p className="text-xs text-theme-muted mt-2 italic">💡 {sanitizeLatex(a.explanation)}</p>}
                                         </div>
                                     </div>
                                 ))}
                             </div>
+                            
+                            <div className="flex justify-center pt-8 border-t border-theme-border/30">
+                                <button 
+                                    onClick={submitQuiz} 
+                                    className="group relative inline-flex items-center gap-4 px-12 py-5 bg-theme-primary text-theme-bg font-black uppercase tracking-[0.2em] rounded-full overflow-hidden hover:scale-105 transition-all shadow-[0_0_40px_rgba(var(--theme-primary),0.4)]"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                                    <span className="relative z-10">Complete Assessment</span> 
+                                    <Check className="w-5 h-5 relative z-10" />
+                                </button>
+                            </div>
                         </div>
+                    )}
 
-                        <button onClick={() => setStep('setup')} className="w-full py-4 bg-gradient-to-r from-theme-primary to-theme-secondary text-theme-bg font-bold rounded-2xl shadow-lg">Start New Assessment</button>
-                    </div >
-                </div >
-            )}
-        </div >
+                    {step === 'result' && assessmentStats && (
+                        <div className="max-w-4xl mx-auto w-full animate-fade-in space-y-8 pb-24 mt-4">
+                            
+                            <div className="text-center space-y-2 mb-10">
+                                <h2 className="text-3xl font-black uppercase tracking-widest text-theme-text">Assessment Complete</h2>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-theme-muted">Performance Diagnostics Generated</p>
+                            </div>
+
+                            {/* Score Dashboard */}
+                            <div className={`p-10 rounded-[40px] bg-theme-surface/60 backdrop-blur-md border border-theme-border/50 shadow-2xl relative overflow-hidden`}>
+                                <div className={`absolute top-0 inset-x-0 h-1.5 ${assessmentStats.score >= 75 ? 'bg-emerald-500' : assessmentStats.score >= 50 ? 'bg-theme-primary' : 'bg-rose-500'}`} />
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                                    {/* Main Score */}
+                                    <div className="md:col-span-1 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-theme-border/50 pb-10 md:pb-0 relative">
+                                        <div className={`w-36 h-36 rounded-full flex items-center justify-center text-5xl font-black shadow-2xl mb-6 relative z-10
+                                            ${assessmentStats.score >= 75 ? 'bg-emerald-500 text-white shadow-emerald-500/30 border border-emerald-400' : 
+                                              assessmentStats.score >= 50 ? 'bg-theme-primary text-theme-bg shadow-theme-primary/30 border border-theme-primary' : 
+                                              'bg-rose-500 text-white shadow-rose-500/30 border border-rose-400'}`}
+                                        >
+                                            {assessmentStats.score}%
+                                        </div>
+                                        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-2xl opacity-20 pointer-events-none
+                                            ${assessmentStats.score >= 75 ? 'bg-emerald-500' : assessmentStats.score >= 50 ? 'bg-theme-primary' : 'bg-rose-500'}`} />
+                                        
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-theme-muted mb-1">Classification</span>
+                                            <p className={`text-sm font-black uppercase tracking-widest 
+                                                ${assessmentStats.score >= 80 ? 'text-emerald-500' : 
+                                                  assessmentStats.score >= 65 ? 'text-theme-primary' : 
+                                                  assessmentStats.score >= 50 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                                {assessmentStats.score >= 80 ? 'Alpha Grade (A)' : 
+                                                 assessmentStats.score >= 65 ? 'Bravo Grade (B)' : 
+                                                 assessmentStats.score >= 50 ? 'Charlie Grade (C)' : 'Fail'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Stats Grid */}
+                                    <div className="md:col-span-2 grid grid-cols-2 gap-4 items-center">
+                                        <div className="p-6 rounded-[24px] bg-theme-bg/80 border border-theme-border/60 text-center flex flex-col items-center justify-center">
+                                            <p className="text-4xl font-black text-emerald-500 mb-2">{assessmentStats.correct}</p>
+                                            <p className="text-[9px] font-black text-theme-muted uppercase tracking-[0.2em]">Correct Hits</p>
+                                        </div>
+                                        <div className="p-6 rounded-[24px] bg-theme-bg/80 border border-theme-border/60 text-center flex flex-col items-center justify-center">
+                                            <p className="text-4xl font-black text-rose-500 mb-2">{assessmentStats.total - assessmentStats.correct}</p>
+                                            <p className="text-[9px] font-black text-theme-muted uppercase tracking-[0.2em]">Incorrect</p>
+                                        </div>
+                                        <div className="p-6 rounded-[24px] bg-theme-bg/80 border border-theme-border/60 text-center flex flex-col items-center justify-center">
+                                            <p className="text-4xl font-black text-theme-primary mb-2">{assessmentStats.total}</p>
+                                            <p className="text-[9px] font-black text-theme-muted uppercase tracking-[0.2em]">Total Objectives</p>
+                                        </div>
+                                        <button 
+                                            onClick={handleRetake}
+                                            className="h-full flex flex-col items-center justify-center gap-3 p-6 rounded-[24px] bg-theme-primary/10 border border-theme-primary/30 text-theme-primary hover:bg-theme-primary hover:text-theme-bg transition-colors group"
+                                        >
+                                            <RefreshCw className="w-8 h-8 group-hover:rotate-180 transition-transform duration-500" />
+                                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">Relaunch</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Progression Unlock Banner */}
+                            {isProgressionTest && assessmentStats.levelUnlocked && (
+                                <div className="p-10 rounded-[40px] bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/30 text-center shadow-xl shadow-emerald-500/10 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
+                                    
+                                    <div className="inline-flex p-5 bg-emerald-500/20 rounded-2xl border border-emerald-500/30 mb-6 relative z-10">
+                                        <Trophy className="w-10 h-10 text-emerald-400" />
+                                    </div>
+                                    <h3 className="text-3xl font-black uppercase tracking-widest text-emerald-400 mb-3 relative z-10">
+                                        {assessmentStats.levelUnlocked === 'mastery' ? 'Full Mastery Achieved' : `Level ${assessmentStats.levelUnlocked === 'intermediate' ? '2' : '3'} Unlocked`}
+                                    </h3>
+                                    <p className="text-emerald-500/80 text-sm font-medium mb-8 max-w-lg mx-auto leading-relaxed relative z-10">
+                                        {assessmentStats.levelUnlocked === 'mastery' 
+                                            ? 'You have conquered all intelligence levels for this sector. Outstanding operational readiness, Cadet.'
+                                            : 'Performance metrics exceed threshold. Next intelligence tier is now accessible in Samvada Lens.'}
+                                    </p>
+                                    <button
+                                        onClick={() => typeof onNavigate === 'function' ? onNavigate('document-study') : null}
+                                        className="relative z-10 px-10 py-4 bg-emerald-500 text-white rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:scale-105 transition-all shadow-lg shadow-emerald-500/30 border border-emerald-400"
+                                    >
+                                        Return to Samvada Lens
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Fail to progress banner */}
+                            {isProgressionTest && !assessmentStats.levelUnlocked && (
+                                <div className="p-10 rounded-[40px] bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/30 text-center shadow-xl shadow-amber-500/10 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
+                                    
+                                    <div className="inline-flex p-5 bg-amber-500/20 rounded-2xl border border-amber-500/30 mb-6 relative z-10">
+                                        <AlertCircle className="w-10 h-10 text-amber-400" />
+                                    </div>
+                                    <h3 className="text-3xl font-black uppercase tracking-widest text-amber-400 mb-3 relative z-10">
+                                        Threshold Not Met
+                                    </h3>
+                                    <p className="text-amber-500/80 text-sm font-medium mb-8 max-w-lg mx-auto leading-relaxed relative z-10">
+                                        Operational readiness requires &gt;60% accuracy for clearance. Return to intelligence files and re-attempt when prepared.
+                                    </p>
+                                    <button
+                                        onClick={() => typeof onNavigate === 'function' ? onNavigate('document-study') : null}
+                                        className="relative z-10 px-10 py-4 bg-amber-500 text-theme-bg rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:scale-105 transition-all shadow-lg shadow-amber-500/30 border border-amber-400"
+                                    >
+                                        Return to Study Material
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                </div>
+            </main>
+        </div>
     );
 };
 

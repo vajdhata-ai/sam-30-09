@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trophy, Zap, Target, Shield, Clock, User, Cpu, ChevronRight, Check, X, Star, Gauge, Swords, BrainCircuit } from './Icons';
+import { Trophy, Zap, Target, Shield, Clock, User, Cpu, ChevronRight, Check, X, Star, Gauge, Swords, BrainCircuit, Activity } from './Icons';
 
-const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
+const BrainLink = ({ quizData, topic, difficulty, onExit, onComplete, isDark }) => {
     const [gameState, setGameState] = useState('playing'); // playing | results
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [userScore, setUserScore] = useState(0);
@@ -18,7 +18,6 @@ const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
     const timerRef = useRef(null);
     const spectreThoughtRef = useRef(null);
 
-    // Auto-scroll combat log
     useEffect(() => {
         logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [combatLog]);
@@ -27,7 +26,6 @@ const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
         setCombatLog(prev => [...prev.slice(-4), msg]);
     };
 
-    // --- Game Logic ---
     useEffect(() => {
         if (gameState === 'playing') {
             startTimer();
@@ -98,7 +96,6 @@ const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
             addToLog("Neural desync detected. Sequence broken.");
         }
 
-        // Wait then move to next or results
         setTimeout(() => {
             if (currentQuestionIndex < quizData.length - 1) {
                 setCurrentQuestionIndex(prev => prev + 1);
@@ -110,7 +107,6 @@ const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
         }, 1500);
     };
 
-    // Callback on battle end
     useEffect(() => {
         if (gameState === 'results' && onComplete) {
             onComplete({
@@ -127,58 +123,88 @@ const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
         const spectreHPPercent = Math.min((spectreScore / maxScore) * 100, 100);
 
         return (
-            <div className={`h-full flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto w-full ${userAnswerStatus === 'wrong' ? 'animate-shake' : ''}`}>
+            <div className={`h-full flex flex-col gap-6 animate-fade-in max-w-6xl mx-auto w-full ${userAnswerStatus === 'wrong' ? 'animate-shake' : ''} pb-12`}>
 
                 {/* HUD: Fighting Game Style Top Bar */}
-                <div className={`flex items-center justify-between gap-4 w-full p-4 md:p-5 rounded-2xl border glass-3d relative transition-all duration-500 shrink-0 will-change-transform bg-theme-surface border-theme-border
+                <div className={`flex items-center justify-between gap-6 w-full p-6 md:p-8 rounded-[40px] border relative transition-all duration-500 shrink-0 bg-theme-surface/60 backdrop-blur-md border-theme-border/50 shadow-xl overflow-hidden
                 `}>
+                    <div className="absolute inset-0 bg-gradient-to-b from-theme-primary/5 to-transparent pointer-events-none" />
+                    
                     {/* User Health Bar */}
-                    <div className="flex-1 space-y-2 relative">
-                        <div className="flex justify-between items-center text-[9px] md:text-xs font-black uppercase tracking-widest text-theme-primary">
-                            <span className="flex items-center gap-1.5"><BrainCircuit className="w-4 h-4" /> Challenger</span>
-                            <span>{userScore}</span>
+                    <div className="flex-1 space-y-3 relative z-10">
+                        <div className="flex justify-between items-center text-[10px] md:text-sm font-black uppercase tracking-[0.2em] text-theme-primary">
+                            <span className="flex items-center gap-2"><BrainCircuit className="w-5 h-5" /> Challenger</span>
+                            <span className="text-xl">{userScore}</span>
                         </div>
-                        <div className={`h-3 md:h-4 w-full rounded-full overflow-hidden border relative bg-theme-bg border-theme-border`}>
+                        <div className={`h-4 md:h-5 w-full rounded-full overflow-hidden border relative bg-theme-bg/60 border-theme-border/60 p-1`}>
                             <div
-                                className="h-full bg-gradient-to-r from-theme-primary to-theme-secondary transition-all duration-700 shadow-[0_0_10px_var(--theme-primary)] opacity-80"
+                                className="h-full rounded-full bg-gradient-to-r from-theme-primary to-theme-secondary transition-all duration-700 shadow-[0_0_15px_rgba(var(--theme-primary),0.5)]"
                                 style={{ width: `${userHPPercent}%` }}
                             ></div>
                         </div>
+                        {combo > 1 && (
+                            <div className="absolute -bottom-8 left-0 text-[10px] font-black uppercase tracking-widest text-theme-secondary animate-bounce">
+                                {combo}x COMBO
+                            </div>
+                        )}
                     </div>
 
                     {/* VS / Timer */}
-                    <div className="flex flex-col items-center justify-center shrink-0 px-2 md:px-4 z-10">
-                        <div className={`text-2xl md:text-3xl font-black tabular-nums transition-colors duration-300 drop-shadow-md leading-none
-                            ${timeLeft <= 5 ? 'text-red-500 animate-pulse' : 'text-theme-text'}
-                        `}>
-                            {timeLeft}
+                    <div className="flex flex-col items-center justify-center shrink-0 px-6 relative z-10">
+                        <div className="w-20 h-20 rounded-full border-4 border-theme-surface bg-theme-bg shadow-[0_0_30px_rgba(var(--theme-primary),0.2)] flex items-center justify-center relative">
+                            <svg className="absolute inset-0 w-full h-full -rotate-90">
+                                <circle cx="50%" cy="50%" r="36" fill="none" stroke="rgba(var(--theme-border), 0.5)" strokeWidth="4" />
+                                <circle 
+                                    cx="50%" 
+                                    cy="50%" 
+                                    r="36" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    strokeWidth="4" 
+                                    strokeDasharray="226"
+                                    strokeDashoffset={226 - (226 * timeLeft) / 15}
+                                    className={`transition-all duration-1000 ${timeLeft <= 5 ? 'text-rose-500' : 'text-theme-primary'}`}
+                                />
+                            </svg>
+                            <div className={`text-3xl font-black tabular-nums transition-colors duration-300 drop-shadow-md leading-none z-10
+                                ${timeLeft <= 5 ? 'text-rose-500 animate-pulse' : 'text-theme-text'}
+                            `}>
+                                {timeLeft}
+                            </div>
                         </div>
-                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-theme-muted mt-0.5">TIME</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-theme-muted mt-3">VS</span>
                     </div>
 
                     {/* Spectre Health Bar */}
-                    <div className="flex-1 space-y-2 relative text-right">
-                        <div className="flex justify-between items-center text-[9px] md:text-xs font-black uppercase tracking-widest text-rose-500">
-                            <span>{spectreScore}</span>
-                            <span className="flex items-center gap-1.5">Spectre-7 <Cpu className="w-4 h-4" /></span>
+                    <div className="flex-1 space-y-3 relative z-10 text-right">
+                        <div className="flex justify-between items-center text-[10px] md:text-sm font-black uppercase tracking-[0.2em] text-rose-500">
+                            <span className="text-xl">{spectreScore}</span>
+                            <span className="flex items-center gap-2">Spectre-7 <Cpu className="w-5 h-5" /></span>
                         </div>
-                        <div className={`h-3 md:h-4 w-full rounded-full overflow-hidden border relative rotate-180 bg-theme-bg border-theme-border`}>
+                        <div className={`h-4 md:h-5 w-full rounded-full overflow-hidden border relative rotate-180 bg-theme-bg/60 border-theme-border/60 p-1`}>
                             <div
-                                className="h-full bg-gradient-to-l from-rose-600 to-rose-400 transition-all duration-700 shadow-[0_0_10px_rgba(244,63,94,0.4)]"
+                                className="h-full rounded-full bg-gradient-to-l from-rose-600 to-rose-400 transition-all duration-700 shadow-[0_0_15px_rgba(244,63,94,0.5)]"
                                 style={{ width: `${spectreHPPercent}%` }}
                             ></div>
                         </div>
+                        {spectreAnswerStatus === 'correct' && (
+                            <div className="absolute -bottom-8 right-0 text-[10px] font-black uppercase tracking-widest text-rose-500 animate-pulse">
+                                Threat Incoming
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Main Battle Core: The Interactive Query Engine */}
-                <div className={`flex-1 rounded-[24px] border glass-3d relative group/core overflow-hidden flex flex-col p-4 md:p-6 min-h-0 will-change-transform bg-theme-surface border-theme-border
+                <div className={`flex-1 rounded-[40px] border relative group/core overflow-hidden flex flex-col p-6 md:p-10 min-h-0 bg-theme-surface/40 backdrop-blur-md border-theme-border/40 shadow-2xl
                 `}>
-                    {/* Combat Log Overlay (Absolute top left) */}
-                    <div className="absolute top-4 left-6 z-20 w-48 md:w-64 max-h-24 overflow-hidden pointer-events-none opacity-60">
-                        <div className="flex flex-col gap-1">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-theme-primary/5 blur-[100px] rounded-full pointer-events-none"></div>
+
+                    {/* Combat Log Overlay */}
+                    <div className="absolute top-6 left-8 z-20 w-48 md:w-72 max-h-32 overflow-hidden pointer-events-none opacity-80">
+                        <div className="flex flex-col gap-2">
                             {combatLog.map((log, i) => (
-                                <div key={i} className="text-[9px] font-bold text-theme-primary uppercase tracking-tight bg-theme-bg opacity-90 px-2 py-0.5 rounded backdrop-blur-sm border-l-2 border-theme-primary animate-in fade-in slide-in-from-left-2">
+                                <div key={i} className="text-[10px] font-bold text-theme-primary uppercase tracking-[0.1em] bg-theme-bg/80 px-3 py-1.5 rounded-lg backdrop-blur-md border-l-4 border-theme-primary animate-in fade-in slide-in-from-left-4 shadow-lg">
                                     {log}
                                 </div>
                             ))}
@@ -187,40 +213,43 @@ const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
                     </div>
 
                     {/* Progress Bar Top */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-theme-border">
+                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-theme-border/50">
                         <div
-                            className="h-full transition-all duration-700 ease-out bg-theme-primary"
+                            className="h-full transition-all duration-700 ease-out bg-gradient-to-r from-theme-primary to-theme-secondary shadow-[0_0_10px_rgba(var(--theme-primary),0.5)]"
                             style={{ width: `${((currentQuestionIndex + 1) / quizData.length) * 100}%` }}
                         ></div>
                     </div>
 
                     {/* Question Section */}
-                    <div className="text-center space-y-2 max-w-2xl mx-auto relative z-10 w-full mb-4 mt-6 md:mt-10">
-                        <span className="text-[8px] font-black uppercase tracking-[0.3em] text-theme-muted">
-                            QUESTION {currentQuestionIndex + 1} / {quizData.length}
-                        </span>
-                        <div className="relative group/q py-1">
-                            <h2 className={`text-base md:text-lg font-extrabold leading-snug tracking-tight min-h-[2.5em] flex items-center justify-center relative z-10 text-theme-text`}>
+                    <div className="text-center space-y-4 max-w-3xl mx-auto relative z-10 w-full mb-8 mt-12 md:mt-16">
+                        <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-theme-bg/60 border border-theme-border/60">
+                            <Activity className="w-4 h-4 text-theme-primary animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-theme-primary">
+                                Sequence {currentQuestionIndex + 1} of {quizData.length}
+                            </span>
+                        </div>
+                        <div className="relative py-4">
+                            <h2 className={`text-xl md:text-3xl font-black leading-snug tracking-tight min-h-[3em] flex items-center justify-center relative z-10 text-theme-text drop-shadow-sm`}>
                                 {q.question}
                             </h2>
                         </div>
                     </div>
 
                     {/* Response Matrix: Options UI */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-3xl mx-auto relative z-10 flex-1 content-center">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl mx-auto relative z-10 flex-1 content-center">
                         {q.options?.map((opt, i) => {
                             const isCorrectVal = opt === q.answer || opt === q.correct_option;
-                            let btnStyle = "border-theme-border bg-theme-surface hover:border-theme-primary hover:bg-theme-primary hover:text-theme-bg shadow-[0_2px_10px_rgba(0,0,0,0.2)] text-theme-text";
+                            let btnStyle = "border-theme-border/60 bg-theme-bg/60 hover:border-theme-primary hover:bg-theme-primary hover:text-theme-bg shadow-sm text-theme-text";
 
                             if (userAnswerStatus) {
                                 if (isCorrectVal) {
-                                    btnStyle = "border-emerald-500 bg-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
+                                    btnStyle = "border-emerald-500 bg-emerald-500/20 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[1.02]";
                                 } else if (userAnswerStatus === 'wrong' && opt === q.answer) {
                                     btnStyle = "border-emerald-500/30 bg-emerald-500/10 text-emerald-500/80";
                                 } else if (userAnswerStatus === 'wrong') {
-                                    btnStyle = "border-red-500/40 bg-red-500/10 text-red-500/80 opacity-50 grayscale-[0.3]";
+                                    btnStyle = "border-rose-500/40 bg-rose-500/10 text-rose-500/80 opacity-60 scale-[0.98]";
                                 } else {
-                                    btnStyle = "opacity-30 grayscale";
+                                    btnStyle = "opacity-40 grayscale border-theme-border/30";
                                 }
                             }
 
@@ -229,20 +258,27 @@ const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
                                     key={i}
                                     disabled={!!userAnswerStatus}
                                     onClick={() => handleAnswer(opt)}
-                                    className={`group/opt p-4 md:p-5 rounded-xl border-2 text-left font-bold transition-all duration-300 flex items-center justify-between
+                                    className={`group/opt p-5 md:p-6 rounded-3xl border-2 text-left transition-all duration-300 flex items-center justify-between overflow-hidden relative
                                         ${btnStyle}
                                     `}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black transition-colors duration-300
-                                            ${userAnswerStatus ? 'bg-black/10 text-theme-text' : 'bg-theme-bg border border-theme-border text-theme-primary group-hover/opt:bg-theme-bg group-hover/opt:text-theme-primary group-hover/opt:border-theme-bg'}
+                                    {!userAnswerStatus && (
+                                        <div className="absolute inset-0 bg-theme-primary/5 translate-y-full group-hover/opt:translate-y-0 transition-transform duration-300 pointer-events-none" />
+                                    )}
+                                    
+                                    <div className="flex items-center gap-5 relative z-10">
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black transition-all duration-300 shadow-inner
+                                            ${userAnswerStatus ? 'bg-black/10 text-theme-text border border-transparent' : 'bg-theme-surface border border-theme-border text-theme-primary group-hover/opt:bg-theme-bg group-hover/opt:text-theme-primary group-hover/opt:border-theme-bg'}
                                         `}>
                                             {String.fromCharCode(65 + i)}
                                         </div>
-                                        <span className={`text-xs md:text-sm leading-tight tracking-tight ${!userAnswerStatus ? 'text-theme-text group-hover/opt:text-theme-bg' : 'text-theme-text font-normal'}`}>{opt}</span>
+                                        <span className={`text-sm md:text-base font-bold leading-tight tracking-tight ${!userAnswerStatus ? 'group-hover/opt:text-theme-bg' : ''}`}>{opt}</span>
                                     </div>
                                     {userAnswerStatus && isCorrectVal && (
-                                        <Check className="w-5 h-5 text-emerald-500 animate-in zoom-in duration-300 shrink-0" />
+                                        <Check className="w-6 h-6 text-emerald-500 animate-in zoom-in duration-300 shrink-0 relative z-10" />
+                                    )}
+                                    {userAnswerStatus === 'wrong' && !isCorrectVal && (
+                                        <X className="w-6 h-6 text-rose-500 animate-in zoom-in duration-300 shrink-0 relative z-10" />
                                     )}
                                 </button>
                             );
@@ -256,55 +292,66 @@ const BrainLink = ({ quizData, topic, difficulty, onExit, isDark }) => {
     if (gameState === 'results') {
         const isWinner = userScore > spectreScore;
         return (
-            <div className="flex flex-col items-center justify-center h-full max-w-4xl mx-auto space-y-8 animate-in zoom-in duration-500">
-                <div className={`p-16 rounded-[48px] border glass-3d text-center space-y-8 w-full relative overflow-hidden bg-theme-surface border-theme-border shadow-[0_0_40px_var(--theme-border)]
+            <div className="flex flex-col items-center justify-center min-h-[70vh] max-w-5xl mx-auto space-y-8 animate-fade-in pb-16">
+                
+                <div className={`w-full p-12 md:p-16 rounded-[48px] border text-center space-y-10 relative overflow-hidden bg-theme-surface/60 backdrop-blur-xl shadow-2xl
+                    ${isWinner ? 'border-emerald-500/30' : 'border-rose-500/30'}
                 `}>
+                    <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] rounded-full pointer-events-none
+                        ${isWinner ? 'bg-emerald-500/10' : 'bg-rose-500/10'}
+                    `} />
+
                     <div className="relative z-10">
-                        <div className={`w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl
-                            ${isWinner ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}
-                        `}>
-                            {isWinner ? <Trophy className="w-12 h-12" /> : <Shield className="w-12 h-12" />}
+                        <div className="relative w-20 h-20 mx-auto mb-6">
+                            <div className={`absolute inset-0 rounded-full blur-[15px] opacity-40 animate-pulse
+                                ${isWinner ? 'bg-emerald-500' : 'bg-rose-500'}
+                            `} />
+                            <div className={`relative w-full h-full rounded-2xl flex items-center justify-center shadow-lg border
+                                ${isWinner ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-rose-500 text-white border-rose-400'}
+                            `}>
+                                {isWinner ? <Trophy className="w-10 h-10" /> : <Shield className="w-10 h-10" />}
+                            </div>
                         </div>
-                        <h2 className="text-5xl font-black italic uppercase tracking-tighter leading-none text-theme-text">
+                        
+                        <h2 className={`text-3xl md:text-4xl font-black uppercase tracking-widest leading-none mb-3
+                            ${isWinner ? 'text-emerald-500' : 'text-rose-500'}
+                        `}>
                             {isWinner ? 'Victory Unlocked' : 'Circuit Breach'}
                         </h2>
-                        <p className="text-theme-muted font-bold text-lg mt-2">Simulation Synchronized</p>
+                        <p className="text-theme-text/80 font-bold text-xs tracking-[0.2em] uppercase">Simulation Complete</p>
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 max-w-2xl mx-auto relative z-10">
-                        <div className="bg-theme-bg p-6 rounded-3xl border border-theme-border">
-                            <span className="text-[10px] font-black uppercase text-theme-primary block mb-2">Battle Rating</span>
-                            <span className="text-3xl font-black text-theme-text">{userScore.toLocaleString()}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto relative z-10">
+                        <div className="bg-theme-bg/60 backdrop-blur-md p-6 rounded-2xl border border-theme-border/40 hover:bg-theme-bg/80 transition-colors">
+                            <span className="text-[9px] font-black uppercase text-theme-primary tracking-[0.2em] block mb-2">Battle Rating</span>
+                            <span className="text-2xl font-black text-theme-text">{userScore.toLocaleString()}</span>
                         </div>
-                        <div className="bg-theme-bg p-6 rounded-3xl border border-theme-border">
-                            <span className="text-[10px] font-black uppercase text-theme-secondary block mb-2">XP Gain</span>
-                            <span className="text-3xl font-black text-theme-text">+{Math.round(userScore * 0.1 * ({ 'Normal': 1, 'Heroic': 1.5, 'Godly': 2.5 }[difficulty]))}</span>
+                        <div className="bg-theme-bg/60 backdrop-blur-md p-6 rounded-2xl border border-theme-border/40 hover:bg-theme-bg/80 transition-colors">
+                            <span className="text-[9px] font-black uppercase text-theme-secondary tracking-[0.2em] block mb-2">XP Gain</span>
+                            <span className="text-2xl font-black text-theme-text">+{Math.round(userScore * 0.1 * ({ 'Normal': 1, 'Heroic': 1.5, 'Godly': 2.5 }[difficulty]))}</span>
                         </div>
-                        <div className="bg-theme-bg p-6 rounded-3xl border border-theme-border opacity-60 hidden lg:block">
-                            <span className="text-[10px] font-black uppercase text-rose-500 block mb-2">Opponent</span>
-                            <span className="text-3xl font-black text-theme-text">{spectreScore.toLocaleString()}</span>
+                        <div className="bg-theme-bg/60 backdrop-blur-md p-6 rounded-2xl border border-theme-border/40 lg:block sm:hidden hover:bg-theme-bg/80 transition-colors">
+                            <span className="text-[9px] font-black uppercase text-rose-500 tracking-[0.2em] block mb-2">Spectre-7 Score</span>
+                            <span className="text-2xl font-black text-theme-text opacity-70">{spectreScore.toLocaleString()}</span>
                         </div>
                     </div>
 
-                    <div className="relative z-10 space-y-4 pt-4">
-                        <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-theme-bg border border-theme-primary text-theme-primary font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_var(--theme-primary)] opacity-80">
+                    <div className="relative z-10 pt-4">
+                        <div className={`inline-flex items-center gap-3 px-8 py-3 rounded-full border border-theme-border/50 font-black text-xs uppercase tracking-[0.2em] shadow-lg
+                            ${isWinner ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}
+                        `}>
+                            <Target className="w-4 h-4" />
                             {isWinner ? 'Dominance Protocol Executed' : 'Strategic Assessment Required'}
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-                    <button
-                        onClick={() => setGameState('lobby')}
-                        className="py-4 rounded-2xl border border-theme-border bg-theme-surface font-bold hover:bg-theme-bg hover:border-theme-primary transition-all text-theme-text"
-                    >
-                        New Battle
-                    </button>
+                <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl">
                     <button
                         onClick={onExit}
-                        className="py-4 rounded-2xl bg-theme-primary font-bold text-theme-bg shadow-xl shadow-theme-border/20 hover:scale-105 hover:bg-theme-secondary transition-all"
+                        className="flex-1 py-5 rounded-full bg-theme-primary font-black uppercase tracking-[0.2em] text-sm text-theme-bg shadow-[0_0_30px_rgba(var(--theme-primary),0.3)] hover:scale-105 transition-all"
                     >
-                        Exit Hub
+                        Exit Protocol
                     </button>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Network, Maximize2, Minimize2, ZoomIn, ZoomOut, Compass } from 'lucide-react';
+import { Network, Maximize2, Minimize2, ZoomIn, ZoomOut, Compass } from './Icons';
 
 const MindMapViewer = ({ data }) => {
     const [scale, setScale] = useState(1);
@@ -20,7 +20,7 @@ const MindMapViewer = ({ data }) => {
         let childrenLayouts = [];
         let totalChildrenHeight = 0;
 
-        if (node.children && node.children.length > 0) {
+        if (node.children && Array.isArray(node.children) && node.children.length > 0) {
             node.children.forEach((child, index) => {
                 const childLayout = computeLayout(child, depth + 1, currentY);
                 childrenLayouts.push(childLayout);

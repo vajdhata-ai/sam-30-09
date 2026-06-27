@@ -18,7 +18,7 @@ const CO_NAV = [
 ];
 
 const COLayout = () => {
-    const { currentUser, logout } = useAuth();
+    const { currentUser, logout, userProfile } = useAuth();
     const [currentView, setCurrentView] = useState('co-dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false); // collapsed by default
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -164,7 +164,7 @@ const COLayout = () => {
                             </div>
                             <div>
                                 <h1 className="font-black text-sm tracking-wide text-white leading-tight">SAMVADA COMMAND</h1>
-                                <p className="text-[9px] text-gray-500 tracking-[0.1em] uppercase">1st Delhi Battalion | NCC Camp New Delhi</p>
+                                <p className="text-[9px] text-gray-500 tracking-[0.1em] uppercase">{userProfile?.battalion || '1st Battalion'} | {userProfile?.wing ? `${userProfile.wing} Wing` : 'Army Wing'} Command</p>
                             </div>
                         </div>
                         <div className="md:hidden">

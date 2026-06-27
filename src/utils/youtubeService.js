@@ -53,7 +53,7 @@ export const fetchTranscript = async (videoId) => {
  */
 export const generateLensPrompt = (transcript) => {
     return `
-You are AUREM LENS — an elite cognitive augmentation system.
+You are SAMVADA LENS — an elite cognitive augmentation system.
 Your goal is to transform this raw video transcript into a mastered study resource.
 
 TRANSCRIPT:

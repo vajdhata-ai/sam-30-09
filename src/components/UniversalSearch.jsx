@@ -53,7 +53,7 @@ const UniversalSearch = ({ onNavigate }) => {
         // Global Features
         const features = [
             { id: 'doubt-solver', title: 'Neural Query', icon: <Bot className="w-5 h-5 text-gold" /> },
-            { id: 'document-study', title: 'Auremous Lens', icon: <FileText className="w-5 h-5 text-gold" /> },
+            { id: 'document-study', title: 'Samvada Lens', icon: <FileText className="w-5 h-5 text-gold" /> },
             { id: 'quiz-assessment', title: 'Adaptive Testing', icon: <Activity className="w-5 h-5 text-gold" /> },
             { id: 'learn-loop', title: 'Mastery Lifecycle', icon: <BrainCircuit className="w-5 h-5 text-gold" /> }
         ];

@@ -19,7 +19,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                 { id: 'cadet-dashboard', label: 'Dashboard', icon: Home },
                 { id: 'cadet-handbook', label: 'Cadet Handbook', icon: BookOpen },
                 { id: 'exam-prep', label: 'B & C Cert Prep', icon: Trophy },
-                { id: 'quiz-assessment', label: 'Adaptive Testing', icon: ClipboardList },
+                { id: 'quiz-assessment', label: 'Precision Testing', icon: ClipboardList },
             ]
         },
         {
@@ -28,7 +28,6 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                 { id: 'doubt-solver', label: 'Neural Query', icon: Bot },
                 { id: 'document-study', label: 'Samvada Lens', icon: Eye },
                 { id: 'podcast-generator', label: 'Audio Studio', icon: Mic },
-                { id: 'video-generator', label: 'Video Studio', icon: Video },
             ]
         },
         {
@@ -55,31 +54,31 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
             <aside className={`
                 fixed md:relative z-50 h-full md:h-[96vh] md:my-[2vh] ml-0 md:ml-[2vh]
                 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform
-                ${isCollapsed ? 'w-[68px]' : 'w-[240px]'}
+                ${isCollapsed ? 'w-[72px]' : 'w-[260px]'}
                 ${isSidebarOpen ? 'translate-x-0 translate-z-0 left-0' : '-translate-x-full md:translate-x-0 translate-z-0'}
             `}>
-                <div className="h-full flex flex-col rounded-[32px] transition-all duration-300 border border-white/10 bg-white/[0.03] backdrop-blur-3xl shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_24px_48px_rgba(0,0,0,0.2)] relative overflow-hidden">
+                <div className="h-full flex flex-col rounded-[32px] transition-all duration-500 border border-white/[0.08] bg-white/[0.02] backdrop-blur-3xl shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_32px_64px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.04)] relative overflow-hidden">
 
                     {/* ═══ Header / Logo ═══ */}
-                    <div className="p-5 pb-4 flex items-center justify-between">
+                    <div className="p-5 pb-5 flex items-center justify-between border-b border-white/[0.04]">
                         {!isCollapsed && (
-                            <div className="flex items-center gap-3 animate-fade-in">
+                            <div className="flex items-center gap-3.5 animate-fade-in">
                                 <div className="relative">
-                                    <div className="p-2.5 bg-theme-primary/10 border border-theme-primary/20 rounded-2xl border-glow-rotate">
+                                    <div className="p-2.5 bg-theme-primary/10 border border-theme-primary/20 rounded-2xl border-glow-rotate shadow-[0_0_20px_rgba(var(--theme-primary),0.15)]">
                                         <AuremLogo className="w-6 h-6" />
                                     </div>
                                 </div>
                                 <div>
-                                    <span className="font-serif italic font-light text-2xl tracking-wide text-theme-text select-none">
-                                        <span className="text-[#c9a55a]">Samvada</span>
+                                    <span className="font-serif italic font-light text-2xl tracking-widest text-theme-primary drop-shadow-[0_0_25px_rgba(var(--theme-primary),0.4)] select-none">
+                                        Samvada
                                     </span>
-                                    <p className="text-[9px] font-medium text-theme-muted mt-1 tracking-[0.2em] uppercase select-none">NCC Portal</p>
+                                    <p className="text-[8px] font-bold text-theme-muted mt-1 tracking-[0.25em] uppercase select-none">Unity & Discipline</p>
                                 </div>
                             </div>
                         )}
                         <button
                             onClick={() => setIsCollapsed(!isCollapsed)}
-                            className={`p-2 rounded-xl transition-colors duration-200 text-theme-muted hover:text-theme-primary hover:bg-theme-surface/50 cursor-none
+                            className={`p-2.5 rounded-xl transition-all duration-300 text-theme-muted hover:text-theme-primary hover:bg-theme-primary/10 hover:shadow-[0_0_12px_rgba(var(--theme-primary),0.15)] 
                                 ${isCollapsed ? 'mx-auto' : ''}
                             `}
                         >
@@ -144,13 +143,13 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                     )}
 
                     {/* ═══ Navigation ═══ */}
-                    <nav className="flex-1 px-3 space-y-4 overflow-y-auto custom-scrollbar">
+                    <nav className="flex-1 px-3 pt-2 space-y-4 overflow-y-auto custom-scrollbar">
 
                         {/* Universal Search Button */}
                         <button
                             onClick={() => window.dispatchEvent(new CustomEvent('open-universal-search'))}
                             className={`
-                                w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300 group relative cursor-none mt-2
+                                w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300 group relative  mt-2
                                 text-theme-primary bg-theme-primary/5 hover:bg-theme-primary/10 border border-theme-primary/20
                                 ${isCollapsed ? 'justify-center px-0' : ''}
                             `}
@@ -171,7 +170,8 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                         {navGroups.map((group, groupIdx) => (
                             <div key={groupIdx} className="space-y-1">
                                 {!isCollapsed && (
-                                    <p className="px-3 py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-theme-primary opacity-80 mt-2">
+                                    <p className="px-3 py-2 text-[9px] font-black tracking-[0.2em] uppercase text-theme-primary/70 mt-3 first:mt-0 flex items-center gap-2">
+                                        <span className="w-1 h-1 rounded-full bg-theme-primary/50" />
                                         {group.title}
                                     </p>
                                 )}
@@ -196,26 +196,26 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                                             }}
                                             style={{ animationDelay: `${index * 50}ms` }}
                                             className={`
-                                                w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300 group relative cursor-none
+                                                w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300 group relative 
                                                 ${isActive
-                                                    ? 'bg-theme-primary/10 text-theme-primary border border-theme-primary/20 nav-active-glow'
-                                                    : 'text-theme-muted hover:text-theme-text hover:bg-theme-surface/50 border border-transparent hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.05)]'
+                                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                                                    : 'text-theme-muted hover:text-theme-text hover:bg-white/[0.04] border border-transparent hover:border-white/[0.06] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1)]'
                                                 }
                                                 ${isCollapsed ? 'justify-center px-0' : ''}
                                             `}
                                         >
                                             <div className={`
-                                                flex-shrink-0 transition-transform duration-300
-                                                ${isActive ? 'scale-110' : 'group-hover:scale-105'}
+                                                flex-shrink-0 transition-all duration-300
+                                                ${isActive ? 'scale-110 drop-shadow-[0_0_6px_rgba(var(--theme-primary),0.5)]' : 'group-hover:scale-110'}
                                             `}>
                                                 <Icon className="w-[18px] h-[18px]" />
                                             </div>
 
                                             {!isCollapsed && (
                                                 <>
-                                                    <span className="font-medium text-[13px] truncate">{item.label}</span>
+                                                    <span className={`text-[13px] truncate ${isActive ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
                                                     {!isActive && (
-                                                        <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 -translate-x-1 group-hover:opacity-40 group-hover:translate-x-0 transition-all duration-200" />
+                                                        <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 -translate-x-2 group-hover:opacity-50 group-hover:translate-x-0 transition-all duration-300" />
                                                     )}
                                                 </>
                                             )}
@@ -227,15 +227,15 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                     </nav>
 
                     {/* ═══ Footer Actions ═══ */}
-                    <div className="p-3 space-y-1.5 border-t border-theme-border">
+                    <div className="p-3 space-y-1.5 border-t border-white/[0.06]">
                         {/* Settings */}
                         <button
                             title="Settings"
                             onClick={() => setCurrentView('settings')}
-                            className={`w-full p-2.5 rounded-xl flex items-center gap-3 transition-colors duration-200 cursor-none
+                            className={`w-full p-2.5 rounded-2xl flex items-center gap-3 transition-all duration-300 
                                 ${currentView === 'settings'
-                                    ? 'bg-theme-surface text-theme-primary'
-                                    : 'text-theme-muted hover:text-theme-secondary hover:bg-theme-surface/50'
+                                    ? 'bg-theme-primary/10 text-theme-primary border border-theme-primary/20 shadow-[0_0_12px_rgba(var(--theme-primary),0.1)]'
+                                    : 'text-theme-muted hover:text-theme-text hover:bg-white/[0.04] border border-transparent hover:border-white/[0.06]'
                                 }
                                 ${isCollapsed ? 'justify-center' : ''}
                             `}
@@ -249,16 +249,16 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
 
 
                         {/* User Profile */}
-                        <div className={`flex items-center gap-3 p-2.5 rounded-xl border border-theme-border mt-1
-                            bg-theme-surface
+                        <div className={`flex items-center gap-3 p-3 rounded-2xl border border-white/[0.06] mt-2
+                            bg-white/[0.03] backdrop-blur-sm
                             ${isCollapsed ? 'justify-center' : ''}
                         `}>
                             <div className="relative">
-                                <div className="w-8 h-8 rounded-full bg-theme-primary/10 border border-theme-primary/30 flex items-center justify-center text-theme-primary font-serif italic text-sm shadow-md">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-theme-primary/20 to-theme-primary/5 border border-theme-primary/30 flex items-center justify-center text-theme-primary font-serif italic text-sm shadow-[0_0_15px_rgba(var(--theme-primary),0.15)]">
                                     {user?.displayName ? user.displayName[0].toUpperCase() : '?'}
                                 </div>
                                 {/* Online indicator */}
-                                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4ade80] rounded-full border border-[var(--surface)]" />
+                                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4ade80] rounded-full border-2 border-[var(--surface)] shadow-[0_0_6px_rgba(74,222,128,0.5)]" />
                             </div>
 
                             {!isCollapsed && (
@@ -273,7 +273,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setIsSidebarOpen,
                                     </div>
                                     <button
                                         onClick={onLogout}
-                                        className="p-1.5 rounded-lg transition-colors duration-200 text-theme-muted hover:text-theme-primary hover:bg-theme-primary/10 cursor-none"
+                                        className="p-1.5 rounded-lg transition-colors duration-200 text-theme-muted hover:text-theme-primary hover:bg-theme-primary/10 "
                                     >
                                         <LogOut className="w-3.5 h-3.5" />
                                     </button>

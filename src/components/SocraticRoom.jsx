@@ -226,7 +226,7 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
                     {/* Voice toggle */}
                     <button
                         onClick={() => setVoiceEnabled(!voiceEnabled)}
-                        className={`p-2 rounded-lg border transition-all duration-300 cursor-none ${
+                        className={`p-2 rounded-lg border transition-all duration-300  ${
                             voiceEnabled 
                                 ? 'border-gold/20 bg-gold/5 text-gold hover:bg-gold/15' 
                                 : 'border-white/5 bg-white/[0.02] text-cream/30 hover:text-cream/50'
@@ -341,7 +341,7 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
                                     }
                                 }}
                                 disabled={isThinking || !!debateSummary}
-                                className={`relative z-10 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl cursor-none disabled:opacity-30
+                                className={`relative z-10 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl  disabled:opacity-30
                                     ${orbState === 'listening' 
                                         ? 'bg-gold text-[#0e0b07] scale-110 shadow-[0_0_30px_rgba(201,165,90,0.5)]' 
                                         : orbState === 'speaking' 
@@ -387,7 +387,7 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
                                 <button
                                     type="submit"
                                     disabled={isThinking || !input.trim() || !!debateSummary}
-                                    className="p-2.5 bg-gold/10 text-gold hover:bg-gold hover:text-[#0e0b07] disabled:opacity-20 border border-gold/15 rounded-xl transition-all duration-300 flex items-center justify-center cursor-none disabled:cursor-not-allowed"
+                                    className="p-2.5 bg-gold/10 text-gold hover:bg-gold hover:text-[#0e0b07] disabled:opacity-20 border border-gold/15 rounded-xl transition-all duration-300 flex items-center justify-center  disabled:cursor-not-allowed"
                                 >
                                     <Send className="w-3.5 h-3.5" />
                                 </button>
@@ -407,7 +407,7 @@ const SocraticRoom = ({ topic, documentContent, isDark, MarkdownRenderer }) => {
                             <p className="text-cream/40 text-sm leading-relaxed">{debateSummary}</p>
                             <button
                                 onClick={() => setDebateSummary(null)}
-                                className="px-10 py-3.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white font-bold tracking-[0.1em] uppercase text-xs rounded-xl transition-all duration-300 cursor-none"
+                                className="px-10 py-3.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white font-bold tracking-[0.1em] uppercase text-xs rounded-xl transition-all duration-300 "
                             >
                                 Continue Mastery
                             </button>

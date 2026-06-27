@@ -17,15 +17,27 @@
 
   html {
     scroll-behavior: smooth;
+    font-size: 112.5%; /* Scales the entire app's rem units up from 16px to 18px */
+  }
+
+  @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
   }
 
   body {
-    font-family: 'Jost', system-ui, -apple-system, sans-serif;
-    background: rgb(var(--theme-bg));
+    font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-weight: 300;
+    letter-spacing: 0.015em;
+    background: linear-gradient(-45deg, #09090b, #18181b, #1a1408, #0f1218);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
     color: rgb(var(--theme-text));
     overflow-x: hidden;
-    cursor: none;
-    /* Hide default cursor for Luminary custom cursor */
+    min-height: 100vh;
+    margin: 0;
   }
 
   /* Luminary Grain Overlay */
@@ -39,31 +51,6 @@
     opacity: 0.03;
   }
 
-  /* Luminary Custom Cursor */
-  .cursor-dot {
-    position: fixed;
-    width: 8px;
-    height: 8px;
-    background: var(--gold);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-    transition: background 0.3s;
-  }
-
-  .cursor-circle {
-    position: fixed;
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--gold);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9998;
-    transform: translate(-50%, -50%);
-    transition: width 0.3s, height 0.3s, opacity 0.3s;
-    opacity: 0.5;
-  }
 
   h1,
   h2,
@@ -71,52 +58,66 @@
   h4,
   h5,
   h6 {
-    font-family: 'Cormorant Garamond', 'Georgia', serif;
+    font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+
+  @layer utilities {
+    .font-black {
+      font-weight: 600 !important;
+      letter-spacing: 0.05em !important;
+    }
+    .font-extrabold {
+      font-weight: 500 !important;
+      letter-spacing: 0.03em !important;
+    }
+    .font-bold {
+      font-weight: 500 !important;
+      letter-spacing: 0.02em !important;
+    }
+    .uppercase {
+      letter-spacing: 0.1em !important;
+    }
   }
 
   /* =============================================
      THEME VARIABLES (Dynamic Architecture)
      ============================================= */
 
-  /* --- LEGACY COLORS (used by LandingPageV2) --- */
   :root {
-    --gold: #c9a55a;
-    --gold-light: #e0c07a;
-    --cream: #f0e8d8;
-    --bark: #eaddd7;
-    --bark-mid: #a89880;
-    --bark-light: #D5C2AD;
-    --bg: #0e0b07;
-    --surface: #141009;
-    --border: rgba(201, 165, 90, 0.12);
+    --bg: #09090b;
+    --surface: #18181b;
+    --border: rgba(255, 255, 255, 0.05);
 
-    /* Default theme vars (= Premium Gold). Class selectors below override these. */
-    --theme-bg: 14, 11, 7;
-    --theme-surface: 20, 16, 9;
-    --theme-text: 240, 232, 216;
-    --theme-muted: 168, 152, 128;
+    /* Default theme vars (= Premium Obsidian). Class selectors below override these. */
+    --theme-bg: 9, 9, 11;
+    --theme-surface: 24, 24, 27;
+    --theme-text: 250, 250, 250;
+    --theme-muted: 161, 161, 170;
     --theme-primary: 201, 165, 90;
-    --theme-secondary: 224, 192, 122;
-    --theme-border: 201, 165, 90;
-    --aurora-1: 35, 100%, 50%;
-    --aurora-2: 45, 100%, 50%;
-    --aurora-3: 15, 100%, 50%;
+    --theme-secondary: 227, 194, 128;
+    --theme-border: 39, 39, 42;
+    --aurora-1: 45, 80%, 40%;
+    --aurora-2: 50, 70%, 50%;
+    --aurora-3: 35, 80%, 30%;
   }
 
-  /* --- PREMIUM THEME (Gold & Deep Blacks) --- */
+  /* --- PREMIUM THEME (Obsidian & Emerald) --- */
   /* :root.theme-X has specificity 0,2,0 beating :root 0,1,0 */
   :root.theme-premium,
   body.theme-premium {
-    --theme-bg: 14, 11, 7;
-    --theme-surface: 20, 16, 9;
-    --theme-text: 240, 232, 216;
-    --theme-muted: 168, 152, 128;
+    --theme-bg: 9, 9, 11;
+    --theme-surface: 24, 24, 27;
+    --theme-text: 250, 250, 250;
+    --theme-muted: 161, 161, 170;
     --theme-primary: 201, 165, 90;
-    --theme-secondary: 224, 192, 122;
-    --theme-border: 201, 165, 90;
-    --aurora-1: 35, 100%, 50%;
-    --aurora-2: 45, 100%, 50%;
-    --aurora-3: 15, 100%, 50%;
+    --theme-secondary: 227, 194, 128;
+    --theme-border: 39, 39, 42;
+    --aurora-1: 45, 80%, 40%;
+    --aurora-2: 50, 70%, 50%;
+    --aurora-3: 35, 80%, 30%;
   }
 
   /* --- VIBRANT THEME (Funky - Bright Indigos & Pink) --- */

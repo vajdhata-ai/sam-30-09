@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, where } from 'firebase/firestore';
 import { ClipboardList, Plus, Clock, CheckCircle, AlertTriangle, Users, Trash2, Calendar } from './Icons';
+import { useAuth } from '../contexts/AuthContext';
 
 const COTaskManager = () => {
+    const { userProfile } = useAuth();
     const [tasks, setTasks] = useState([]);
     const [filter, setFilter] = useState('Active'); // All, Active, Completed, Overdue
     const [isCreating, setIsCreating] = useState(false);
@@ -16,7 +18,11 @@ const COTaskManager = () => {
     });
 
     useEffect(() => {
-        const q = query(collection(db, 'tasks'));
+        if (!userProfile) return;
+        const q = query(
+            collection(db, 'tasks'),
+            where('wing', '==', userProfile.wing || 'army')
+        );
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
@@ -51,6 +57,8 @@ const COTaskManager = () => {
                 ...formData,
                 status: 'Active',
                 completedCount: 0,
+                wing: userProfile?.wing || 'army',
+                battalion: userProfile?.battalion || '1st Battalion',
                 createdAt: serverTimestamp()
             });
             setIsCreating(false);

@@ -8,9 +8,10 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Jost', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-                serif: ['"Cormorant Garamond"', 'ui-serif', 'Georgia', 'serif'],
-                mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+                sans: ['"Cormorant Garamond"', '"Playfair Display"', 'Georgia', 'serif'],
+                serif: ['"Cormorant Garamond"', '"Playfair Display"', 'Georgia', 'serif'],
+                display: ['"Playfair Display"', '"Cormorant Garamond"', 'Georgia', 'serif'],
+                mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
             },
             colors: {
                 // Premium Warm Light Mode (Luminary)

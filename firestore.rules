@@ -2,8 +2,51 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper function to check if user is logged in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to get user role
+    function isCO() {
+      return get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.role == 'co';
+    }
+
+    match /userRoles/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated() && isCO();
+    }
+
+    match /userProfiles/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated() && isCO();
+    }
+    
+    match /grievances/{grievanceId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.cadetUid || isCO());
+      allow update, delete: if isAuthenticated() && isCO();
+    }
+    
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isCO();
+    }
+    
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isCO();
+    }
+    
+    match /performance/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated() && isCO();
+    }
+
+    // Default rule: block everything else
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

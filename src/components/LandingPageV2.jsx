@@ -55,7 +55,7 @@ const features = [
     },
     {
         icon: '📋',
-        name: 'Adaptive Testing',
+        name: 'Precision Testing',
         tag: 'Smart Assessment',
         desc: 'Auto-generated quizzes on NCC subjects with adjustable difficulty. Instant feedback, detailed performance reports, and topic-wise analysis.',
         color: 'feature-sky',
@@ -116,14 +116,14 @@ const LandingPageV2 = ({ onGetStarted }) => {
     }, []);
 
     return (
-        <div ref={rootRef} className="lp-root" style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
+        <div ref={rootRef} className="lp-root" style={{ height: '100vh', overflowY: 'auto', overflowX: 'hidden' }}>
             <StarryBackground density={80} speed={0.4} connectDistance={120} />
 
             {/* ── NAV ── */}
             <nav className="lp-nav">
                 <div className="lp-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <AuremLogo style={{ width: '28px', height: '28px' }} />
-                    Samvada
+                    <span className="font-serif italic font-light tracking-widest text-theme-primary drop-shadow-[0_0_25px_rgba(var(--theme-primary),0.4)]">Samvada</span>
                 </div>
                 <ul className="lp-nav-links">
                     <li><a href="#features">Features</a></li>
@@ -140,10 +140,10 @@ const LandingPageV2 = ({ onGetStarted }) => {
                 <div className="lp-hero-orb orb3" />
 
                 <div className="lp-hero-left">
-                    <p className="lp-eyebrow">The AI-Powered NCC Cadet Portal</p>
+                    <p className="lp-eyebrow">Unity and Discipline</p>
                     <h1>Train smarter.<br />Serve <span className="gradient-text">stronger.</span><br />Lead with honor.</h1>
                     <p className="lp-hero-sub">
-                        Samvada is the all-in-one AI platform built exclusively for NCC Cadets — from exam prep and drill theory to confidential grievance reporting and battalion analytics. Unity and Discipline, powered by intelligence.
+                        Samvada is the all-in-one AI platform built exclusively for the National Cadet Corps — from exam prep and drill theory to confidential grievance reporting and battalion analytics. Engineered for Unity and Discipline.
                     </p>
                     <div className="lp-hero-actions">
                         <button className="lp-btn-dark" onClick={onGetStarted}>Report for Duty</button>
@@ -342,12 +342,12 @@ const LandingPageV2 = ({ onGetStarted }) => {
 
             {/* ── FOOTER ── */}
             <footer className="lp-footer">
-                <div className="lp-footer-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <AuremLogo style={{ width: '20px', height: '20px' }} />
-                    Samvada
+                <div className="lp-footer-brand">
+                    <AuremLogo style={{ width: '24px', height: '24px' }} />
+                    <span className="font-serif italic font-light tracking-widest text-theme-primary drop-shadow-[0_0_25px_rgba(var(--theme-primary),0.4)]">Samvada</span>
                 </div>
-                <p>© 2026 Samvada — Unity and Discipline. The AI-Powered NCC Cadet Portal.</p>
-                <p>Privacy · Terms · Support</p>
+                <p>© 2026 Samvada — Unity and Discipline.</p>
+                <p>National Cadet Corps</p>
             </footer>
 
         </div>

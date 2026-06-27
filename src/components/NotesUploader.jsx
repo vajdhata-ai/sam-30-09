@@ -167,7 +167,7 @@ Rules:
                     
                     <div 
                         onClick={() => !isLoading && fileInputRef.current?.click()}
-                        className={`relative z-10 border-2 border-dashed rounded-3xl p-12 flex flex-col items-center justify-center transition-all cursor-pointer \${file ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-theme-border/50 hover:border-emerald-500/40 hover:bg-emerald-500/5'}`}
+                        className={`relative z-10 border-2 border-dashed rounded-3xl p-12 flex flex-col items-center justify-center transition-all cursor-pointer ${file ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-theme-border/50 hover:border-emerald-500/40 hover:bg-emerald-500/5'}`}
                     >
                         {file ? (
                             <div className="text-center space-y-4">
