@@ -48,8 +48,7 @@ const Login = ({ onSwitchToSignup }) => {
         try {
             setError('');
             setLoading(true);
-            await loginWithCredentials(regNumber, password, role);
-            // We pass wing/cert/battalion to userProfile via AuthContext defaults if new user
+            await loginWithCredentials(regNumber, password, role, selectedWing);
         } catch (err) {
             console.error(err);
             setError(err.message || 'Failed to sign in. Please check your credentials.');

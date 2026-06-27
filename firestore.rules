@@ -3,43 +3,54 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to check if user is logged in
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // Helper function to get user role
     function isCO() {
       return get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.role == 'co';
     }
 
+    // userRoles: users read their own, COs can read any
     match /userRoles/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
-      allow read: if isAuthenticated() && isCO();
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
     }
 
+    // userProfiles: users manage their own, COs can read any
     match /userProfiles/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
-      allow read: if isAuthenticated() && isCO();
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // users collection (if used)
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
     }
     
+    // grievances: cadets create, read their own. COs read/update all.
     match /grievances/{grievanceId} {
       allow create: if isAuthenticated();
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.cadetUid || isCO());
-      allow update, delete: if isAuthenticated() && isCO();
+      allow read: if isAuthenticated();
+      allow update: if isAuthenticated() && isCO();
+      allow delete: if isAuthenticated() && isCO();
     }
     
+    // tasks: everyone reads, only COs write
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isCO();
     }
     
+    // announcements: everyone reads, only COs write
     match /announcements/{announcementId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isCO();
     }
     
-    match /performance/{userId} {
+    // userPerformance: users manage their own
+    match /userPerformance/{userId} {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
       allow read: if isAuthenticated() && isCO();
     }

@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
     // Track whether loginWithCredentials already set the role (to avoid race with onAuthStateChanged)
     const roleSetByLogin = React.useRef(false);
 
-    const loginWithCredentials = async (regNumber, password, role) => {
+    const loginWithCredentials = async (regNumber, password, role, wing = 'army') => {
         try {
             if (!regNumber || !password) throw new Error("Please fill in all fields.");
             if (role === 'co' && password !== 'admin123') throw new Error("Invalid Officer credentials.");
@@ -63,20 +63,24 @@ export const AuthProvider = ({ children }) => {
                 
                 // Fetch profile if exists
                 const profileDoc = await getDoc(doc(db, 'userProfiles', user.uid));
+                let profileData;
                 if (profileDoc.exists()) {
-                    setUserProfile(profileDoc.data());
+                    profileData = profileDoc.data();
+                    // Always update the wing to what was selected at login
+                    profileData = { ...profileData, wing };
+                    await setDoc(doc(db, 'userProfiles', user.uid), profileData, { merge: true });
                 } else {
                     // Create default profile for new users
-                    const defaultProfile = {
+                    profileData = {
                         regimentalNumber: regNumber,
-                        wing: 'army',
+                        wing,
                         certificateLevel: 'B',
                         battalion: '1st Battalion',
                         rank: role === 'co' ? 'Lieutenant' : 'Cadet'
                     };
-                    await setDoc(doc(db, 'userProfiles', user.uid), defaultProfile, { merge: true });
-                    setUserProfile(defaultProfile);
+                    await setDoc(doc(db, 'userProfiles', user.uid), profileData, { merge: true });
                 }
+                setUserProfile(profileData);
             } catch (e) {
                 console.warn("Firestore save/fetch failed, relying on local auth state", e);
             }
