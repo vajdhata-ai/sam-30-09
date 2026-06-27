@@ -45,7 +45,7 @@ const COGrievanceView = () => {
         });
 
         return () => unsubscribe();
-    }, [selectedGrievance]);
+    }, [userProfile]);
 
     const filteredGrievances = grievances.filter(g => {
         // Status filter

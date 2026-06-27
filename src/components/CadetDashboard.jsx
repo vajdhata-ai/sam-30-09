@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, where } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { usePerformance } from '../contexts/PerformanceContext';
 import { Bot, Eye, ClipboardList, Trophy, ShieldAlert, Swords, CheckCircle, Clock, AlertCircle, Megaphone, Calendar, ChevronRight, FilePlus } from './Icons';
 
 const CadetDashboard = ({ onNavigate }) => {
-    const { currentUser } = useAuth();
+    const { currentUser, userProfile } = useAuth();
     const { getLevelInfo, getRecords } = usePerformance();
     const levelInfo = getLevelInfo();
     
@@ -31,9 +31,13 @@ const CadetDashboard = ({ onNavigate }) => {
 
     // Fetch active tasks
     useEffect(() => {
+        if (!userProfile) return;
         const fetchTasks = async () => {
             try {
-                const q = query(collection(db, 'tasks'));
+                const q = query(
+                    collection(db, 'tasks'),
+                    where('wing', '==', userProfile.wing || 'army')
+                );
                 const snapshot = await getDocs(q);
                 const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
@@ -55,13 +59,17 @@ const CadetDashboard = ({ onNavigate }) => {
             }
         };
         fetchTasks();
-    }, []);
+    }, [userProfile]);
 
     // Fetch announcements
     useEffect(() => {
+        if (!userProfile) return;
         const fetchAnnouncements = async () => {
             try {
-                const q = query(collection(db, 'announcements'));
+                const q = query(
+                    collection(db, 'announcements'),
+                    where('wing', '==', userProfile.wing || 'army')
+                );
                 const snapshot = await getDocs(q);
                 const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
@@ -77,7 +85,7 @@ const CadetDashboard = ({ onNavigate }) => {
             }
         };
         fetchAnnouncements();
-    }, []);
+    }, [userProfile]);
 
     const handleCompleteTask = async (task) => {
         try {
