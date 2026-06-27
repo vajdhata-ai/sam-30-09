@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -11,12 +11,15 @@ export const PerformanceProvider = ({ children }) => {
     const { currentUser } = useAuth();
     const [performanceData, setPerformanceData] = useState([]);
     const [xp, setXp] = useState(0);
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Load from localStorage and Firebase on mount or user change
     useEffect(() => {
+        setIsLoaded(false);
         const loadPerformance = async () => {
             if (!currentUser?.uid) {
                 setPerformanceData([]);
+                setXp(0);
+                setIsLoaded(true);
                 return;
             }
 
@@ -27,7 +30,6 @@ export const PerformanceProvider = ({ children }) => {
                 const storedXp = localStorage.getItem(`aurem_xp_${currentUser.uid}`);
                 if (storedXp) setXp(parseInt(storedXp, 10));
 
-                // Sync from Firebase
                 const docRef = doc(db, 'userPerformance', currentUser.uid);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
@@ -43,14 +45,15 @@ export const PerformanceProvider = ({ children }) => {
                 }
             } catch (e) {
                 console.error("Failed to load performance data", e);
+            } finally {
+                setIsLoaded(true);
             }
         };
         loadPerformance();
     }, [currentUser]);
 
-    // Save to localStorage and Firebase whenever it changes
     useEffect(() => {
-        if (!currentUser?.uid) return;
+        if (!currentUser?.uid || !isLoaded) return;
         
         const savePerformance = async () => {
             try {
@@ -66,9 +69,8 @@ export const PerformanceProvider = ({ children }) => {
         
         const timeoutId = setTimeout(savePerformance, 1500);
         return () => clearTimeout(timeoutId);
-    }, [performanceData, xp, currentUser]);
+    }, [performanceData, xp, currentUser, isLoaded]);
 
-    // Add a new performance record (score out of 100)
     const addRecord = (featureId, score) => {
         const newRecord = {
             id: Date.now().toString(),
@@ -78,13 +80,11 @@ export const PerformanceProvider = ({ children }) => {
         };
 
         setPerformanceData(prev => {
-            // Keep only the last 50 recs to prevent bloating
             const updated = [newRecord, ...prev];
             return updated.slice(0, 50);
         });
     };
 
-    // Get all records for a specific feature, or all if none specified
     const getRecords = (featureId = null) => {
         if (featureId) {
             return performanceData.filter(r => r.featureId === featureId);
@@ -92,15 +92,12 @@ export const PerformanceProvider = ({ children }) => {
         return performanceData;
     };
 
-    // Determine difficulty level based on recent average or specific score
-    // 0-60: easy, 61-80: intermediate, 81-100: hard
     const getDifficultyLevel = (scoreOverride = null) => {
         let scoreToUse = scoreOverride;
 
         if (scoreToUse === null) {
-            if (performanceData.length === 0) return 'intermediate'; // Default
+            if (performanceData.length === 0) return 'intermediate';
 
-            // Average last 3 scores to determine current level
             const recent = performanceData.slice(0, 3);
             const sum = recent.reduce((acc, curr) => acc + curr.score, 0);
             scoreToUse = sum / recent.length;
@@ -111,24 +108,14 @@ export const PerformanceProvider = ({ children }) => {
         return 'hard';
     };
 
-    // ═══════════════════════════════════
-    // GAMIFICATION (XP & LEVEL)
-    // ═══════════════════════════════════
     const addXp = (amount) => {
         setXp(prev => prev + amount);
     };
 
     const getLevelInfo = () => {
-        // Simple scaling: Lvl 1 = 0 XP, Lvl 2 = 100 XP, Lvl 3 = 400 XP... Level = floor(sqrt(xp/100)) + 1
         const currentLevel = Math.floor(Math.sqrt(xp / 100)) + 1;
-        
-        // XP required for next level = (currentLevel)^2 * 100
         const xpForNextLevel = Math.pow(currentLevel, 2) * 100;
-        
-        // XP required for current level = (currentLevel - 1)^2 * 100
         const xpForCurrentLevel = Math.pow(currentLevel - 1, 2) * 100;
-        
-        // Progress into current level
         const xpIntoLevel = xp - xpForCurrentLevel;
         const xpNeededForNext = xpForNextLevel - xpForCurrentLevel;
         const progressPercentage = (xpIntoLevel / xpNeededForNext) * 100;
