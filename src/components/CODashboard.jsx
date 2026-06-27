@@ -319,6 +319,7 @@ const CODashboard = ({ onNavigate }) => {
 
                     </div>
                 </div>
+                </div>
 
             </div>
         </div>
