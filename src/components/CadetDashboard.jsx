@@ -166,18 +166,26 @@ const CadetDashboard = ({ onNavigate }) => {
                         </div>
 
                         {/* Right: Stat Cards in a clean row */}
-                        <div className="flex gap-3 flex-shrink-0">
-                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[120px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                        <div className="flex flex-wrap md:flex-nowrap gap-3 flex-shrink-0">
+                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[110px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
                                 <span className="text-[10px] font-semibold text-theme-muted uppercase tracking-[0.2em] mb-1">Rank</span>
                                 <span className="text-2xl font-light text-theme-text">{levelInfo.rankAbbr}</span>
                             </div>
-                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[120px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[110px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
                                 <span className="text-[10px] font-semibold text-theme-muted uppercase tracking-[0.2em] mb-1">Avg Score</span>
                                 <span className="text-2xl font-light text-theme-primary">{avgScore > 0 ? `${avgScore}%` : 'N/A'}</span>
                             </div>
-                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[120px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
-                                <span className="text-[10px] font-semibold text-theme-muted uppercase tracking-[0.2em] mb-1">Tests Taken</span>
+                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[110px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] font-semibold text-theme-muted uppercase tracking-[0.2em] mb-1">Tests</span>
                                 <span className="text-2xl font-light text-theme-primary">{quizRecords.length}</span>
+                            </div>
+                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[110px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] font-semibold text-theme-muted uppercase tracking-[0.2em] mb-1">Attendance</span>
+                                <span className="text-2xl font-light text-theme-text">85%</span>
+                            </div>
+                            <div className="rounded-2xl px-5 py-4 flex flex-col items-center min-w-[110px] border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl">
+                                <span className="text-[10px] font-semibold text-theme-muted uppercase tracking-[0.2em] mb-1">Next Parade</span>
+                                <span className="text-2xl font-light text-theme-text">14 Nov</span>
                             </div>
                         </div>
                     </div>

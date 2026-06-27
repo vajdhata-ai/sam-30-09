@@ -180,18 +180,22 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
             - Difficulty: ${quizConfig.difficulty}
             - Question Count: ${numToGenerate}
             
-            Return ONLY a valid JSON array of question objects matching this exact schema (NO markdown formatting, just raw JSON):
-            [{
-                "id": "unique-string-id",
-                "type": "mcq",
-                "question": "The question text",
-                "options": ["A", "B", "C", "D"],
-                "answer": "The exact string from options that is correct",
-                "explanation": "Brief explanation of why it is correct",
-                "marks": 1
-            }]`;
+            Return a JSON object with a single key "questions" containing an array of question objects matching this exact schema:
+            {
+              "questions": [
+                {
+                  "id": "unique-string-id",
+                  "type": "mcq",
+                  "question": "The question text",
+                  "options": ["A", "B", "C", "D"],
+                  "answer": "The exact string from options that is correct",
+                  "explanation": "Brief explanation of why it is correct",
+                  "marks": 1
+                }
+              ]
+            }`;
 
-            const result = await callGroq([{ role: 'user', content: prompt }], null, true);
+            const result = await callGroq([{ role: 'user', content: prompt }], null, false, { response_format: { type: "json_object" } });
             let questions = [];
             
             try {
@@ -205,13 +209,11 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                     const jsonMatch = textResult.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
                     if (jsonMatch) {
                         textResult = jsonMatch[1];
-                    } else {
-                        const arrayMatch = textResult.match(/\[\s*\{[\s\S]*\}\s*\]/);
-                        if (arrayMatch) textResult = arrayMatch[0];
                     }
-                    questions = JSON.parse(textResult);
+                    const parsed = JSON.parse(textResult);
+                    questions = parsed.questions || parsed;
                 } else {
-                    questions = textResult;
+                    questions = textResult.questions || textResult;
                 }
             } catch (e) {
                 console.error("Failed to parse questions JSON:", e, result);
@@ -468,34 +470,34 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                     )}
 
                     {step === 'chapter-options' && activeChapter && (
-                        <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in p-4 md:p-8">
-                            <div className="max-w-4xl w-full">
-                                <div className="text-center mb-16 relative">
-                                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-[28px] bg-gradient-to-br from-theme-primary/20 to-theme-primary/5 text-theme-primary mb-8 shadow-[0_0_40px_rgba(var(--theme-primary),0.2)] border border-theme-primary/30">
-                                        <Target className="w-10 h-10" />
+                        <div className="flex flex-col items-center justify-center min-h-[50vh] animate-fade-in p-4">
+                            <div className="max-w-3xl w-full">
+                                <div className="text-center mb-8 relative">
+                                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-[20px] bg-gradient-to-br from-theme-primary/20 to-theme-primary/5 text-theme-primary mb-6 shadow-[0_0_30px_rgba(var(--theme-primary),0.2)] border border-theme-primary/30">
+                                        <Target className="w-6 h-6" />
                                     </div>
-                                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-widest text-theme-text mb-4 leading-tight">
+                                    <h2 className="text-2xl md:text-3xl font-black uppercase tracking-widest text-theme-text mb-3 leading-tight">
                                         {activeChapter.chapterName}
                                     </h2>
-                                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-theme-primary/80 flex items-center justify-center gap-3">
-                                        <Shield className="w-4 h-4" />
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-theme-primary/80 flex items-center justify-center gap-2">
+                                        <Shield className="w-3 h-3" />
                                         Select Operating Mode
-                                        <Shield className="w-4 h-4" />
+                                        <Shield className="w-3 h-3" />
                                     </p>
                                 </div>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                     {/* Question Bank Option */}
                                     <button 
                                         onClick={() => handleModeSelect('bank')}
-                                        className="group p-10 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 hover:border-theme-primary/60 hover:bg-theme-surface/80 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden"
+                                        className="group p-6 md:p-8 rounded-[24px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 hover:border-theme-primary/60 hover:bg-theme-surface/80 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-b from-theme-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <div className="w-24 h-24 rounded-[32px] bg-theme-bg border border-theme-border/60 text-theme-primary flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500 z-10 shadow-lg group-hover:border-theme-primary/40 group-hover:bg-theme-primary/10 group-hover:shadow-[0_0_30px_rgba(var(--theme-primary),0.2)]">
-                                            <FileText className="w-10 h-10" />
+                                        <div className="w-16 h-16 rounded-[20px] bg-theme-bg border border-theme-border/60 text-theme-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-500 z-10 shadow-md group-hover:border-theme-primary/40 group-hover:bg-theme-primary/10 group-hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.2)]">
+                                            <FileText className="w-7 h-7" />
                                         </div>
-                                        <h3 className="text-2xl font-black uppercase tracking-widest text-theme-text mb-4 z-10">Question Bank</h3>
-                                        <p className="text-sm text-theme-muted leading-relaxed z-10 font-medium max-w-xs">
+                                        <h3 className="text-lg font-black uppercase tracking-widest text-theme-text mb-2 z-10">Question Bank</h3>
+                                        <p className="text-xs text-theme-muted leading-relaxed z-10 font-medium max-w-xs">
                                             Study all questions and their correct answers without timer or scoring. Perfect for deep revision.
                                         </p>
                                     </button>
@@ -503,14 +505,14 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                                     {/* Custom Paper Option */}
                                     <button 
                                         onClick={() => handleModeSelect('quiz')}
-                                        className="group p-10 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 hover:border-theme-primary/60 hover:bg-theme-surface/80 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden"
+                                        className="group p-6 md:p-8 rounded-[24px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 hover:border-theme-primary/60 hover:bg-theme-surface/80 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-b from-theme-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <div className="w-24 h-24 rounded-[32px] bg-theme-bg border border-theme-border/60 text-theme-primary flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500 z-10 shadow-lg group-hover:border-theme-primary/40 group-hover:bg-theme-primary/10 group-hover:shadow-[0_0_30px_rgba(var(--theme-primary),0.2)]">
-                                            <Trophy className="w-10 h-10" />
+                                        <div className="w-16 h-16 rounded-[20px] bg-theme-bg border border-theme-border/60 text-theme-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-500 z-10 shadow-md group-hover:border-theme-primary/40 group-hover:bg-theme-primary/10 group-hover:shadow-[0_0_20px_rgba(var(--theme-primary),0.2)]">
+                                            <Trophy className="w-7 h-7" />
                                         </div>
-                                        <h3 className="text-2xl font-black uppercase tracking-widest text-theme-text mb-4 z-10">Custom Paper</h3>
-                                        <p className="text-sm text-theme-muted leading-relaxed z-10 font-medium max-w-xs">
+                                        <h3 className="text-lg font-black uppercase tracking-widest text-theme-text mb-2 z-10">Custom Paper</h3>
+                                        <p className="text-xs text-theme-muted leading-relaxed z-10 font-medium max-w-xs">
                                             Configure a custom mock test. Select difficulty, pattern, and question count to evaluate readiness.
                                         </p>
                                     </button>
@@ -537,8 +539,8 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                                     
                                     {/* Number of Questions */}
-                                    <div className="p-8 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 shadow-xl flex flex-col relative overflow-hidden group hover:border-theme-primary/30 transition-all duration-500">
-                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted mb-8 flex items-center gap-3">
+                                    <div className="p-6 rounded-3xl bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 shadow-xl flex flex-col relative overflow-hidden group hover:border-theme-primary/30 transition-all duration-500">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted mb-6 flex items-center gap-3">
                                             <div className="w-6 h-6 rounded-full bg-theme-bg border border-theme-border flex items-center justify-center">
                                                 <FileText className="w-3 h-3 text-theme-primary" />
                                             </div>
@@ -549,14 +551,14 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                                                 <button 
                                                     key={num}
                                                     onClick={() => setQuizConfig({...quizConfig, numQuestions: num})}
-                                                    className={`px-8 py-4 rounded-2xl font-black text-lg transition-all duration-300 ${quizConfig.numQuestions === num ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-105 border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
+                                                    className={`px-6 py-3 rounded-2xl font-black text-lg transition-all duration-300 ${quizConfig.numQuestions === num ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-105 border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
                                                 >
                                                     {num}
                                                 </button>
                                             ))}
                                             <button 
                                                 onClick={() => setQuizConfig({...quizConfig, numQuestions: 'All'})}
-                                                className={`w-full mt-2 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 ${quizConfig.numQuestions === 'All' ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-[1.02] border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
+                                                className={`w-full mt-2 px-5 py-3 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 ${quizConfig.numQuestions === 'All' ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-[1.02] border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
                                             >
                                                 <Target className="w-4 h-4" /> All Available
                                             </button>
@@ -564,8 +566,8 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                                     </div>
 
                                     {/* Difficulty Level */}
-                                    <div className="p-8 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 shadow-xl flex flex-col relative overflow-hidden group hover:border-theme-primary/30 transition-all duration-500">
-                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted mb-8 flex items-center gap-3">
+                                    <div className="p-6 rounded-3xl bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 shadow-xl flex flex-col relative overflow-hidden group hover:border-theme-primary/30 transition-all duration-500">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted mb-6 flex items-center gap-3">
                                             <div className="w-6 h-6 rounded-full bg-theme-bg border border-theme-border flex items-center justify-center">
                                                 <Trophy className="w-3 h-3 text-theme-primary" />
                                             </div>
@@ -580,7 +582,7 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                                                 <button 
                                                     key={level.id}
                                                     onClick={() => setQuizConfig({...quizConfig, difficulty: level.id})}
-                                                    className={`w-full px-6 py-4 rounded-2xl font-black flex items-center justify-between transition-all duration-300 ${quizConfig.difficulty === level.id ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-[1.02] border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
+                                                    className={`w-full px-5 py-3 rounded-2xl font-black flex items-center justify-between transition-all duration-300 ${quizConfig.difficulty === level.id ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-[1.02] border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
                                                 >
                                                     <span className="uppercase tracking-widest">{level.id}</span>
                                                     <span className={`text-[9px] uppercase tracking-widest ${quizConfig.difficulty === level.id ? 'text-theme-bg/70' : 'text-theme-muted'}`}>{level.desc}</span>
@@ -590,8 +592,8 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                                     </div>
 
                                     {/* Question Pattern */}
-                                    <div className="p-8 rounded-[40px] bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 shadow-xl flex flex-col relative overflow-hidden group hover:border-theme-primary/30 transition-all duration-500">
-                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted mb-8 flex items-center gap-3">
+                                    <div className="p-6 rounded-3xl bg-theme-surface/40 backdrop-blur-md border border-theme-border/40 shadow-xl flex flex-col relative overflow-hidden group hover:border-theme-primary/30 transition-all duration-500">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted mb-6 flex items-center gap-3">
                                             <div className="w-6 h-6 rounded-full bg-theme-bg border border-theme-border flex items-center justify-center">
                                                 <Shield className="w-3 h-3 text-theme-primary" />
                                             </div>
@@ -608,7 +610,7 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                                                     <button 
                                                         key={pattern.id}
                                                         onClick={() => setQuizConfig({...quizConfig, pattern: pattern.id})}
-                                                        className={`w-full px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center gap-4 transition-all duration-300 ${quizConfig.pattern === pattern.id ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-[1.02] border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
+                                                        className={`w-full px-5 py-3 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center gap-4 transition-all duration-300 ${quizConfig.pattern === pattern.id ? 'bg-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] scale-[1.02] border border-theme-primary' : 'bg-theme-bg border border-theme-border/60 text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface'}`}
                                                     >
                                                         <Icon className={`w-4 h-4 ${quizConfig.pattern === pattern.id ? 'text-theme-bg' : 'text-theme-primary'}`} />
                                                         <span>{pattern.id}</span>
@@ -879,7 +881,7 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
 
                             {/* Fail to progress banner */}
                             {isProgressionTest && !assessmentStats.levelUnlocked && (
-                                <div className="p-10 rounded-[40px] bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/30 text-center shadow-xl shadow-amber-500/10 relative overflow-hidden">
+                                <div className="p-10 rounded-[40px] bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/30 text-center shadow-xl shadow-amber-500/10 relative overflow-hidden mt-8">
                                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
                                     
                                     <div className="inline-flex p-5 bg-amber-500/20 rounded-2xl border border-amber-500/30 mb-6 relative z-10">
@@ -896,6 +898,36 @@ const QuizAssessment = ({ onNavigate, assessmentContext, setAssessmentContext })
                                         className="relative z-10 px-10 py-4 bg-amber-500 text-theme-bg rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:scale-105 transition-all shadow-lg shadow-amber-500/30 border border-amber-400"
                                     >
                                         Return to Study Material
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Learning Loop Fix This Banner for standard custom papers */}
+                            {!isProgressionTest && assessmentStats.score < 60 && (
+                                <div className="p-10 rounded-[40px] bg-gradient-to-br from-rose-500/10 to-rose-500/5 border border-rose-500/30 text-center shadow-xl shadow-rose-500/10 relative overflow-hidden mt-8">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/10 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
+                                    
+                                    <div className="inline-flex p-5 bg-rose-500/20 rounded-2xl border border-rose-500/30 mb-6 relative z-10">
+                                        <AlertCircle className="w-10 h-10 text-rose-400" />
+                                    </div>
+                                    <h3 className="text-3xl font-black uppercase tracking-widest text-rose-400 mb-3 relative z-10">
+                                        Learning Loop Recommended
+                                    </h3>
+                                    <p className="text-rose-500/80 text-sm font-medium mb-8 max-w-lg mx-auto leading-relaxed relative z-10">
+                                        Your score is below the 60% operational threshold. Let's fix this. Jump into Samvada Lens to master this topic with curated AI notes and re-attempt later.
+                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            if (typeof setAssessmentContext === 'function') {
+                                                setAssessmentContext({ topic: activeChapter.chapterName, level: 'beginner' });
+                                            }
+                                            if (typeof onNavigate === 'function') {
+                                                onNavigate('document-study');
+                                            }
+                                        }}
+                                        className="relative z-10 px-10 py-4 bg-rose-500 text-white rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:scale-105 transition-all shadow-lg shadow-rose-500/30 border border-rose-400"
+                                    >
+                                        Let's Fix This
                                     </button>
                                 </div>
                             )}

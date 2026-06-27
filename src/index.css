@@ -17,7 +17,7 @@
 
   html {
     scroll-behavior: smooth;
-    font-size: 112.5%; /* Scales the entire app's rem units up from 16px to 18px */
+    font-size: 100%; /* Restore original default scale */
   }
 
   @keyframes gradientBG {
