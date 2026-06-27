@@ -37,7 +37,7 @@ const COTaskManager = () => {
             console.error("Tasks fetch error:", error);
         });
         return () => unsubscribe();
-    }, []);
+    }, [userProfile]);
 
     const filteredTasks = tasks.filter(t => {
         const isOverdue = t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Completed';

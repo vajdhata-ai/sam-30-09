@@ -34,7 +34,7 @@ const COAnnouncementsView = () => {
             console.error("Announcements fetch error:", error);
         });
         return () => unsubscribe();
-    }, []);
+    }, [userProfile]);
 
     const handleCreateAnnouncement = async (e) => {
         e.preventDefault();
