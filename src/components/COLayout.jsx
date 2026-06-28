@@ -4,10 +4,11 @@ import CODashboard from './CODashboard';
 import COGrievanceView from './COGrievanceView';
 import COTaskManager from './COTaskManager';
 import COAnnouncementsView from './COAnnouncementsView';
+import COQuartermasterView from './COQuartermasterView';
 import ErrorBoundary from './ErrorBoundary';
 import {
     BarChart, ShieldAlert, ClipboardList, Users, Megaphone, Settings,
-    ChevronRight, ChevronLeft, LogOut, Menu, X, AuremLogo
+    ChevronRight, ChevronLeft, LogOut, Menu, X, AuremLogo, Package
 } from './Icons';
 
 const CO_NAV = [
@@ -15,6 +16,7 @@ const CO_NAV = [
     { id: 'co-grievances', label: 'Grievance Queue', icon: ShieldAlert },
     { id: 'co-tasks', label: 'Task Manager', icon: ClipboardList },
     { id: 'co-announcements', label: 'Announcements', icon: Megaphone },
+    { id: 'co-quartermaster', label: 'Quartermaster Indents', icon: Package },
 ];
 
 const COLayout = () => {
@@ -34,6 +36,8 @@ const COLayout = () => {
                 return <COTaskManager />;
             case 'co-announcements':
                 return <COAnnouncementsView />;
+            case 'co-quartermaster':
+                return <COQuartermasterView />;
             default:
                 return <CODashboard onNavigate={setCurrentView} />;
         }
