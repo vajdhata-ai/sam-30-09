@@ -55,6 +55,14 @@ service cloud.firestore {
       allow read: if isAuthenticated() && isCO();
     }
 
+    // kitRequests: cadets create, read their own. COs read/update all.
+    match /kitRequests/{requestId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow update: if isAuthenticated() && isCO();
+      allow delete: if isAuthenticated() && isCO();
+    }
+
     // Default rule: block everything else
     match /{document=**} {
       allow read, write: if false;
