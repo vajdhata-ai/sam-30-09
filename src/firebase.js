@@ -20,6 +20,6 @@ setPersistence(auth, browserLocalPersistence).catch((error) => {
     console.error("Auth persistence error:", error);
 });
 
-export const db = getFirestore(app, 'default'); // CRITICAL: Connect to 'default' database (not '(default)')
+export const db = getFirestore(app); // Firestore for subscription persistence
 export const googleProvider = new GoogleAuthProvider();
 export default app;
